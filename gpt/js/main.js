@@ -1,0 +1,3 @@
+initTime()
+initSwipe()
+initControlCenter()
