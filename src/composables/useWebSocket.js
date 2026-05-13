@@ -82,7 +82,9 @@ async function registerPushSubscription() {
 
   try {
     const registration = await navigator.serviceWorker.ready;
-    const res = await fetch("/api/push/vapid-key");
+
+    const BASE = import.meta.env.VITE_API_URL || "";
+    const res = await fetch(`${BASE}/api/push/vapid-key`);
     const { key } = await res.json();
 
     const subscription = await registration.pushManager.subscribe({
@@ -90,7 +92,7 @@ async function registerPushSubscription() {
       applicationServerKey: urlBase64ToUint8Array(key),
     });
 
-    await fetch("/api/push/subscribe", {
+    await fetch(`${BASE}/api/push/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(subscription),

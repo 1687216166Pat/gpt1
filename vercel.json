@@ -1,11 +1,11 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "https://gpt1-production-ba3b.up.railway.app/api/$1"
-    }
-  ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vue"
+  "framework": "vue",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

@@ -87,6 +87,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { api } from '@/utils/api'
 
 const personas = ref([])
 const activePersona = ref('')
@@ -103,30 +104,33 @@ const proactive = reactive({
     minInterval: 4
 })
 
-
 async function loadData() {
-    const pRes = await fetch('/api/prompts/personas')
-    const pData = await pRes.json()
-    personas.value = pData.personas
-    activePersona.value = pData.active
+    try {
+        const pRes = await api('/api/prompts/personas')
+        const pData = await pRes.json()
+        personas.value = pData.personas
+        activePersona.value = pData.active
 
-    const uRes = await fetch('/api/prompts/user')
-    const uData = await uRes.json()
-    userPrompt.value = uData.content
-    template.value = uData.template
+        const uRes = await api('/api/prompts/user')
+        const uData = await uRes.json()
+        userPrompt.value = uData.content
+        template.value = uData.template
 
-    const proRes = await fetch('/api/proactive/settings')
-    const proData = await proRes.json()
-    Object.assign(proactive, proData)
+        const proRes = await api('/api/proactive/settings')
+        const proData = await proRes.json()
+        Object.assign(proactive, proData)
+    } catch (e) {
+        console.error('加载设置失败:', e)
+    }
 }
 
 async function switchPersona(id) {
-    await fetch(`/api/prompts/personas/${id}/activate`, { method: 'POST' })
+    await api(`/api/prompts/personas/${id}/activate`, { method: 'POST' })
     activePersona.value = id
 }
 
 async function saveUserPrompt() {
-    await fetch('/api/prompts/user', {
+    await api('/api/prompts/user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: userPrompt.value })
@@ -136,7 +140,7 @@ async function saveUserPrompt() {
 }
 
 async function saveProactive() {
-    await fetch('/api/proactive/settings', {
+    await api('/api/proactive/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(proactive)
@@ -144,10 +148,11 @@ async function saveProactive() {
 }
 
 async function testProactive() {
-    await fetch('/api/proactive/trigger', { method: 'POST' })
+    await api('/api/proactive/trigger', { method: 'POST' })
 }
 
 onMounted(loadData)
+
 </script>
 
 <style scoped>

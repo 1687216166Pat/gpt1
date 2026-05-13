@@ -1,8 +1,6 @@
-// src/stores/chat.js
 import { defineStore } from "pinia";
 import { ref } from "vue";
-
-const API = import.meta.env.VITE_API_URL || "";
+import { api } from "@/utils/api";
 
 export const useChatStore = defineStore("chat", () => {
   const messages = ref([]);
@@ -18,7 +16,7 @@ export const useChatStore = defineStore("chat", () => {
 
   async function loadHistory() {
     try {
-      const res = await fetch(`${API}/api/messages`);
+      const res = await api("/api/messages");
       const data = await res.json();
       messages.value = data.map((m) => ({
         id: m.id,
@@ -33,7 +31,7 @@ export const useChatStore = defineStore("chat", () => {
 
   async function loadSessionMessages(sessionId) {
     try {
-      const res = await fetch(`${API}/api/sessions/${sessionId}/messages`);
+      const res = await api(`/api/sessions/${sessionId}/messages`);
       const data = await res.json();
       messages.value = data.map((m) => ({
         id: m.id,

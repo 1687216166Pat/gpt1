@@ -1,6 +1,5 @@
-// src/utils/api.js
-const API = import.meta.env.VITE_API_URL || "";
+const BASE = import.meta.env.VITE_API_URL || "";
 
-export function apiUrl(path) {
-  return `${API}${path}`;
+export function api(path, options) {
+  return fetch(`${BASE}${path}`, options);
 }

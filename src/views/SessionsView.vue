@@ -21,13 +21,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { api } from '@/utils/api'
 
 const router = useRouter()
 const sessions = ref([])
 
 async function loadSessions() {
     try {
-        const res = await fetch('/api/sessions')
+        const res = await api('/api/sessions')
         sessions.value = await res.json()
     } catch (e) {
         console.error('加载会话失败:', e)
@@ -36,7 +37,7 @@ async function loadSessions() {
 
 async function createNew() {
     try {
-        const res = await fetch('/api/sessions', {
+        const res = await api('/api/sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: '新对话' })
@@ -50,28 +51,13 @@ async function createNew() {
 
 async function deleteSession(id) {
     try {
-        await fetch(`/api/sessions/${id}`, { method: 'DELETE' })
+        await api(`/api/sessions/${id}`, { method: 'DELETE' })
         sessions.value = sessions.value.filter(s => s.id !== id)
     } catch (e) {
         console.error('删除会话失败:', e)
     }
 }
 
-function openSession(id) {
-    router.push(`/chat/${id}`)
-}
-
-function formatTime(ts) {
-    if (!ts) return ''
-    const d = new Date(ts)
-    const now = new Date()
-    if (d.toDateString() === now.toDateString()) {
-        return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-    }
-    return `${d.getMonth() + 1}/${d.getDate()}`
-}
-
-onMounted(loadSessions)
 </script>
 
 <style scoped>

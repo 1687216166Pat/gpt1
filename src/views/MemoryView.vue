@@ -60,6 +60,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { api } from '@/utils/api'
 
 const profile = ref('')
 const profileEdit = ref('')
@@ -67,7 +68,7 @@ const recentMemories = ref([])
 const editingProfile = ref(false)
 
 async function loadMemories() {
-    const res = await fetch('/api/memories')
+    const res = await api('/api/memories')
     const data = await res.json()
     profile.value = data.profile
     profileEdit.value = data.profile
@@ -75,7 +76,7 @@ async function loadMemories() {
 }
 
 async function saveProfile() {
-    await fetch('/api/memories/profile', {
+    await api('/api/memories/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: profileEdit.value })
@@ -85,16 +86,17 @@ async function saveProfile() {
 }
 
 async function doConsolidate() {
-    await fetch('/api/memories/consolidate', { method: 'POST' })
+    await api('/api/memories/consolidate', { method: 'POST' })
     loadMemories()
 }
 
 async function deleteRecent(id) {
-    await fetch(`/api/memories/recent/${id}`, { method: 'DELETE' })
+    await api(`/api/memories/recent/${id}`, { method: 'DELETE' })
     recentMemories.value = recentMemories.value.filter(m => m.id !== id)
 }
 
 onMounted(loadMemories)
+
 </script>
 
 <style scoped>
