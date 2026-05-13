@@ -1,6 +1,4 @@
 node_modules/
-dist/
 server/db/app.db
 .env
 *.log
-node_modules
