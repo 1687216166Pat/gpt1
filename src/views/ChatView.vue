@@ -1,7 +1,7 @@
 <template>
     <div class="chat-page">
         <div class="chat-header">
-            <button class="back-btn" @click="$router.push('/')">‹</button>
+            <button class="back-btn" @click="$router.push('/sessions')">‹</button>
             <h2>AI 助手</h2>
         </div>
         <div class="chat-messages" ref="messagesContainer">
@@ -14,14 +14,16 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import ChatBubble from '@/components/chat/ChatBubble.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import TypingIndicator from '@/components/chat/TypingIndicator.vue'
 import { useChatStore } from '@/stores/chat'
 import { useWebSocket } from '@/composables/useWebSocket'
 
+const route = useRoute()
 const chatStore = useChatStore()
-const { connect, send, onMessage, removeHandler } = useWebSocket()
+const { send, onMessage, removeHandler } = useWebSocket()
 const messagesContainer = ref(null)
 const isTyping = ref(false)
 
@@ -35,7 +37,7 @@ function scrollToBottom() {
 
 function handleSend(text) {
     chatStore.addMessage({ role: 'user', content: text })
-    send({ type: 'chat', content: text })
+    send({ type: 'chat', content: text, sessionId: route.params.id })
     isTyping.value = true
     scrollToBottom()
 }
@@ -49,9 +51,14 @@ function handleIncoming(data) {
 }
 
 onMounted(() => {
-    connect()
     onMessage(handleIncoming)
-    chatStore.loadHistory()
+    // 加载指定会话的消息
+    const sessionId = route.params.id
+    if (sessionId) {
+        chatStore.loadSessionMessages(sessionId)
+    } else {
+        chatStore.loadHistory()
+    }
 })
 
 onUnmounted(() => {

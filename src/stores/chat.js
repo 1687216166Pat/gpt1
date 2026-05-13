@@ -29,5 +29,30 @@ export const useChatStore = defineStore("chat", () => {
     }
   }
 
-  return { messages, addMessage, loadHistory };
+  async function loadSessionMessages(sessionId) {
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/messages`);
+      const data = await res.json();
+      messages.value = data.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+      }));
+    } catch (e) {
+      console.error("加载会话消息失败:", e);
+    }
+  }
+
+  function clearMessages() {
+    messages.value = [];
+  }
+
+  return {
+    messages,
+    addMessage,
+    loadHistory,
+    loadSessionMessages,
+    clearMessages,
+  };
 });

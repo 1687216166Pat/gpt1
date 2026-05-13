@@ -1,6 +1,7 @@
 <template>
     <div class="phone-screen">
         <StatusBar />
+        <NotificationBanner />
         <main class="screen-content">
             <RouterView />
         </main>
@@ -9,8 +10,19 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import StatusBar from '@/components/StatusBar.vue'
 import HomeIndicator from '@/components/HomeIndicator.vue'
+import NotificationBanner from '@/components/NotificationBanner.vue'
+import { useWebSocket } from '@/composables/useWebSocket'
+
+const { connect, requestNotificationPermission, registerPushSubscription } = useWebSocket()
+
+onMounted(() => {
+    connect()
+    requestNotificationPermission()
+    registerPushSubscription()
+})
 </script>
 
 <style scoped>

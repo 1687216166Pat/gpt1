@@ -5,7 +5,7 @@
             <p class="date-display">{{ dateStr }}</p>
         </div>
         <div class="app-grid">
-            <div class="app-icon" @click="$router.push('/chat')">
+            <div class="app-icon" @click="$router.push('/sessions')">
                 <div class="icon-bg chat-icon">💬</div>
                 <span class="icon-label">AI 聊天</span>
             </div>
@@ -13,7 +13,7 @@
                 <div class="icon-bg status-icon">📱</div>
                 <span class="icon-label">手机状态</span>
             </div>
-            <div class="app-icon">
+            <div class="app-icon" @click="$router.push('/settings')">
                 <div class="icon-bg settings-icon">⚙️</div>
                 <span class="icon-label">设置</span>
             </div>
