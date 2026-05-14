@@ -16,13 +16,13 @@ const { timeStr } = useTime()
 
 <style scoped>
 .status-bar {
-    height: calc(env(safe-area-inset-top, 20px) + 24px);
+    padding-top: 14px;
     padding-left: 24px;
     padding-right: 24px;
+    padding-bottom: 4px;
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
-    padding-bottom: 4px;
+    align-items: center;
     font-size: 14px;
     font-weight: 600;
     color: var(--color-text);
