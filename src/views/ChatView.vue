@@ -78,6 +78,7 @@ watch(() => chatStore.messages.length, scrollToBottom)
     display: flex;
     flex-direction: column;
     height: 100%;
+    padding-top: env(safe-area-inset-top, 44px);
 }
 
 .chat-header {

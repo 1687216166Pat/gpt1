@@ -81,7 +81,10 @@ onMounted(loadSessions)
     display: flex;
     flex-direction: column;
     height: 100%;
+    padding-top: env(safe-area-inset-top, 44px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
 
 .sessions-header {
     display: flex;

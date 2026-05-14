@@ -4,7 +4,7 @@
             <p class="time-display">{{ timeStr }}</p>
             <p class="date-display">{{ dateStr }}</p>
             <p class="greeting-text">{{ greeting }}</p>
-            <p class="version-text">v1.0.9</p>
+            <p class="version-text">v1.0.1</p>
 
         </div>
         <div class="app-grid">
@@ -33,6 +33,7 @@ const { timeStr, dateStr, greeting } = useTime()
 <style scoped>
 .home-screen {
     padding-top: calc(env(safe-area-inset-top, 44px) + 20px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
     height: 100%;
     display: flex;
     flex-direction: column;
