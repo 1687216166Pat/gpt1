@@ -1,12 +1,13 @@
 const { getDB } = require("../db/index");
 
-let messageCount = 0;
+let messageCount = {};
 const EXTRACT_INTERVAL = 3;
 
-function shouldExtract() {
-  messageCount++;
-  if (messageCount >= EXTRACT_INTERVAL) {
-    messageCount = 0;
+function shouldExtract(personaId) {
+  if (!messageCount[personaId]) messageCount[personaId] = 0;
+  messageCount[personaId]++;
+  if (messageCount[personaId] >= EXTRACT_INTERVAL) {
+    messageCount[personaId] = 0;
     return true;
   }
   return false;
@@ -14,8 +15,8 @@ function shouldExtract() {
 
 // ========== 记忆提取 ==========
 
-async function extractMemoryByAI(userMessage, aiReply) {
-  if (!shouldExtract()) return null;
+async function extractMemoryByAI(personaId, userMessage, aiReply) {
+  if (!shouldExtract(personaId)) return null;
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -57,7 +58,7 @@ AI: ${aiReply}
     const result = data.choices[0].message.content.trim();
     if (result === "无" || result.length < 2) return null;
 
-    console.log("记忆提取结果:", result);
+    console.log(`[${personaId}] 记忆提取结果:`, result);
     return result;
   } catch (e) {
     console.error("记忆提取失败:", e);
@@ -67,13 +68,14 @@ AI: ${aiReply}
 
 // ========== 每日记忆存储 ==========
 
-async function saveDailyMemory(content) {
+async function saveDailyMemory(personaId, content) {
   const db = getDB();
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: existing } = await db
     .from("memories_recent")
     .select("id, content")
+    .eq("persona_id", personaId)
     .eq("source_session", today)
     .limit(1);
 
@@ -92,26 +94,29 @@ async function saveDailyMemory(content) {
       .from("memories_recent")
       .update({ content: merged })
       .eq("id", existing[0].id);
-    console.log(`今日记忆更新: ${merged}`);
   } else {
-    await db.from("memories_recent").insert({ content, source_session: today });
-    console.log(`今日记忆新建: ${content}`);
+    await db
+      .from("memories_recent")
+      .insert({ persona_id: personaId, content, source_session: today });
   }
 }
 
 // ========== 行为模式检测 ==========
 
-async function detectPatterns(userMessage) {
+async function detectPatterns(personaId, userMessage) {
   const db = getDB();
   const now = new Date();
   const hour = now.getHours();
 
-  // 深夜聊天检测
   if (hour >= 23 || hour <= 3) {
-    await upsertPattern(db, "late_night", "用户经常深夜聊天，可能有熬夜习惯");
+    await upsertPattern(
+      db,
+      personaId,
+      "late_night",
+      "用户经常深夜聊天，可能有熬夜习惯",
+    );
   }
 
-  // 负面情绪检测
   const negativeWords = [
     "累",
     "烦",
@@ -129,10 +134,14 @@ async function detectPatterns(userMessage) {
     "伤心",
   ];
   if (negativeWords.some((w) => userMessage.includes(w))) {
-    await upsertPattern(db, "emotion_negative", "用户近期情绪偏低落，需要关心");
+    await upsertPattern(
+      db,
+      personaId,
+      "emotion_negative",
+      "用户近期情绪偏低落，需要关心",
+    );
   }
 
-  // 积极情绪检测
   const positiveWords = [
     "开心",
     "高兴",
@@ -145,10 +154,9 @@ async function detectPatterns(userMessage) {
     "期待",
   ];
   if (positiveWords.some((w) => userMessage.includes(w))) {
-    await upsertPattern(db, "emotion_positive", "用户近期心情不错");
+    await upsertPattern(db, personaId, "emotion_positive", "用户近期心情不错");
   }
 
-  // 工作/学习压力检测
   const workWords = [
     "加班",
     "赶工",
@@ -160,14 +168,20 @@ async function detectPatterns(userMessage) {
     "忙死",
   ];
   if (workWords.some((w) => userMessage.includes(w))) {
-    await upsertPattern(db, "work_pressure", "用户工作/学习压力较大");
+    await upsertPattern(
+      db,
+      personaId,
+      "work_pressure",
+      "用户工作/学习压力较大",
+    );
   }
 }
 
-async function upsertPattern(db, type, description) {
+async function upsertPattern(db, personaId, type, description) {
   const { data: existing } = await db
     .from("memory_patterns")
     .select("id, frequency")
+    .eq("persona_id", personaId)
     .eq("pattern_type", type)
     .limit(1);
 
@@ -183,31 +197,37 @@ async function upsertPattern(db, type, description) {
   } else {
     await db
       .from("memory_patterns")
-      .insert({ pattern_type: type, description, frequency: 1 });
+      .insert({
+        persona_id: personaId,
+        pattern_type: type,
+        description,
+        frequency: 1,
+      });
   }
 }
 
 // ========== 记忆召回 ==========
 
-async function buildMemoryContextAsync(sessionId, userMessage) {
+async function buildMemoryContextAsync(personaId, userMessage) {
   const db = getDB();
   let context = "";
 
-  // 第一层：总档案
+  // 总档案
   const { data: profileRow } = await db
     .from("user_profile")
     .select("value")
-    .eq("key", "memory_profile")
+    .eq("key", `memory_profile_${personaId}`)
     .limit(1);
 
   if (profileRow && profileRow.length > 0 && profileRow[0].value) {
     context += `\n[用户档案] ${profileRow[0].value}\n`;
   }
 
-  // 第二层：最近 7 天的记忆
+  // 最近 7 天记忆
   const { data: recentDays } = await db
     .from("memories_recent")
     .select("content, source_session")
+    .eq("persona_id", personaId)
     .order("created_at", { ascending: false })
     .limit(7);
 
@@ -218,10 +238,11 @@ async function buildMemoryContextAsync(sessionId, userMessage) {
     }
   }
 
-  // 第三层：行为模式（频率>=3才展示，说明是真正的模式）
+  // 行为模式
   const { data: patterns } = await db
     .from("memory_patterns")
     .select("pattern_type, description, frequency, last_seen")
+    .eq("persona_id", personaId)
     .gte("frequency", 3)
     .order("frequency", { ascending: false })
     .limit(5);
@@ -233,10 +254,11 @@ async function buildMemoryContextAsync(sessionId, userMessage) {
     }
   }
 
-  // 第四层：互动状态
+  // 互动状态
   const { data: lastMsg } = await db
     .from("messages")
     .select("timestamp")
+    .eq("persona_id", personaId)
     .eq("role", "user")
     .order("id", { ascending: false })
     .limit(1);
@@ -262,12 +284,13 @@ async function buildMemoryContextAsync(sessionId, userMessage) {
 
 // ========== 记忆合并 ==========
 
-async function consolidateMemories() {
+async function consolidateMemories(personaId) {
   const db = getDB();
 
   const { data: dailyMems } = await db
     .from("memories_recent")
     .select("*")
+    .eq("persona_id", personaId)
     .order("created_at", { ascending: true });
 
   if (!dailyMems || dailyMems.length === 0) return;
@@ -275,7 +298,7 @@ async function consolidateMemories() {
   const { data: profileRow } = await db
     .from("user_profile")
     .select("value")
-    .eq("key", "memory_profile")
+    .eq("key", `memory_profile_${personaId}`)
     .limit(1);
 
   const currentProfileText =
@@ -315,31 +338,36 @@ ${allDaily}
     if (!data.choices || !data.choices[0]) return;
 
     const newProfile = data.choices[0].message.content.trim();
+    const profileKey = `memory_profile_${personaId}`;
 
     const { data: existing } = await db
       .from("user_profile")
       .select("id")
-      .eq("key", "memory_profile")
+      .eq("key", profileKey)
       .limit(1);
 
     if (existing && existing.length > 0) {
       await db
         .from("user_profile")
         .update({ value: newProfile, updated_at: new Date().toISOString() })
-        .eq("key", "memory_profile");
+        .eq("key", profileKey);
     } else {
       await db
         .from("user_profile")
-        .insert({ key: "memory_profile", value: newProfile });
+        .insert({ key: profileKey, value: newProfile });
     }
 
-    // 清理 7 天前的每日记忆
+    // 清理 7 天前的
     const sevenDaysAgo = new Date(
       Date.now() - 7 * 24 * 60 * 60 * 1000,
     ).toISOString();
-    await db.from("memories_recent").delete().lt("created_at", sevenDaysAgo);
+    await db
+      .from("memories_recent")
+      .delete()
+      .eq("persona_id", personaId)
+      .lt("created_at", sevenDaysAgo);
 
-    console.log(`总档案更新: ${newProfile}`);
+    console.log(`[${personaId}] 总档案更新: ${newProfile}`);
   } catch (e) {
     console.error("记忆合并失败:", e);
   }
@@ -347,22 +375,23 @@ ${allDaily}
 
 // ========== 基础查询 ==========
 
-async function getSessionMemory(sessionId, limit = 10) {
+async function getSessionMemory(personaId, limit = 10) {
   const db = getDB();
   const { data } = await db
     .from("messages")
     .select("role, content")
-    .eq("session_id", sessionId)
+    .eq("persona_id", personaId)
     .order("id", { ascending: false })
     .limit(limit);
   return (data || []).reverse();
 }
 
-async function getRecentMemories(limit = 50) {
+async function getRecentMemories(personaId, limit = 50) {
   const db = getDB();
   const { data } = await db
     .from("memories_recent")
     .select("*")
+    .eq("persona_id", personaId)
     .order("created_at", { ascending: false })
     .limit(limit);
   return data || [];
@@ -373,34 +402,33 @@ async function deleteRecentMemory(id) {
   await db.from("memories_recent").delete().eq("id", id);
 }
 
-async function getMemoryProfile() {
+async function getMemoryProfile(personaId) {
   const db = getDB();
   const { data } = await db
     .from("user_profile")
     .select("value")
-    .eq("key", "memory_profile")
+    .eq("key", `memory_profile_${personaId}`)
     .limit(1);
   return data && data.length > 0 ? data[0].value : "";
 }
 
-async function setMemoryProfile(content) {
+async function setMemoryProfile(personaId, content) {
   const db = getDB();
+  const profileKey = `memory_profile_${personaId}`;
 
   const { data: existing } = await db
     .from("user_profile")
     .select("id")
-    .eq("key", "memory_profile")
+    .eq("key", profileKey)
     .limit(1);
 
   if (existing && existing.length > 0) {
     await db
       .from("user_profile")
       .update({ value: content, updated_at: new Date().toISOString() })
-      .eq("key", "memory_profile");
+      .eq("key", profileKey);
   } else {
-    await db
-      .from("user_profile")
-      .insert({ key: "memory_profile", value: content });
+    await db.from("user_profile").insert({ key: profileKey, value: content });
   }
 }
 

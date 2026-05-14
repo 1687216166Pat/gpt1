@@ -1,4 +1,3 @@
-// server/routes/api.js
 const express = require("express");
 const router = express.Router();
 const { reportStatus, getLatestStatus } = require("../services/phone");
@@ -11,13 +10,6 @@ const {
   consolidateMemories,
 } = require("../services/memory");
 const { setUserInfo, getAllUserInfo } = require("../services/user");
-const {
-  createSession,
-  getSessions,
-  getSessionMessages,
-  deleteSession,
-  getCurrentSession,
-} = require("../services/session");
 const {
   getPersonaList,
   getActivePersona,
@@ -44,45 +36,29 @@ router.get("/phone/status", async (req, res) => {
   res.json(status);
 });
 
-// 聊天记录
-router.get("/messages", async (req, res) => {
-  const session = await getCurrentSession();
-  const messages = await getSessionMessages(session.id);
-  res.json(messages);
+// 聊天记录 - 按人格获取
+router.get("/messages/:personaId", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { data } = await db
+    .from("messages")
+    .select("*")
+    .eq("persona_id", req.params.personaId)
+    .order("id", { ascending: false })
+    .limit(50);
+  res.json((data || []).reverse());
 });
 
-// 会话管理
-router.get("/sessions/latest", async (req, res) => {
-  const session = await getCurrentSession();
-  res.json(session);
-});
-
-router.post("/sessions", async (req, res) => {
-  const { title } = req.body;
-  const id = await createSession(title);
-  res.json({ id, title: title || "新对话" });
-});
-
-router.delete("/sessions/:id", async (req, res) => {
-  await deleteSession(req.params.id);
-  res.json({ success: true });
-});
-
-router.get("/sessions/:id/messages", async (req, res) => {
-  const messages = await getSessionMessages(req.params.id);
-  res.json(messages);
-});
-
-// 记忆管理
-router.get("/memories", async (req, res) => {
-  const profile = await getMemoryProfile();
-  const recent = await getRecentMemories(50);
+// 记忆管理 - 按人格
+router.get("/memories/:personaId", async (req, res) => {
+  const profile = await getMemoryProfile(req.params.personaId);
+  const recent = await getRecentMemories(req.params.personaId, 50);
   res.json({ profile, recent });
 });
 
-router.put("/memories/profile", async (req, res) => {
+router.put("/memories/:personaId/profile", async (req, res) => {
   const { content } = req.body;
-  await setMemoryProfile(content);
+  await setMemoryProfile(req.params.personaId, content);
   res.json({ success: true });
 });
 
@@ -91,9 +67,9 @@ router.delete("/memories/recent/:id", async (req, res) => {
   res.json({ success: true });
 });
 
-router.post("/memories/consolidate", async (req, res) => {
+router.post("/memories/:personaId/consolidate", async (req, res) => {
   try {
-    await consolidateMemories();
+    await consolidateMemories(req.params.personaId);
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });

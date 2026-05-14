@@ -1,4 +1,3 @@
-// server/services/ai.js
 const { getDB } = require("../db/index");
 const { pushNotification } = require("./push");
 const { getFullPrompt } = require("./prompt");
@@ -9,8 +8,6 @@ const {
   getSessionMemory,
   detectPatterns,
 } = require("./memory");
-
-const { getCurrentSession, touchSession } = require("./session");
 
 function getTimeContext() {
   const now = new Date();
@@ -35,33 +32,29 @@ function getTimeContext() {
   return `[当前时间] 现在是${year}年${month}月${date}日 周${weekday} ${hour}:${minute.toString().padStart(2, "0")} ${period}。你能感知到这个时间。`;
 }
 
-async function handleChat(userMessage, ws, sessionId) {
+async function handleChat(userMessage, ws, personaId) {
   const db = getDB();
-
-  let sid = sessionId;
-  if (!sid) {
-    const session = await getCurrentSession();
-    sid = session.id;
-  }
-
+  const pid = personaId || "xiaorou";
   const nowISO = new Date().toISOString();
 
+  // 存用户消息
   await db.from("messages").insert({
-    session_id: sid,
+    persona_id: pid,
     role: "user",
     content: userMessage,
     timestamp: nowISO,
   });
 
-  detectPatterns(userMessage);
+  // 检测行为模式
+  detectPatterns(pid, userMessage);
 
-  await touchSession(sid);
+  // 获取历史
+  const history = await getSessionMemory(pid, 10);
 
-  const history = await getSessionMemory(sid, 10);
-
+  // 构建 prompt
   const timeContext = getTimeContext();
   const fullPrompt = getFullPrompt();
-  const memoryContext = await buildMemoryContextAsync(sid, userMessage);
+  const memoryContext = await buildMemoryContextAsync(pid, userMessage);
 
   const systemContent = `${fullPrompt}
 ${timeContext}
@@ -118,15 +111,17 @@ ${memoryContext}`;
 
   const aiReply = data.choices[0].message.content;
 
+  // 存 AI 回复
   await db.from("messages").insert({
-    session_id: sid,
+    persona_id: pid,
     role: "ai",
     content: aiReply,
     timestamp: new Date().toISOString(),
   });
 
-  extractMemoryByAI(userMessage, aiReply).then((memory) => {
-    if (memory) saveDailyMemory(memory);
+  // 提取记忆
+  extractMemoryByAI(pid, userMessage, aiReply).then((memory) => {
+    if (memory) saveDailyMemory(pid, memory);
   });
 
   ws.send(

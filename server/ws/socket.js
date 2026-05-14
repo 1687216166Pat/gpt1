@@ -1,4 +1,3 @@
-// server/ws/socket.js
 const { WebSocketServer } = require("ws");
 const { handleChat } = require("../services/ai");
 
@@ -17,7 +16,7 @@ function initWebSocket(server) {
         const msg = JSON.parse(data);
 
         if (msg.type === "chat") {
-          await handleChat(msg.content, ws, msg.sessionId);
+          await handleChat(msg.content, ws, msg.personaId);
         }
       } catch (err) {
         console.error("消息处理错误:", err);

@@ -1,6 +1,4 @@
-// server/index.js000
 require("dotenv").config({ path: __dirname + "/.env" });
-
 
 const express = require("express");
 const cors = require("cors");
@@ -12,6 +10,7 @@ const { initDB } = require("./db/index");
 const apiRoutes = require("./routes/api");
 const { consolidateMemories } = require("./services/memory");
 const { checkProactiveMessages } = require("./services/proactive");
+const { getPersonaList } = require("./services/prompt");
 
 const app = express();
 const server = http.createServer(app);
@@ -29,7 +28,6 @@ app.use(
 app.use(express.json());
 app.use("/api", apiRoutes);
 
-// 只在 dist 目录存在时托管前端（本地开发或一体部署时）
 const distPath = path.join(__dirname, "../dist");
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
@@ -44,7 +42,15 @@ if (fs.existsSync(distPath)) {
 
 initWebSocket(server);
 
-setInterval(consolidateMemories, 6 * 60 * 60 * 1000);
+// 每 6 小时合并所有人格的记忆
+setInterval(
+  () => {
+    const personas = getPersonaList();
+    personas.forEach((p) => consolidateMemories(p.id));
+  },
+  6 * 60 * 60 * 1000,
+);
+
 setInterval(checkProactiveMessages, 30 * 60 * 1000);
 
 server.listen(PORT, () => {
