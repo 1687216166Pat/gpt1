@@ -1,11 +1,9 @@
 <template>
     <div class="chat-input-area">
-        <div class="input-row">
-            <input v-model="text" placeholder="输入消息..." @keyup.enter="sendMessage" />
-            <button @click="sendMessage" :disabled="!text.trim()">
-                <span>↑</span>
-            </button>
-        </div>
+        <input v-model="text" placeholder="输入消息..." @keyup.enter="sendMessage" />
+        <button @click="sendMessage" :disabled="!text.trim()">
+            <span>↑</span>
+        </button>
     </div>
 </template>
 
@@ -24,18 +22,12 @@ function sendMessage() {
 
 <style scoped>
 .chat-input-area {
-    flex-shrink: 0;
-    padding: 10px 0;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-    background: rgba(253, 246, 240, 0.9);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-}
-
-.input-row {
     display: flex;
     gap: 8px;
+    padding: 10px 0;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
     align-items: center;
+    flex-shrink: 0;
 }
 
 input {

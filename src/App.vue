@@ -1,18 +1,14 @@
 <template>
     <div class="phone-screen" :class="period">
-        <StatusBar />
         <NotificationBanner />
         <main class="screen-content">
             <RouterView />
         </main>
-        <HomeIndicator />
     </div>
 </template>
 
 <script setup>
 import { onMounted, onUnmounted } from 'vue'
-import StatusBar from '@/components/StatusBar.vue'
-import HomeIndicator from '@/components/HomeIndicator.vue'
 import NotificationBanner from '@/components/NotificationBanner.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { useTime } from '@/composables/useTime'

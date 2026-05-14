@@ -43,7 +43,6 @@ body {
   flex-direction: column;
 }
 
-/* 桌面浏览器手机预览 */
 @media (min-width: 500px) {
   body {
     background: #2c2c2c;
@@ -61,7 +60,6 @@ body {
   }
 }
 
-/* 滚动条美化 */
 ::-webkit-scrollbar {
   width: 3px;
 }
@@ -71,7 +69,6 @@ body {
   border-radius: 3px;
 }
 
-/* 夜间模式 */
 .phone-screen.midnight {
   --color-text: #e0d8e8;
   --color-text-light: #b0a8b8;
