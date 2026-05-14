@@ -11,6 +11,7 @@ const {
 const {
   updateDimensionsFromChat,
   buildRelationshipContext,
+  evaluateRelationship,
 } = require("./relationship");
 
 function getTimeContext() {
@@ -200,6 +201,9 @@ ${relationshipContext}`;
     content: aiReply,
     timestamp: new Date().toISOString(),
   });
+
+  // 触发关系评估
+  evaluateRelationship(pid, history);
 
   // 提取记忆
   extractMemoryByAI(pid, userMessage, aiReply).then((memory) => {
