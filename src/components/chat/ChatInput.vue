@@ -1,65 +1,24 @@
-<!-- src/components/chat/ChatInput.vue -->
 <template>
-    <div class="chat-input-area">
-        <input v-model="text" placeholder="输入消息..." @keyup.enter="sendMessage" />
-        <button @click="sendMessage" :disabled="!text.trim()">
-            <span>↑</span>
-        </button>
+    <div class="home-indicator-area">
+        <div class="home-indicator"></div>
     </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-
-const emit = defineEmits(['send'])
-const text = ref('')
-
-function sendMessage() {
-    if (!text.value.trim()) return
-    emit('send', text.value.trim())
-    text.value = ''
-}
-</script>
-
 <style scoped>
-.chat-input-area {
+.home-indicator-area {
+    padding-top: 6px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     display: flex;
-    gap: 8px;
-    padding: 10px 0;
-    align-items: center;
-}
-
-input {
-    flex: 1;
-    height: 36px;
-    border-radius: 18px;
-    border: 1px solid var(--color-bg-secondary);
-    padding: 0 16px;
-    font-size: 15px;
-    background: var(--color-white);
-    outline: none;
-}
-
-input:focus {
-    border-color: var(--color-primary);
-}
-
-button {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: var(--color-primary);
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: flex-start;
+    flex-shrink: 0;
 }
 
-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+.home-indicator {
+    width: 134px;
+    height: 5px;
+    background: var(--color-text);
+    border-radius: 3px;
+    opacity: 0.3;
 }
 </style>

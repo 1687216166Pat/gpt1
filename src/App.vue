@@ -5,20 +5,24 @@
         <main class="screen-content">
             <RouterView />
         </main>
-        <HomeIndicator />
+        <HomeIndicator v-if="!isChatPage" />
     </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import StatusBar from '@/components/StatusBar.vue'
 import HomeIndicator from '@/components/HomeIndicator.vue'
 import NotificationBanner from '@/components/NotificationBanner.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { useTime } from '@/composables/useTime'
 
+const route = useRoute()
 const { connect, requestNotificationPermission, registerPushSubscription } = useWebSocket()
 const { period, startClock, stopClock } = useTime()
+
+const isChatPage = computed(() => route.path.startsWith('/chat'))
 
 onMounted(() => {
     connect()
@@ -31,6 +35,7 @@ onUnmounted(() => {
     stopClock()
 })
 </script>
+
 
 <style scoped>
 .phone-screen {

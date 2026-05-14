@@ -9,7 +9,9 @@
             <TypingIndicator :visible="isTyping" />
         </div>
         <DebugPanel :info="debugInfo" />
-        <ChatInput @send="handleSend" />
+        <div class="chat-bottom">
+            <ChatInput @send="handleSend" />
+        </div>
     </div>
 </template>
 
@@ -78,13 +80,14 @@ watch(() => chatStore.messages.length, scrollToBottom)
     display: flex;
     flex-direction: column;
     height: 100%;
+    margin: 0 -20px;
 }
 
 .chat-header {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 0;
+    padding: 8px 20px;
     border-bottom: 1px solid var(--color-bg-secondary);
 }
 
@@ -106,6 +109,13 @@ watch(() => chatStore.messages.length, scrollToBottom)
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 0;
+    padding: 16px 20px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.chat-bottom {
+    padding: 0 20px;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    flex-shrink: 0;
 }
 </style>
