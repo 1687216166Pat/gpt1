@@ -4,7 +4,7 @@
             <p class="time-display">{{ timeStr }}</p>
             <p class="date-display">{{ dateStr }}</p>
             <p class="greeting-text">{{ greeting }}</p>
-            <p class="version-text">v1.0.1</p>
+            <p class="version-text">v1.0.2</p>
 
         </div>
         <div class="app-grid">
