@@ -141,4 +141,11 @@ router.get("/push/vapid-key", (req, res) => {
   res.json({ key: process.env.VAPID_PUBLIC_KEY });
 });
 
+const { getDimensionsForDisplay } = require("../services/relationship");
+
+router.get("/relationship/:personaId", async (req, res) => {
+  const data = await getDimensionsForDisplay(req.params.personaId);
+  res.json(data);
+});
+
 module.exports = router;

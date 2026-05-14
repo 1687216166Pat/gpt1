@@ -23,6 +23,11 @@
                 <div class="icon-bg settings-icon">⚙️</div>
                 <span class="icon-label">设置</span>
             </div>
+            <div class="app-icon" @click="$router.push('/relationship')">
+                <div class="icon-bg relationship-icon">💕</div>
+                <span class="icon-label">关系</span>
+            </div>
+
         </div>
     </div>
 </template>
@@ -137,5 +142,9 @@ async function openChat() {
     margin-top: 6px;
     font-size: 11px;
     color: var(--color-text);
+}
+
+.relationship-icon {
+    background: linear-gradient(135deg, #f8b4d9, #e8a0bf);
 }
 </style>

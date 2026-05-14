@@ -8,6 +8,10 @@ const {
   getSessionMemory,
   detectPatterns,
 } = require("./memory");
+const {
+  updateDimensionsFromChat,
+  buildRelationshipContext,
+} = require("./relationship");
 
 function getTimeContext() {
   const now = new Date();
@@ -84,6 +88,7 @@ async function handleChat(userMessage, ws, personaId) {
 
   // 检测行为模式
   detectPatterns(pid, userMessage);
+  updateDimensionsFromChat(pid, userMessage);
 
   // 获取历史
   const history = await getSessionMemory(pid, 10);
@@ -92,10 +97,12 @@ async function handleChat(userMessage, ws, personaId) {
   const timeContext = getTimeContext();
   const fullPrompt = getFullPrompt();
   const memoryContext = await buildMemoryContextAsync(pid, userMessage);
+  const relationshipContext = await buildRelationshipContext(pid);
 
   const systemContent = `${fullPrompt}
 ${timeContext}
-${memoryContext}`;
+${memoryContext}
+${relationshipContext}`;
 
   const messages = [
     { role: "system", content: systemContent },
