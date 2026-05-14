@@ -1,6 +1,6 @@
 const { getDB } = require("../db/index");
 const { pushNotification } = require("./push");
-const { getFullPrompt } = require("./prompt");
+const { getFullPrompt, getActivePersona } = require("./prompt");
 const {
   extractMemoryByAI,
   saveDailyMemory,
@@ -30,6 +30,43 @@ function getTimeContext() {
   else period = "凌晨";
 
   return `[当前时间] 现在是${year}年${month}月${date}日 周${weekday} ${hour}:${minute.toString().padStart(2, "0")} ${period}。你能感知到这个时间。`;
+}
+
+function detectEmotion(userMessage) {
+  const negativeWords = [
+    "累",
+    "烦",
+    "难受",
+    "压力",
+    "焦虑",
+    "失眠",
+    "不想",
+    "好烦",
+    "崩溃",
+    "郁闷",
+    "孤独",
+    "难过",
+    "伤心",
+  ];
+  const positiveWords = [
+    "开心",
+    "高兴",
+    "哈哈",
+    "太好了",
+    "nice",
+    "棒",
+    "爽",
+    "兴奋",
+    "期待",
+    "喜欢",
+    "爱",
+  ];
+  const neutralWords = ["嗯", "哦", "好的", "知道了"];
+
+  if (negativeWords.some((w) => userMessage.includes(w))) return "低落";
+  if (positiveWords.some((w) => userMessage.includes(w))) return "积极";
+  if (neutralWords.some((w) => userMessage === w)) return "平淡";
+  return "正常";
 }
 
 async function handleChat(userMessage, ws, personaId) {
@@ -66,6 +103,7 @@ ${memoryContext}`;
       role: m.role === "user" ? "user" : "assistant",
       content: m.content,
     })),
+    { role: "user", content: userMessage },
   ];
 
   const body = JSON.stringify({
@@ -83,27 +121,64 @@ ${memoryContext}`;
   console.log("开始请求 AI...");
   const startTime = Date.now();
 
-  const response = await fetch(`${process.env.AI_BASE_URL}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      Authorization: `Bearer ${process.env.AI_API_KEY}`,
-    },
-    body: body,
-  });
+  let apiError = null;
+  let data = null;
 
-  const data = await response.json();
+  try {
+    const response = await fetch(
+      `${process.env.AI_BASE_URL}/chat/completions`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Authorization: `Bearer ${process.env.AI_API_KEY}`,
+        },
+        body: body,
+      },
+    );
+
+    data = await response.json();
+
+    if (!response.ok) {
+      apiError = `HTTP ${response.status}: ${JSON.stringify(data)}`;
+      console.error("[handleChat] API错误:", apiError);
+    }
+  } catch (e) {
+    apiError = e.message;
+    console.error("[handleChat] 请求异常:", e.message);
+  }
+
   const elapsed = Date.now() - startTime;
   console.log(`AI 响应耗时: ${elapsed}ms`);
 
-  if (!data.choices || !data.choices[0]) {
-    console.error("AI 返回异常:", data);
+  if (apiError || !data || !data.choices || !data.choices[0]) {
+    console.error("AI 返回异常:", apiError || data);
     ws.send(
       JSON.stringify({
         type: "chat",
         role: "ai",
         content: "抱歉，我暂时无法回复。",
         timestamp: new Date().toISOString(),
+        debug: {
+          layer1: {
+            model: process.env.AI_MODEL,
+            status: "error",
+            error: apiError || "无有效回复",
+            estimatedTokens,
+            actualTokens: null,
+            elapsed,
+          },
+          layer2: {
+            persona: pid,
+            emotion: detectEmotion(userMessage),
+            memoryContext: memoryContext || "无",
+            activePersona: getActivePersona(),
+          },
+          layer3: {
+            historyCount: history.length,
+            systemPromptLength: systemContent.length,
+          },
+        },
       }),
     );
     return;
@@ -124,6 +199,23 @@ ${memoryContext}`;
     if (memory) saveDailyMemory(pid, memory);
   });
 
+  // 获取今日消息数
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: todayMsgs } = await db
+    .from("messages")
+    .select("id", { count: "exact" })
+    .eq("persona_id", pid)
+    .gte("timestamp", today + "T00:00:00Z");
+
+  // 获取行为模式
+  const { data: patterns } = await db
+    .from("memory_patterns")
+    .select("pattern_type, frequency")
+    .eq("persona_id", pid)
+    .gte("frequency", 2)
+    .order("frequency", { ascending: false })
+    .limit(3);
+
   ws.send(
     JSON.stringify({
       type: "chat",
@@ -131,15 +223,33 @@ ${memoryContext}`;
       content: aiReply,
       timestamp: new Date().toISOString(),
       debug: {
-        prompt: fullPrompt,
-        memory: memoryContext || "无",
-        time: timeContext.trim(),
-        systemLength: systemContent.length,
-        historyCount: history.length,
-        estimatedTokens,
-        actualTokens: data.usage || null,
-        elapsed,
-        model: process.env.AI_MODEL,
+        layer1: {
+          model: process.env.AI_MODEL,
+          status: "success",
+          error: null,
+          estimatedTokens,
+          actualTokens: data.usage || null,
+          elapsed,
+          promptTokens: data.usage?.prompt_tokens || null,
+          completionTokens: data.usage?.completion_tokens || null,
+        },
+        layer2: {
+          persona: pid,
+          personaName: { xiaorou: "小柔", cool: "阿冷", assistant: "助手" }[
+            pid
+          ],
+          emotion: detectEmotion(userMessage),
+          memoryContext: memoryContext || "无",
+          memoryLength: memoryContext ? memoryContext.length : 0,
+          patterns: patterns || [],
+        },
+        layer3: {
+          historyCount: history.length,
+          systemPromptLength: systemContent.length,
+          todayMessages: todayMsgs ? todayMsgs.length : 0,
+          wsClients: "active",
+          timeContext: timeContext.trim(),
+        },
       },
     }),
   );

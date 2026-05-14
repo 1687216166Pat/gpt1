@@ -15,6 +15,7 @@ export const useChatStore = defineStore("chat", () => {
   }
 
   async function loadPersonaMessages(personaId) {
+    if (!personaId) return;
     try {
       const res = await api(`/api/messages/${personaId}`);
       const data = await res.json();
