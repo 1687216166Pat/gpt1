@@ -3,8 +3,37 @@
         <div class="chat-header">
             <button class="back-btn" @click="goBack">‹</button>
             <h2>{{ personaName }}</h2>
-            <button class="setting-btn" @click="$router.push(`/persona-detail/${personaId}`)">⚙</button>
+            <button class="setting-btn" @click="showPanel = !showPanel">✦</button>
         </div>
+
+        <!-- 漂浮面板 -->
+        <transition name="panel">
+            <div v-if="showPanel" class="float-panel" @click.self="showPanel = false">
+                <div class="panel-content">
+                    <div class="panel-item" @click="goToDetail">
+                        <span class="panel-icon">✧</span>
+                        <div>
+                            <p class="panel-title">关于他</p>
+                            <p class="panel-sub">进入人格空间</p>
+                        </div>
+                    </div>
+                    <div class="panel-item" @click="clearChat">
+                        <span class="panel-icon">◌</span>
+                        <div>
+                            <p class="panel-title">清理痕迹</p>
+                            <p class="panel-sub">清空这段时间的对话</p>
+                        </div>
+                    </div>
+                    <div class="panel-item" @click="$router.push('/worldbook')">
+                        <span class="panel-icon">❋</span>
+                        <div>
+                            <p class="panel-title">世界书</p>
+                            <p class="panel-sub">这个世界的设定</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
 
         <div class="chat-messages" ref="messagesContainer" @scroll="handleScroll">
             <div v-if="chatStore.hasMore" class="load-more" @click="loadOlder">
@@ -37,6 +66,19 @@ const { send, onMessage, removeHandler } = useWebSocket()
 const messagesContainer = ref(null)
 const isTyping = ref(false)
 const debugInfo = ref(null)
+const showPanel = ref(false)
+
+function goToDetail() {
+    showPanel.value = false
+    router.push(`/persona-detail/${personaId.value}`)
+}
+
+async function clearChat() {
+    if (!confirm('清理这段时间的对话痕迹？')) return
+    await api(`/api/messages/${personaId.value}`, { method: 'DELETE' })
+    chatStore.clearMessages()
+    showPanel.value = false
+}
 
 function goBack() {
     if (window.history.length > 1) {
@@ -216,5 +258,115 @@ watch(() => chatStore.messages.length, scrollToBottom)
 
 .load-more:active {
     opacity: 0.7;
+}
+
+.setting-btn {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: var(--color-text-light);
+    cursor: pointer;
+    padding: 4px 8px;
+    opacity: 0.5;
+    transition: opacity var(--duration-normal);
+}
+
+.setting-btn:active {
+    opacity: 0.8;
+}
+
+/* 漂浮面板 */
+.float-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: flex-end;
+    padding-top: calc(env(safe-area-inset-top, 44px) + 50px);
+    padding-right: 8px;
+}
+
+.panel-content {
+    background: var(--color-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid var(--color-border);
+    padding: 8px;
+    width: 200px;
+    box-shadow: 0 8px 32px rgba(200, 130, 160, 0.1);
+    align-self: flex-start;
+}
+
+.panel-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: background var(--duration-normal) var(--ease-soft);
+}
+
+.panel-item:active {
+    background: rgba(212, 137, 158, 0.06);
+}
+
+.panel-icon {
+    font-size: 14px;
+    opacity: 0.6;
+    width: 20px;
+    text-align: center;
+}
+
+.panel-title {
+    font-size: 13px;
+    color: var(--color-text);
+    font-weight: 400;
+}
+
+.panel-sub {
+    font-size: 10px;
+    color: var(--color-text-light);
+    opacity: 0.6;
+    margin-top: 1px;
+}
+
+/* 面板动画 */
+.panel-enter-active {
+    transition: opacity 0.3s var(--ease-soft);
+}
+
+.panel-enter-active .panel-content {
+    transition: transform 0.35s var(--ease-soft), opacity 0.3s var(--ease-soft);
+}
+
+.panel-leave-active {
+    transition: opacity 0.2s var(--ease-soft);
+}
+
+.panel-leave-active .panel-content {
+    transition: transform 0.2s var(--ease-soft), opacity 0.2s;
+}
+
+.panel-enter-from {
+    opacity: 0;
+}
+
+.panel-enter-from .panel-content {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+}
+
+.panel-leave-to {
+    opacity: 0;
+}
+
+.panel-leave-to .panel-content {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
 }
 </style>

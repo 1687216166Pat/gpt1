@@ -8,30 +8,38 @@
         </div>
         <div class="app-grid">
             <div class="app-icon" @click="openChat">
-                <div class="icon-bg chat-icon">💬</div>
+                <AppIcon icon="chat"
+                    gradient="linear-gradient(155deg, rgba(248,244,250,0.95), rgba(238,230,242,0.7))" />
                 <span class="icon-label">AI 聊天</span>
             </div>
             <div class="app-icon" @click="$router.push('/about')">
-                <div class="icon-bg about-icon">💕</div>
+                <AppIcon icon="heart"
+                    gradient="linear-gradient(155deg, rgba(252,246,248,0.95), rgba(245,235,240,0.7))" />
                 <span class="icon-label">关于他</span>
             </div>
             <div class="app-icon" @click="$router.push('/memory')">
-                <div class="icon-bg status-icon">🧠</div>
+                <AppIcon icon="brain"
+                    gradient="linear-gradient(155deg, rgba(246,250,252,0.95), rgba(235,242,248,0.7))" />
                 <span class="icon-label">记忆库</span>
             </div>
             <div class="app-icon" @click="$router.push('/worldbook')">
-                <div class="icon-bg worldbook-icon">📖</div>
+                <AppIcon icon="book"
+                    gradient="linear-gradient(155deg, rgba(252,250,246,0.95), rgba(245,240,232,0.7))" />
                 <span class="icon-label">世界书</span>
             </div>
             <div class="app-icon" @click="$router.push('/settings')">
-                <div class="icon-bg settings-icon">⚙️</div>
+                <AppIcon icon="settings"
+                    gradient="linear-gradient(155deg, rgba(250,248,252,0.95), rgba(240,236,245,0.7))" />
                 <span class="icon-label">设置</span>
             </div>
         </div>
+
+
     </div>
 </template>
 
 <script setup>
+import AppIcon from '@/components/ui/AppIcon.vue'
 import { useRouter } from 'vue-router'
 import { useTime } from '@/composables/useTime'
 import { api } from '@/utils/api'

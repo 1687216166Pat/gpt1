@@ -8,7 +8,8 @@
         <div class="settings-content">
             <!-- API 配置 -->
             <div class="section">
-                <h3>🔑 API 配置</h3>
+                <h3>✦ 连接方式</h3>
+                <p class="section-sub">这里决定你们如何继续交流</p>
                 <GlassCard size="md">
                     <DreamInput label="API Key" type="password" v-model="apiConfig.key" placeholder="sk-..." />
                     <DreamInput label="API 地址" v-model="apiConfig.baseUrl" placeholder="https://api.openai.com/v1" />
@@ -38,7 +39,8 @@
 
             <!-- 主动消息设置 -->
             <div class="section">
-                <h3>💬 主动消息</h3>
+                <h3>◐ 陪伴频率</h3>
+                <p class="section-sub">决定他会在什么时候更自然地出现</p>
                 <GlassCard size="md">
                     <div class="setting-row">
                         <span>启用主动消息</span>
@@ -85,7 +87,8 @@
 
             <!-- 用户偏好 -->
             <div class="section">
-                <h3>📝 我的偏好</h3>
+                <h3>❋ 陪伴方式</h3>
+                <p class="section-sub">调整你们之间的交流风格</p>
                 <GlassCard size="md">
                     <div class="setting-row">
                         <span>AI 输出包含动作描写</span>
@@ -110,7 +113,8 @@
 
             <!-- 导入导出 -->
             <div class="section">
-                <h3>💾 数据管理</h3>
+                <h3>◌ 时间整理</h3>
+                <p class="section-sub">整理那些被留下来的痕迹</p>
                 <GlassCard size="md">
                     <SoftButton variant="secondary" block @click="exportData">导出数据 (JSON)</SoftButton>
                     <SoftButton variant="secondary" block @click="triggerImport">导入数据 (JSON)</SoftButton>
@@ -121,7 +125,8 @@
 
             <!-- 手机状态感知 -->
             <div class="section">
-                <h3>📱 手机状态感知</h3>
+                <h3>◑ 生活感知</h3>
+                <p class="section-sub">让他更自然地感受到你的生活节奏</p>
                 <GlassCard size="md">
                     <p class="guide-text">通过 iOS 快捷指令自动上报手机状态，让 AI 感知你的生活节奏。</p>
                     <p class="guide-step">1. 打开「快捷指令」App</p>
@@ -755,5 +760,14 @@ textarea:focus {
     flex-wrap: wrap;
     gap: 6px;
     margin-top: 10px;
+}
+
+.section-sub {
+    font-size: 11px;
+    color: var(--color-text-light);
+    opacity: 0.5;
+    margin-bottom: 14px;
+    font-style: italic;
+    letter-spacing: 0.03em;
 }
 </style>

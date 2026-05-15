@@ -16,7 +16,7 @@
             <template v-if="currentView === 'main'">
                 <!-- 总档案 -->
                 <div class="section-block">
-                    <h3 class="section-label">📋 总档案</h3>
+                    <h3 class="section-label">✧ 被长期保留的印象</h3>
                     <GlassCard size="md">
                         <p class="content-text" v-if="profile">{{ profile }}</p>
                         <p class="content-text empty" v-else>暂无档案</p>
@@ -25,7 +25,7 @@
 
                 <!-- 热力图 -->
                 <div class="section-block">
-                    <h3 class="section-label">📊 最近两个月</h3>
+                    <h3 class="section-label">◐ 最近留下来的痕迹</h3>
                     <GlassCard size="md">
                         <div class="heatmap">
                             <div v-for="day in heatmapDays" :key="day.date" class="heat-cell"
@@ -38,7 +38,7 @@
 
                 <!-- 记忆归档 -->
                 <div class="section-block">
-                    <h3 class="section-label">🗂️ 记忆归档</h3>
+                    <h3 class="section-label">◌ 那些被时间保存的东西</h3>
                     <div class="tag-box">
                         <SoftButton v-for="year in Object.keys(dateTree)" :key="year" variant="glass" size="sm"
                             @click="openYear(year)">

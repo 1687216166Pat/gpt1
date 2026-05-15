@@ -470,29 +470,35 @@ onMounted(loadPersonas)
 /* 分页导航 */
 .tab-nav {
     display: flex;
-    gap: 6px;
-    margin: 16px 0;
+    gap: 4px;
+    margin: 18px 0;
+    padding: 4px;
+    background: var(--color-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
 }
 
 .nav-item {
     flex: 1;
-    padding: 9px 4px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-card);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    padding: 10px 4px;
+    border: none;
+    border-radius: 13px;
+    background: transparent;
     font-size: 11px;
     color: var(--color-text-light);
     cursor: pointer;
     text-align: center;
-    transition: all var(--duration-normal) var(--ease-soft);
+    transition: all 0.4s var(--ease-soft);
+    letter-spacing: 0.02em;
 }
 
 .nav-item.active {
-    background: linear-gradient(135deg, #e8a8be, #d4899e);
-    color: white;
-    border-color: transparent;
+    background: var(--color-card);
+    color: var(--color-text);
+    box-shadow: 0 2px 8px rgba(200, 130, 160, 0.08);
+    font-weight: 500;
 }
 
 /* 分页内容 */
