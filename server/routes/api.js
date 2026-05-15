@@ -244,4 +244,82 @@ router.post("/import", async (req, res) => {
   }
 });
 
+// 获取记忆热力图数据（最近60天每天的消息数）
+router.get("/memories/:personaId/heatmap", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const personaId = req.params.personaId;
+
+  const sixtyDaysAgo = new Date(
+    Date.now() - 60 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  const { data } = await db
+    .from("messages")
+    .select("timestamp")
+    .eq("persona_id", personaId)
+    .gte("timestamp", sixtyDaysAgo);
+
+  // 按日期统计
+  const counts = {};
+  if (data) {
+    data.forEach((m) => {
+      const day = m.timestamp.slice(0, 10);
+      counts[day] = (counts[day] || 0) + 1;
+    });
+  }
+
+  res.json(counts);
+});
+
+// 获取某天的记忆
+router.get("/memories/:personaId/date/:date", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { personaId, date } = req.params;
+
+  const { data } = await db
+    .from("memories_recent")
+    .select("*")
+    .eq("persona_id", personaId)
+    .eq("source_session", date);
+
+  res.json(data || []);
+});
+
+// 获取有记忆的年月列表
+router.get("/memories/:personaId/dates", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const personaId = req.params.personaId;
+
+  const { data } = await db
+    .from("memories_recent")
+    .select("source_session")
+    .eq("persona_id", personaId)
+    .order("source_session", { ascending: false });
+
+  // 整理成 { "2026": ["05", "04", ...] } 格式
+  const tree = {};
+  if (data) {
+    data.forEach((m) => {
+      if (!m.source_session) return;
+      const [year, month] = m.source_session.split("-");
+      if (!tree[year]) tree[year] = new Set();
+      tree[year].add(month);
+    });
+  }
+
+  // Set 转 Array
+  const result = {};
+  Object.keys(tree)
+    .sort()
+    .reverse()
+    .forEach((y) => {
+      result[y] = [...tree[y]].sort().reverse();
+    });
+
+  res.json(result);
+});
+
 module.exports = router;

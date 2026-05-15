@@ -1,7 +1,7 @@
 const { getDB } = require("../db/index");
 
 let messageCount = {};
-const EXTRACT_INTERVAL = 3;
+const EXTRACT_INTERVAL = 1;
 
 function shouldExtract(personaId) {
   if (!messageCount[personaId]) messageCount[personaId] = 0;
@@ -20,13 +20,13 @@ async function extractMemoryByAI(personaId, userMessage, aiReply) {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const prompt = `从以下对话提取值得长期记住的信息。包含事件、情绪、偏好、计划等。
-格式：每条一行，带简短描述。没有值得记住的回复"无"。
+  const prompt = `从以下对话中提取所有值得记住的内容。可以包括：
+- 用户分享的事实、计划、经历、情绪
+- 对话中产生的共识、约定、玩笑
+- 值得以后回忆的瞬间或话题
+- 用户的偏好、习惯、关系信息
 
-示例输出：
-明天有英语考试，很紧张
-最近在学吉他
-喜欢吃辣，不吃香菜
+每条一行，简短描述。没有值得记住的回复"无"。
 
 今天日期：${today}
 用户: ${userMessage}
@@ -35,6 +35,10 @@ AI: ${aiReply}
 提取：`;
 
   try {
+    console.log(
+      `[记忆] 调用API提取, 模型:`,
+      process.env.AI_MEMORY_MODEL || process.env.AI_MODEL,
+    );
     const response = await fetch(
       `${process.env.AI_BASE_URL}/chat/completions`,
       {
@@ -52,16 +56,19 @@ AI: ${aiReply}
       },
     );
 
+    console.log(`[记忆] API响应状态:`, response.status);
     const data = await response.json();
+    console.log(`[记忆] API返回:`, JSON.stringify(data).slice(0, 200));
+
     if (!data.choices || !data.choices[0]) return null;
 
     const result = data.choices[0].message.content.trim();
+    console.log(`[记忆] 提取原始返回:`, result);
     if (result === "无" || result.length < 2) return null;
 
-    console.log(`[${personaId}] 记忆提取结果:`, result);
     return result;
   } catch (e) {
-    console.error("记忆提取失败:", e);
+    console.error("[记忆] 提取失败:", e.message);
     return null;
   }
 }
@@ -195,14 +202,12 @@ async function upsertPattern(db, personaId, type, description) {
       })
       .eq("id", existing[0].id);
   } else {
-    await db
-      .from("memory_patterns")
-      .insert({
-        persona_id: personaId,
-        pattern_type: type,
-        description,
-        frequency: 1,
-      });
+    await db.from("memory_patterns").insert({
+      persona_id: personaId,
+      pattern_type: type,
+      description,
+      frequency: 1,
+    });
   }
 }
 
@@ -276,7 +281,7 @@ async function buildMemoryContextAsync(personaId, userMessage) {
 
   if (context) {
     context +=
-      "[记忆使用提示] 以上是你记住的信息。在合适时机自然引用，像真正记得一样。不要每句都提，只在相关时提起。\n";
+      "[记忆使用提示] 以上是你的记忆背景。规则：1.不要主动提起记忆，除非用户的话题自然关联到 2.绝对不要在每句话末尾追问记忆相关的事 3.记忆只用来理解用户，不用来展示你记得什么 4.如果用户没提到相关话题，就当这些记忆不存在\n";
   }
 
   return context;

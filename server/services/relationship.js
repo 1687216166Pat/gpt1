@@ -56,11 +56,28 @@ async function getDimensions(personaId) {
     .select("dimension, score")
     .eq("persona_id", personaId);
 
-  if (!data || data.length === 0) {
-    await initDimensions(personaId);
-    return DIMENSIONS.map((d) => ({ dimension: d, score: 0 }));
+  // 补全缺失的维度
+  const existing = new Set((data || []).map((d) => d.dimension));
+  for (const dim of DIMENSIONS) {
+    if (!existing.has(dim)) {
+      await db.from("relationship_dimensions").insert({
+        persona_id: personaId,
+        dimension: dim,
+        score: 0,
+      });
+    }
   }
-  return data;
+
+  // 如果有补全，重新查询
+  if (existing.size < DIMENSIONS.length) {
+    const { data: fresh } = await db
+      .from("relationship_dimensions")
+      .select("dimension, score")
+      .eq("persona_id", personaId);
+    return fresh || [];
+  }
+
+  return data || [];
 }
 
 // 增加维度分数（有上限100）

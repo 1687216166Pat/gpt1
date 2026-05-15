@@ -15,7 +15,9 @@ const {
 } = require("./relationship");
 
 function getTimeContext() {
-  const now = new Date();
+  const now = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }),
+  );
   const hour = now.getHours();
   const minute = now.getMinutes();
   const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
@@ -111,7 +113,6 @@ ${relationshipContext}`;
       role: m.role === "user" ? "user" : "assistant",
       content: m.content,
     })),
-    { role: "user", content: userMessage },
   ];
 
   const body = JSON.stringify({
