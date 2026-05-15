@@ -34,50 +34,62 @@ function autoResize() {
 <style scoped>
 .chat-input-area {
     display: flex;
-    gap: 8px;
-    padding: 10px 0;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+    gap: 10px;
+    padding: 14px 0;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
     align-items: flex-end;
     flex-shrink: 0;
 }
 
 textarea {
     flex: 1;
-    min-height: 36px;
+    min-height: 40px;
     max-height: 120px;
-    border-radius: 18px;
-    border: 1px solid var(--color-bg-secondary);
-    padding: 8px 16px;
-    font-size: 15px;
+    border-radius: 22px;
+    border: 1px solid var(--color-border);
+    padding: 10px 18px;
+    font-size: 14px;
     font-family: inherit;
-    background: var(--color-white);
+    background: var(--color-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     outline: none;
     resize: none;
-    line-height: 1.4;
+    line-height: 1.45;
     overflow-y: auto;
+    color: var(--color-text);
+    transition: border-color var(--duration-normal) var(--ease-soft), box-shadow var(--duration-normal) var(--ease-soft);
 }
 
 textarea:focus {
-    border-color: var(--color-primary);
+    border-color: rgba(212, 137, 158, 0.3);
+    box-shadow: 0 0 0 3px rgba(212, 137, 158, 0.06);
+}
+
+textarea::placeholder {
+    color: var(--color-text-light);
+    opacity: 0.5;
 }
 
 button {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
     border: none;
-    background: var(--color-primary);
+    background: linear-gradient(135deg, #e8a8be, #d4899e);
     color: white;
-    font-size: 18px;
+    font-size: 16px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(212, 137, 158, 0.25);
 }
 
 button:disabled {
-    opacity: 0.4;
+    opacity: 0.25;
     cursor: not-allowed;
+    box-shadow: none;
 }
 </style>

@@ -161,69 +161,60 @@ watch(() => chatStore.messages.length, scrollToBottom)
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-bg-secondary);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
 }
 
 .back-btn {
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 24px;
     color: var(--color-primary);
     cursor: pointer;
     padding: 0 4px;
-}
-
-.chat-header h2 {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--color-text);
-}
-
-.chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 0;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    min-height: 0;
-}
-
-.chat-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-bg-secondary);
+    opacity: 0.75;
 }
 
 .chat-header h2 {
     flex: 1;
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--color-text);
+    letter-spacing: 0.03em;
 }
 
 .setting-btn {
     background: none;
     border: none;
-    font-size: 18px;
+    font-size: 15px;
     color: var(--color-text-light);
     cursor: pointer;
     padding: 4px;
+    opacity: 0.5;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 0;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    min-height: 0;
 }
 
 .load-more {
     text-align: center;
-    padding: 12px;
-    color: var(--color-primary);
-    font-size: 13px;
+    padding: 18px;
+    color: var(--color-text-light);
+    font-size: 11px;
     cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s;
+    opacity: 0.4;
+    transition: opacity var(--duration-normal);
+    letter-spacing: 0.5px;
 }
 
 .load-more:active {
-    opacity: 1;
+    opacity: 0.7;
 }
 </style>

@@ -568,14 +568,14 @@ onMounted(loadPersonas)
 }
 
 .profile-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(253, 246, 240, 0.8));
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    animation: floatUp 0.4s ease backwards;
+    background: var(--color-card);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+    animation: fadeIn 0.5s var(--ease-soft);
 }
 </style>

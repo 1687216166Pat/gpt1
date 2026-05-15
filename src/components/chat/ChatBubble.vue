@@ -29,8 +29,8 @@ function formatTime(ts) {
 <style scoped>
 .bubble-wrapper {
     display: flex;
-    margin-bottom: 12px;
-    animation: bubbleIn 0.3s ease backwards;
+    margin-bottom: 14px;
+    animation: fadeIn 0.35s var(--ease-soft) backwards;
 }
 
 .bubble-wrapper.user {
@@ -42,42 +42,34 @@ function formatTime(ts) {
 }
 
 .bubble {
-    max-width: 70%;
-    padding: 10px 14px;
+    max-width: 72%;
+    padding: 11px 15px;
     border-radius: 18px;
-    font-size: 15px;
-    line-height: 1.4;
+    font-size: 14px;
+    line-height: 1.5;
     color: var(--color-text);
 }
 
 .user .bubble {
     background: var(--color-primary);
     color: white;
-    border-bottom-right-radius: 4px;
+    border-bottom-right-radius: 5px;
+    box-shadow: 0 1px 4px rgba(196, 160, 176, 0.2);
 }
 
 .ai .bubble {
-    background: var(--color-white);
-    border-bottom-left-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    background: var(--color-card);
+    border-bottom-left-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .time {
     display: block;
-    font-size: 11px;
-    margin-top: 4px;
-    opacity: 0.6;
-}
-
-@keyframes bubbleIn {
-    from {
-        opacity: 0;
-        transform: translateY(8px) scale(0.96);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    font-size: 10px;
+    margin-top: 5px;
+    opacity: 0.45;
+    font-weight: 300;
 }
 </style>

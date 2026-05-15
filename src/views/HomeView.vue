@@ -61,50 +61,56 @@ async function openChat() {
 
 <style scoped>
 .home-screen {
-    padding-top: calc(env(safe-area-inset-top, 44px) + 20px);
+    padding-top: calc(env(safe-area-inset-top, 44px) + 30px);
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
     height: 100%;
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
 }
 
 .lock-info {
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom: 60px;
+    animation: fadeIn 0.6s var(--ease-soft);
 }
 
 .time-display {
-    font-size: 64px;
+    font-size: 56px;
     font-weight: 200;
     color: var(--color-text);
     letter-spacing: -2px;
     line-height: 1;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    animation: breathe 5s ease-in-out infinite;
 }
 
 .date-display {
-    font-size: 16px;
+    font-size: 14px;
     color: var(--color-text-light);
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    font-weight: 300;
 }
 
 .greeting-text {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--color-primary);
-    font-weight: 500;
+    font-weight: 400;
+    opacity: 0.8;
 }
 
 .version-text {
-    font-size: 11px;
-    color: #999;
-    margin-top: 4px;
+    font-size: 10px;
+    color: var(--color-text-light);
+    margin-top: 6px;
+    opacity: 0.4;
 }
 
 .app-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-    padding: 0 10px;
+    gap: 28px 20px;
+    padding: 0 16px;
 }
 
 .app-icon {
@@ -112,95 +118,7 @@ async function openChat() {
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    transition: transform 0.15s;
-}
-
-.app-icon:active {
-    transform: scale(0.9);
-}
-
-.icon-bg {
-    width: 60px;
-    height: 60px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.chat-icon {
-    background: linear-gradient(135deg, #e8a0bf, #ba90c6);
-}
-
-.contacts-icon {
-    background: linear-gradient(135deg, #f0d9a8, #e8c088);
-}
-
-.status-icon {
-    background: linear-gradient(135deg, #c0dbea, #a8d8ea);
-}
-
-.settings-icon {
-    background: linear-gradient(135deg, #f5ebe3, #e8d5c4);
-}
-
-.icon-label {
-    margin-top: 6px;
-    font-size: 11px;
-    color: var(--color-text);
-}
-
-.relationship-icon {
-    background: linear-gradient(135deg, #f8b4d9, #e8a0bf);
-}
-
-.worldbook-icon {
-    background: linear-gradient(135deg, #b8d4e3, #8fb8d4);
-}
-
-.about-icon {
-    background: linear-gradient(135deg, #f8b4d9, #e8a0bf);
-}
-
-.chat-enter-btn {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    background: var(--color-primary);
-    color: white;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    margin-bottom: 8px;
-}
-
-.time-display {
-    font-size: 64px;
-    font-weight: 200;
-    color: var(--color-text);
-    letter-spacing: -2px;
-    line-height: 1;
-    margin-bottom: 8px;
-    animation: breathe 4s ease-in-out infinite;
-}
-
-.greeting-text {
-    font-size: 14px;
-    color: var(--color-primary);
-    font-weight: 500;
-    animation: softPulse 3s ease-in-out infinite;
-}
-
-.app-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: floatUp 0.5s ease backwards;
+    animation: fadeIn 0.5s var(--ease-soft) backwards;
 }
 
 .app-icon:nth-child(1) {
@@ -223,23 +141,47 @@ async function openChat() {
     animation-delay: 0.25s;
 }
 
-.app-icon:active {
-    transform: scale(0.9);
-}
-
 .icon-bg {
-    width: 60px;
-    height: 60px;
-    border-radius: 14px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    font-size: 26px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: transform var(--duration-slow) var(--ease-soft), box-shadow var(--duration-slow) var(--ease-soft);
 }
 
 .app-icon:active .icon-bg {
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    transform: scale(0.92);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.chat-icon {
+    background: linear-gradient(145deg, #e8c5d5, #d4a0b8);
+}
+
+.about-icon {
+    background: linear-gradient(145deg, #e8d5c5, #d4b8a0);
+}
+
+.status-icon {
+    background: linear-gradient(145deg, #c5d5e8, #a0b8d4);
+}
+
+.worldbook-icon {
+    background: linear-gradient(145deg, #c5e0d8, #a0c8b8);
+}
+
+.settings-icon {
+    background: linear-gradient(145deg, #e0dcd5, #c8c0b8);
+}
+
+.icon-label {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--color-text-light);
+    font-weight: 400;
 }
 </style>

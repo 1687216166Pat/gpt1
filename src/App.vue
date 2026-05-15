@@ -36,11 +36,11 @@ onUnmounted(() => {
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    transition: background 1s ease;
+    transition: background 1.2s var(--ease-soft);
 }
 
 .phone-screen.morning {
-    background: linear-gradient(180deg, #fff5e6 0%, #fdf6f0 30%);
+    background: linear-gradient(180deg, #fff5f8 0%, #fdf6f8 40%);
 }
 
 .phone-screen.forenoon {
@@ -48,7 +48,7 @@ onUnmounted(() => {
 }
 
 .phone-screen.noon {
-    background: linear-gradient(180deg, #fff8f0 0%, #fdf6f0 30%);
+    background: linear-gradient(180deg, #fffaf5 0%, #fdf6f8 40%);
 }
 
 .phone-screen.afternoon {
@@ -56,40 +56,22 @@ onUnmounted(() => {
 }
 
 .phone-screen.evening {
-    background: linear-gradient(180deg, #f5e6d3 0%, #fdf6f0 30%);
+    background: linear-gradient(180deg, #f8e8e0 0%, #fdf6f8 40%);
 }
 
 .phone-screen.night {
-    background: linear-gradient(180deg, #e8dff0 0%, #f5ebe3 30%);
+    background: linear-gradient(180deg, #f0e0ea 0%, #f5eaf0 40%);
 }
 
 .phone-screen.midnight {
-    background: linear-gradient(180deg, #d4c5e2 0%, #e8dff0 50%);
+    background: linear-gradient(180deg, #382830 0%, #2a2228 50%);
 }
 
 .screen-content {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0 20px;
+    padding: 0 22px;
     -webkit-overflow-scrolling: touch;
-}
-
-.page-enter-active {
-    transition: opacity 0.35s ease, transform 0.35s ease;
-}
-
-.page-leave-active {
-    transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.page-enter-from {
-    opacity: 0;
-    transform: translateX(20px);
-}
-
-.page-leave-to {
-    opacity: 0;
-    transform: translateX(-10px);
 }
 </style>
