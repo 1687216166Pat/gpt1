@@ -16,12 +16,10 @@ function formatTime(ts) {
     if (!ts) return ''
     let d = new Date(ts)
 
-    // 如果时间戳不含时区信息（来自SQLite），当作UTC处理
     if (typeof ts === 'string' && !ts.includes('T') && !ts.includes('Z') && !ts.includes('+')) {
         d = new Date(ts + 'Z')
     }
 
-    // 如果解析失败
     if (isNaN(d.getTime())) return ''
 
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
@@ -32,6 +30,7 @@ function formatTime(ts) {
 .bubble-wrapper {
     display: flex;
     margin-bottom: 12px;
+    animation: bubbleIn 0.3s ease backwards;
 }
 
 .bubble-wrapper.user {
@@ -68,5 +67,17 @@ function formatTime(ts) {
     font-size: 11px;
     margin-top: 4px;
     opacity: 0.6;
+}
+
+@keyframes bubbleIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 </style>

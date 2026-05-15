@@ -4,14 +4,19 @@ import { api } from "@/utils/api";
 
 export const useChatStore = defineStore("chat", () => {
   const messages = ref([]);
+  const allMessages = ref([]);
+  const hasMore = ref(false);
+  const pageSize = 10;
 
   function addMessage(msg) {
-    messages.value.push({
+    const newMsg = {
       id: msg.id || Date.now() + Math.random(),
       role: msg.role,
       content: msg.content,
       timestamp: msg.timestamp || new Date().toISOString(),
-    });
+    };
+    messages.value.push(newMsg);
+    allMessages.value.push(newMsg);
   }
 
   async function loadPersonaMessages(personaId) {
@@ -19,15 +24,15 @@ export const useChatStore = defineStore("chat", () => {
     try {
       const res = await api(`/api/messages/${personaId}`);
       const data = await res.json();
-      messages.value = [];
+
+      // 处理 AI 分句
+      const processed = [];
       data.forEach((m) => {
-        // AI 消息按换行拆分成多个气泡
         if (m.role === "ai") {
           const lines = m.content
             .split("\n")
             .map((l) => l.trim())
             .filter(Boolean);
-          // 合并过短的行
           const merged = [];
           for (let i = 0; i < lines.length; i++) {
             if (lines[i].length < 4 && i + 1 < lines.length) {
@@ -39,7 +44,7 @@ export const useChatStore = defineStore("chat", () => {
           }
           if (merged.length > 1) {
             merged.forEach((line) => {
-              messages.value.push({
+              processed.push({
                 id: m.id + "_" + Math.random(),
                 role: m.role,
                 content: line,
@@ -47,7 +52,7 @@ export const useChatStore = defineStore("chat", () => {
               });
             });
           } else {
-            messages.value.push({
+            processed.push({
               id: m.id,
               role: m.role,
               content: m.content,
@@ -55,7 +60,7 @@ export const useChatStore = defineStore("chat", () => {
             });
           }
         } else {
-          messages.value.push({
+          processed.push({
             id: m.id,
             role: m.role,
             content: m.content,
@@ -63,19 +68,44 @@ export const useChatStore = defineStore("chat", () => {
           });
         }
       });
+
+      allMessages.value = processed;
+      // 只显示最新 10 条
+      if (processed.length > pageSize) {
+        messages.value = processed.slice(-pageSize);
+        hasMore.value = true;
+      } else {
+        messages.value = processed;
+        hasMore.value = false;
+      }
     } catch (e) {
       console.error("加载消息失败:", e);
     }
   }
 
+  function loadMore() {
+    if (!hasMore.value) return;
+    const currentCount = messages.value.length;
+    const totalCount = allMessages.value.length;
+    const startIdx = Math.max(0, totalCount - currentCount - pageSize);
+    const endIdx = totalCount - currentCount;
+    const older = allMessages.value.slice(startIdx, endIdx);
+    messages.value = [...older, ...messages.value];
+    hasMore.value = startIdx > 0;
+  }
+
   function clearMessages() {
     messages.value = [];
+    allMessages.value = [];
+    hasMore.value = false;
   }
 
   return {
     messages,
+    hasMore,
     addMessage,
     loadPersonaMessages,
+    loadMore,
     clearMessages,
   };
 });

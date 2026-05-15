@@ -176,4 +176,70 @@ async function openChat() {
     cursor: pointer;
     margin-bottom: 8px;
 }
+
+.time-display {
+    font-size: 64px;
+    font-weight: 200;
+    color: var(--color-text);
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 8px;
+    animation: breathe 4s ease-in-out infinite;
+}
+
+.greeting-text {
+    font-size: 14px;
+    color: var(--color-primary);
+    font-weight: 500;
+    animation: softPulse 3s ease-in-out infinite;
+}
+
+.app-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: floatUp 0.5s ease backwards;
+}
+
+.app-icon:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.app-icon:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.app-icon:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.app-icon:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.app-icon:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.app-icon:active {
+    transform: scale(0.9);
+}
+
+.icon-bg {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.app-icon:active .icon-bg {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
 </style>

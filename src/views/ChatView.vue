@@ -6,7 +6,10 @@
             <button class="setting-btn" @click="$router.push(`/persona-detail/${personaId}`)">⚙</button>
         </div>
 
-        <div class="chat-messages" ref="messagesContainer">
+        <div class="chat-messages" ref="messagesContainer" @scroll="handleScroll">
+            <div v-if="chatStore.hasMore" class="load-more" @click="loadOlder">
+                <span>加载更早的消息</span>
+            </div>
             <ChatBubble v-for="msg in chatStore.messages" :key="msg.id" :msg="msg" />
             <TypingIndicator :visible="isTyping" />
         </div>
@@ -115,7 +118,19 @@ function handleIncoming(data) {
     }
 }
 
+function loadOlder() {
+    chatStore.loadMore()
+}
+
+function handleScroll() {
+    // 可以在这里做滚动到顶部自动加载
+}
+
+
 onMounted(async () => {
+    // 禁止父容器滚动
+    document.querySelector('.screen-content').style.overflow = 'hidden'
+
     onMessage(handleIncoming)
     loadPersonaName()
     await chatStore.loadPersonaMessages(personaId.value)
@@ -123,8 +138,11 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+    // 恢复父容器滚动
+    document.querySelector('.screen-content').style.overflow = 'auto'
     removeHandler(handleIncoming)
 })
+
 
 watch(() => chatStore.messages.length, scrollToBottom)
 
@@ -135,6 +153,7 @@ watch(() => chatStore.messages.length, scrollToBottom)
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: hidden;
     padding-top: env(safe-area-inset-top, 44px);
 }
 
@@ -166,6 +185,8 @@ watch(() => chatStore.messages.length, scrollToBottom)
     overflow-y: auto;
     padding: 16px 0;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    min-height: 0;
 }
 
 .chat-header {
@@ -190,5 +211,19 @@ watch(() => chatStore.messages.length, scrollToBottom)
     color: var(--color-text-light);
     cursor: pointer;
     padding: 4px;
+}
+
+.load-more {
+    text-align: center;
+    padding: 12px;
+    color: var(--color-primary);
+    font-size: 13px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.load-more:active {
+    opacity: 1;
 }
 </style>

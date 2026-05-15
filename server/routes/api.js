@@ -571,7 +571,7 @@ router.get("/patterns/:personaId", async (req, res) => {
   res.json(data || []);
 });
 
-// 测试推送通知（不调用AI）
+// 测试推送通知（不调用API)
 router.post("/push/test", async (req, res) => {
   const { pushNotification } = require("../services/push");
   const result = await pushNotification(

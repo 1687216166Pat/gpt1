@@ -566,4 +566,16 @@ onMounted(loadPersonas)
     font-size: 13px;
     margin-top: 4px;
 }
+
+.profile-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(253, 246, 240, 0.8));
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    animation: floatUp 0.4s ease backwards;
+}
 </style>
