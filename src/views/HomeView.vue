@@ -27,20 +27,6 @@
                 <div class="icon-bg settings-icon">⚙️</div>
                 <span class="icon-label">设置</span>
             </div>
-            <!-- 档案 -->
-            <div v-if="activeTab === 'profile'" class="tab-content">
-                <div class="info-block">
-                    <h4>基本信息</h4>
-                    ...
-                </div>
-                <div class="info-block">
-                    <h4>人设</h4>
-                    ...
-                </div>
-                <button class="chat-enter-btn" @click="$router.push(`/chat/${currentPersona}`)">💬 进入对话</button>
-                <button class="edit-btn" @click="$router.push(`/persona-detail/${currentPersona}`)">编辑详情</button>
-            </div>
-
         </div>
     </div>
 </template>

@@ -6,6 +6,7 @@ const {
   buildMemoryContextAsync,
   getSessionMemory,
   detectPatterns,
+  getCounter,
 } = require("./memory");
 
 const {
