@@ -112,17 +112,35 @@
             </div>
 
             <!-- 时间线 -->
-            <div v-if="activeTab === 'timeline'" class="tab-content">
-                <div v-if="timelineItems.length > 0">
-                    <TimelineCard v-for="item in timelineItems" :key="item.id" :time="item.time">
-                        {{ item.text }}
-                    </TimelineCard>
+            <div v-if="activeTab === 'timeline'" class="tab-content timeline-area">
+                <!-- 氛围区 -->
+                <div class="timeline-atmosphere">
+                    <p class="timeline-title">留下来的痕迹</p>
+                    <p class="timeline-subtitle">{{ timelineAtmosphere }}</p>
                 </div>
-                <div v-else class="placeholder-area">
-                    <p class="placeholder-icon">🕐</p>
-                    <p class="placeholder-title">时间线</p>
-                    <p class="placeholder-sub">记录你们共同的时间沉淀</p>
-                    <p class="placeholder-sub">随着对话积累，这里会慢慢出现痕迹...</p>
+
+                <!-- 时间线内容 -->
+                <div v-if="timelineGroups.length > 0" class="timeline-flow">
+                    <div v-for="group in timelineGroups" :key="group.period" class="timeline-group">
+                        <p class="period-label">{{ group.period }}</p>
+                        <div class="timeline-cards">
+                            <GlassCard v-for="event in group.events" :key="event.id" size="sm" class="timeline-event">
+                                <p class="event-content">{{ event.content }}</p>
+                                <div class="event-tags" v-if="event.tags.length > 0">
+                                    <GlassTag v-for="tag in event.tags" :key="tag" variant="pink" size="sm">{{ tag }}
+                                    </GlassTag>
+                                </div>
+                            </GlassCard>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 空状态 -->
+                <div v-else class="timeline-empty">
+                    <p class="empty-icon">🌙</p>
+                    <p class="empty-title">还没有留下痕迹</p>
+                    <p class="empty-sub">随着时间流动，这里会慢慢出现</p>
+                    <p class="empty-sub">那些值得被记住的瞬间...</p>
                 </div>
             </div>
 
@@ -163,6 +181,7 @@ const patterns = ref([])
 const loaded = ref(false)
 const activeTab = ref('profile')
 const timelineItems = ref([])
+const timelineGroups = ref([])
 
 const tabs = [
     { id: 'profile', name: '档案', icon: '📋' },
@@ -186,6 +205,14 @@ const currentRelation = computed(() => {
     const stages = ["靠近", "停留", "熟悉", "偏爱", "默契", "依恋", "长伴", "归属"]
     const idx = Math.min(Math.floor(avg * 8), 7)
     return stages[idx]
+})
+
+const timelineAtmosphere = computed(() => {
+    if (timelineGroups.value.length === 0) return '时间还在慢慢流动...'
+    const count = timelineGroups.value.reduce((sum, g) => sum + g.events.length, 0)
+    if (count < 3) return '刚开始留下一些痕迹...'
+    if (count < 10) return '不知不觉，已经有了一些共同的记忆'
+    return '原来已经一起走了这么久了'
 })
 
 const recentTimeline = computed(() => {
@@ -249,8 +276,17 @@ async function switchPersona(id) {
 
 async function loadAll() {
     loaded.value = false
-    await Promise.all([loadDetail(), loadRelation(), loadObserve()])
+    await Promise.all([loadDetail(), loadRelation(), loadObserve(), loadTimeline()])
     loaded.value = true
+}
+
+async function loadTimeline() {
+    try {
+        const res = await api(`/api/timeline/${currentPersona.value}`)
+        timelineGroups.value = await res.json()
+    } catch {
+        timelineGroups.value = []
+    }
 }
 
 async function loadDetail() {
@@ -587,5 +623,113 @@ onMounted(loadPersonas)
     color: var(--color-text-light);
     opacity: 0.6;
     margin-top: 4px;
+}
+
+/* 时间线 */
+.timeline-area {
+    animation: fadeIn 0.5s var(--ease-soft);
+}
+
+.timeline-atmosphere {
+    text-align: center;
+    padding: 28px 0 24px;
+}
+
+.timeline-title {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--color-text);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.timeline-subtitle {
+    font-size: 12px;
+    color: var(--color-text-light);
+    font-style: italic;
+    opacity: 0.7;
+    animation: breathe 5s ease-in-out infinite;
+}
+
+.timeline-flow {
+    padding-bottom: 20px;
+}
+
+.timeline-group {
+    margin-bottom: 28px;
+    animation: fadeIn 0.5s var(--ease-soft) backwards;
+}
+
+.timeline-group:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.timeline-group:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.timeline-group:nth-child(4) {
+    animation-delay: 0.3s;
+}
+
+.period-label {
+    font-size: 11px;
+    color: var(--color-text-light);
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
+    padding-left: 4px;
+    opacity: 0.6;
+}
+
+.timeline-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.timeline-event {
+    animation: fadeIn 0.4s var(--ease-soft) backwards;
+}
+
+.event-content {
+    font-size: 14px;
+    color: var(--color-text);
+    line-height: 1.7;
+    font-weight: 400;
+}
+
+.event-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+/* 空状态 */
+.timeline-empty {
+    text-align: center;
+    padding: 56px 20px;
+    animation: fadeIn 0.6s var(--ease-soft);
+}
+
+.timeline-empty .empty-icon {
+    font-size: 36px;
+    margin-bottom: 16px;
+    animation: softFloat 8s ease-in-out infinite;
+}
+
+.timeline-empty .empty-title {
+    font-size: 15px;
+    color: var(--color-text);
+    font-weight: 400;
+    margin-bottom: 8px;
+}
+
+.timeline-empty .empty-sub {
+    font-size: 12px;
+    color: var(--color-text-light);
+    opacity: 0.5;
+    margin-top: 4px;
+    line-height: 1.6;
 }
 </style>

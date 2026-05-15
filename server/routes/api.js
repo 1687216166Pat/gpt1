@@ -581,4 +581,11 @@ router.post("/push/test", async (req, res) => {
   res.json({ success: true, subscribers: result.length });
 });
 
+// 时间线
+router.get("/timeline/:personaId", async (req, res) => {
+  const { getTimeline } = require("../services/timeline");
+  const data = await getTimeline(req.params.personaId);
+  res.json(data);
+});
+
 module.exports = router;

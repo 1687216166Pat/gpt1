@@ -15,6 +15,8 @@ const {
   evaluateRelationship,
 } = require("./relationship");
 
+const { checkTimelineEvent } = require("./timeline");
+
 function getTimeContext() {
   const now = new Date(
     new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }),
@@ -222,6 +224,9 @@ ${relationshipContext}`;
 
   // 记忆处理（双触发机制）
   processMemory(pid, userMessage, aiReply);
+
+  // 时间线检测
+  checkTimelineEvent(pid, userMessage, aiReply);
 
   // 获取今日消息数
   const today = new Date().toISOString().slice(0, 10);
