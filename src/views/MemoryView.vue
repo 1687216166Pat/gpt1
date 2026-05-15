@@ -6,44 +6,45 @@
         </div>
 
         <div class="persona-tabs" v-if="currentView === 'main'">
-            <button v-for="p in personas" :key="p.id" class="tab-btn" :class="{ active: currentPersona === p.id }"
+            <button v-for="p in personas" :key="p.id" class="tab-item" :class="{ active: currentPersona === p.id }"
                 @click="switchPersona(p.id)">
                 {{ p.name }}
             </button>
         </div>
 
         <div class="memory-content">
-            <!-- 主视图 -->
             <template v-if="currentView === 'main'">
                 <!-- 总档案 -->
-                <div class="section">
-                    <h3>📋 总档案</h3>
-                    <div class="profile-box">
-                        <p v-if="profile">{{ profile }}</p>
-                        <p v-else class="empty">暂无档案</p>
-                    </div>
+                <div class="section-block">
+                    <h3 class="section-label">📋 总档案</h3>
+                    <GlassCard size="md">
+                        <p class="content-text" v-if="profile">{{ profile }}</p>
+                        <p class="content-text empty" v-else>暂无档案</p>
+                    </GlassCard>
                 </div>
 
                 <!-- 热力图 -->
-                <div class="section">
-                    <h3>📊 最近两个月</h3>
-                    <div class="heatmap">
-                        <div v-for="day in heatmapDays" :key="day.date" class="heat-cell"
-                            :style="{ opacity: day.intensity }" :title="day.date + ': ' + day.count + '条'"
-                            @click="openDate(day.date)">
+                <div class="section-block">
+                    <h3 class="section-label">📊 最近两个月</h3>
+                    <GlassCard size="md">
+                        <div class="heatmap">
+                            <div v-for="day in heatmapDays" :key="day.date" class="heat-cell"
+                                :style="{ opacity: day.intensity }" :title="day.date + ': ' + day.count + '条'"
+                                @click="openDate(day.date)">
+                            </div>
                         </div>
-                    </div>
+                    </GlassCard>
                 </div>
 
-                <!-- 年份标签 -->
-                <div class="section">
-                    <h3>🗂️ 记忆归档</h3>
+                <!-- 记忆归档 -->
+                <div class="section-block">
+                    <h3 class="section-label">🗂️ 记忆归档</h3>
                     <div class="tag-box">
-                        <button v-for="year in Object.keys(dateTree)" :key="year" class="tag-btn"
+                        <SoftButton v-for="year in Object.keys(dateTree)" :key="year" variant="glass" size="sm"
                             @click="openYear(year)">
                             {{ year }}年
-                        </button>
-                        <p v-if="Object.keys(dateTree).length === 0" class="empty">暂无归档记忆</p>
+                        </SoftButton>
+                        <p v-if="Object.keys(dateTree).length === 0" class="empty-text">暂无归档记忆</p>
                     </div>
                 </div>
             </template>
@@ -51,31 +52,31 @@
             <!-- 年视图 -->
             <template v-if="currentView === 'year'">
                 <div class="tag-box">
-                    <button v-for="month in dateTree[selectedYear]" :key="month" class="tag-btn"
+                    <SoftButton v-for="month in dateTree[selectedYear]" :key="month" variant="glass" size="sm"
                         @click="openMonth(month)">
                         {{ parseInt(month) }}月
-                    </button>
+                    </SoftButton>
                 </div>
             </template>
 
             <!-- 月视图 -->
             <template v-if="currentView === 'month'">
                 <div class="tag-box">
-                    <button v-for="day in monthDays" :key="day" class="tag-btn"
+                    <SoftButton v-for="day in monthDays" :key="day" variant="glass" size="sm"
                         @click="openDate(`${selectedYear}-${selectedMonth}-${day}`)">
                         {{ parseInt(day) }}日
-                    </button>
+                    </SoftButton>
                 </div>
             </template>
 
             <!-- 日视图 -->
             <template v-if="currentView === 'date'">
                 <div v-if="dayMemories.length > 0">
-                    <div v-for="mem in dayMemories" :key="mem.id" class="memory-item">
-                        <div class="memory-text">{{ mem.content }}</div>
-                    </div>
+                    <GlassCard v-for="mem in dayMemories" :key="mem.id" size="sm">
+                        <p class="content-text">{{ mem.content }}</p>
+                    </GlassCard>
                 </div>
-                <p v-else class="empty">这天没有记忆</p>
+                <p v-else class="empty-text">这天没有记忆</p>
             </template>
         </div>
     </div>
@@ -84,6 +85,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { api } from '@/utils/api'
+import GlassCard from '@/components/ui/GlassCard.vue'
+import SoftButton from '@/components/ui/SoftButton.vue'
 
 const personas = ref([])
 const currentPersona = ref('')
@@ -113,7 +116,7 @@ const heatmapDays = computed(() => {
         d.setDate(d.getDate() - i)
         const dateStr = d.toISOString().slice(0, 10)
         const count = heatmapData.value[dateStr] || 0
-        const intensity = count === 0 ? 0.1 : Math.min(1, 0.2 + count * 0.05)
+        const intensity = count === 0 ? 0.08 : Math.min(1, 0.2 + count * 0.05)
         days.push({ date: dateStr, count, intensity })
     }
     return days
@@ -121,7 +124,6 @@ const heatmapDays = computed(() => {
 
 const monthDays = computed(() => {
     if (!selectedYear.value || !selectedMonth.value) return []
-    // 获取该月有记忆的日期
     const prefix = `${selectedYear.value}-${selectedMonth.value}`
     const days = new Set()
     Object.keys(heatmapData.value).forEach((d) => {
@@ -129,7 +131,6 @@ const monthDays = computed(() => {
             days.add(d.slice(8, 10))
         }
     })
-    // 也从 dateTree 的记忆数据里补充
     return [...days].sort()
 })
 
@@ -148,11 +149,7 @@ async function loadPersonas() {
 }
 
 async function loadAll() {
-    await Promise.all([
-        loadProfile(),
-        loadHeatmap(),
-        loadDateTree()
-    ])
+    await Promise.all([loadProfile(), loadHeatmap(), loadDateTree()])
 }
 
 async function loadProfile() {
@@ -160,21 +157,21 @@ async function loadProfile() {
         const res = await api(`/api/memories/${currentPersona.value}`)
         const data = await res.json()
         profile.value = data.profile || ''
-    } catch (e) { }
+    } catch { }
 }
 
 async function loadHeatmap() {
     try {
         const res = await api(`/api/memories/${currentPersona.value}/heatmap`)
         heatmapData.value = await res.json()
-    } catch (e) { }
+    } catch { }
 }
 
 async function loadDateTree() {
     try {
         const res = await api(`/api/memories/${currentPersona.value}/dates`)
         dateTree.value = await res.json()
-    } catch (e) { }
+    } catch { }
 }
 
 function switchPersona(id) {
@@ -202,21 +199,16 @@ async function openDate(date) {
     try {
         const res = await api(`/api/memories/${currentPersona.value}/date/${date}`)
         dayMemories.value = await res.json()
-    } catch (e) {
+    } catch {
         dayMemories.value = []
     }
 }
 
 function goBack() {
-    if (currentView.value === 'date') {
-        currentView.value = 'month'
-    } else if (currentView.value === 'month') {
-        currentView.value = 'year'
-    } else if (currentView.value === 'year') {
-        currentView.value = 'main'
-    } else {
-        window.history.length > 1 ? history.back() : location.href = '/'
-    }
+    if (currentView.value === 'date') currentView.value = 'month'
+    else if (currentView.value === 'month') currentView.value = 'year'
+    else if (currentView.value === 'year') currentView.value = 'main'
+    else window.history.length > 1 ? history.back() : location.href = '/'
 }
 
 onMounted(loadPersonas)
@@ -234,77 +226,96 @@ onMounted(loadPersonas)
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-bg-secondary);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
 }
 
 .back-btn {
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 24px;
     color: var(--color-primary);
     cursor: pointer;
-    padding: 0 4px;
+    opacity: 0.75;
 }
 
 .memory-header h2 {
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--color-text);
 }
 
 .persona-tabs {
     display: flex;
     gap: 8px;
-    padding: 12px 0;
-    flex-wrap: wrap;
+    padding: 14px 0;
+    overflow-x: auto;
+    flex-shrink: 0;
 }
 
-.tab-btn {
-    padding: 6px 16px;
+.tab-item {
+    padding: 7px 16px;
     border-radius: 20px;
-    border: 1px solid var(--color-bg-secondary);
-    background: var(--color-white);
-    font-size: 13px;
-    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-size: 12px;
+    color: var(--color-text-light);
     cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--duration-normal) var(--ease-soft);
 }
 
-.tab-btn.active {
-    background: var(--color-primary);
+.tab-item.active {
+    background: linear-gradient(135deg, #e8a8be, #d4899e);
     color: white;
-    border-color: var(--color-primary);
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(212, 137, 158, 0.2);
 }
 
 .memory-content {
     flex: 1;
     overflow-y: auto;
     padding: 16px 0;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
 }
 
-.section {
+.section-block {
     margin-bottom: 24px;
+    animation: fadeIn 0.4s var(--ease-soft) backwards;
 }
 
-.section h3 {
-    font-size: 14px;
-    color: var(--color-text);
+.section-block:nth-child(2) {
+    animation-delay: 0.06s;
+}
+
+.section-block:nth-child(3) {
+    animation-delay: 0.12s;
+}
+
+.section-label {
+    font-size: 12px;
+    color: var(--color-text-light);
     margin-bottom: 10px;
-    font-weight: 500;
+    font-weight: 400;
+    letter-spacing: 0.5px;
 }
 
-.profile-box {
-    background: var(--color-white);
-    border-radius: 12px;
-    padding: 14px;
-    font-size: 14px;
+.content-text {
+    font-size: 13px;
     color: var(--color-text);
-    line-height: 1.6;
+    line-height: 1.7;
     white-space: pre-line;
 }
 
-/* 热力图 */
+.content-text.empty {
+    color: var(--color-text-light);
+    font-style: italic;
+    opacity: 0.6;
+}
+
 .heatmap {
     display: grid;
     grid-template-columns: repeat(10, 1fr);
@@ -313,57 +324,25 @@ onMounted(loadPersonas)
 
 .heat-cell {
     aspect-ratio: 1;
-    border-radius: 3px;
+    border-radius: 4px;
     background: var(--color-primary);
     cursor: pointer;
-    transition: transform 0.1s;
+    transition: transform 0.15s var(--ease-soft);
 }
 
 .heat-cell:active {
-    transform: scale(1.3);
+    transform: scale(1.4);
 }
 
-/* 标签盒子 */
 .tag-box {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
 }
 
-.tag-btn {
-    padding: 10px 20px;
-    border-radius: 12px;
-    border: 1px solid var(--color-bg-secondary);
-    background: var(--color-white);
-    font-size: 14px;
-    color: var(--color-text);
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.tag-btn:active {
-    background: var(--color-primary);
-    color: white;
-    border-color: var(--color-primary);
-}
-
-/* 记忆条目 */
-.memory-item {
-    background: var(--color-white);
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 8px;
-}
-
-.memory-text {
-    font-size: 14px;
-    color: var(--color-text);
-    line-height: 1.5;
-    white-space: pre-line;
-}
-
-.empty {
+.empty-text {
     color: var(--color-text-light);
     font-size: 13px;
+    opacity: 0.6;
 }
 </style>

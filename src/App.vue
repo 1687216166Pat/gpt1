@@ -1,5 +1,10 @@
 <template>
     <div class="phone-screen" :class="period">
+        <div class="bg-decor">
+            <div class="decor-circle c1"></div>
+            <div class="decor-circle c2"></div>
+            <div class="decor-circle c3"></div>
+        </div>
         <NotificationBanner />
         <main class="screen-content">
             <RouterView />
@@ -73,5 +78,58 @@ onUnmounted(() => {
     overflow-x: hidden;
     padding: 0 22px;
     -webkit-overflow-scrolling: touch;
+}
+
+.bg-decor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+}
+
+.decor-circle {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.3;
+}
+
+.c1 {
+    width: 200px;
+    height: 200px;
+    background: #f0c0d0;
+    top: -40px;
+    right: -60px;
+    animation: softFloat 12s ease-in-out infinite;
+}
+
+.c2 {
+    width: 160px;
+    height: 160px;
+    background: #d0c0e8;
+    bottom: 20%;
+    left: -40px;
+    animation: softFloat 10s ease-in-out infinite 2s;
+}
+
+.c3 {
+    width: 120px;
+    height: 120px;
+    background: #f0d8c0;
+    bottom: -20px;
+    right: 20%;
+    animation: softFloat 14s ease-in-out infinite 4s;
+}
+
+.screen-content {
+    flex: 1;
+    overflow: hidden;
+    padding: 0 22px;
+    position: relative;
+    z-index: 1;
 }
 </style>

@@ -8,68 +8,70 @@
 
         <div class="detail-content">
             <!-- 头像 -->
-            <div class="section">
-                <h3>头像</h3>
-                <div class="avatar-row">
-                    <div class="avatar-preview">
-                        <img v-if="detail.avatarUrl" :src="detail.avatarUrl" />
-                        <span v-else>{{ detail.avatar || '💬' }}</span>
+            <div class="section-block">
+                <h3 class="section-label">头像</h3>
+                <GlassCard size="md">
+                    <div class="avatar-row">
+                        <div class="avatar-preview">
+                            <img v-if="detail.avatarUrl" :src="detail.avatarUrl" />
+                            <span v-else>{{ detail.avatar || '💬' }}</span>
+                        </div>
+                        <div class="avatar-actions">
+                            <DreamInput v-model="detail.avatarUrl" placeholder="图片URL或图床链接" />
+                            <input type="file" accept="image/*" @change="handleAvatarUpload" class="file-input" />
+                        </div>
                     </div>
-                    <div class="avatar-actions">
-                        <input type="text" v-model="detail.avatarUrl" placeholder="图片URL或图床链接" />
-                        <input type="file" accept="image/*" @change="handleAvatarUpload" />
-                    </div>
-                </div>
+                </GlassCard>
             </div>
 
             <!-- 基本信息 -->
-            <div class="section">
-                <h3>基本信息</h3>
-                <div class="input-group">
-                    <label>助手名字</label>
-                    <input v-model="detail.name" placeholder="AI对自己的称呼" />
-                </div>
-                <div class="input-group">
-                    <label>备注</label>
-                    <input v-model="detail.note" placeholder="你给AI的备注" />
-                </div>
-                <div class="input-group">
-                    <label>性别</label>
-                    <select v-model="detail.gender">
-                        <option value="">未设置</option>
-                        <option value="female">女</option>
-                        <option value="male">男</option>
-                        <option value="other">其他</option>
-                    </select>
-                </div>
+            <div class="section-block">
+                <h3 class="section-label">基本信息</h3>
+                <GlassCard size="md">
+                    <DreamInput label="助手名字" v-model="detail.name" placeholder="AI对自己的称呼" />
+                    <DreamInput label="备注" v-model="detail.note" placeholder="你给AI的备注" />
+                    <div class="select-group">
+                        <label class="select-label">性别</label>
+                        <select v-model="detail.gender" class="select-field">
+                            <option value="">未设置</option>
+                            <option value="female">女</option>
+                            <option value="male">男</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                </GlassCard>
             </div>
 
             <!-- 人设详情 -->
-            <div class="section">
-                <h3>人设详情</h3>
-                <textarea v-model="detail.content" rows="10" placeholder="角色的性格、说话方式、背景设定..."></textarea>
+            <div class="section-block">
+                <h3 class="section-label">人设详情</h3>
+                <GlassCard size="md">
+                    <DreamInput type="textarea" v-model="detail.content" :rows="10" placeholder="角色的性格、说话方式、背景设定..." />
+                </GlassCard>
             </div>
 
             <!-- 世界书绑定 -->
-            <div class="section">
-                <h3>世界书绑定</h3>
-                <select v-model="detail.worldBookId">
-                    <option value="">不绑定</option>
-                    <option v-for="book in worldBooks" :key="book.id" :value="book.id">{{ book.title }}</option>
-                </select>
+            <div class="section-block">
+                <h3 class="section-label">世界书绑定</h3>
+                <GlassCard size="md">
+                    <select v-model="detail.worldBookId" class="select-field full">
+                        <option value="">不绑定</option>
+                        <option v-for="book in worldBooks" :key="book.id" :value="book.id">{{ book.title }}</option>
+                    </select>
+                </GlassCard>
             </div>
 
             <!-- 进入对话 -->
-            <div class="section">
-                <button class="chat-btn" @click="$router.push(`/chat/${personaId}`)">💬 进入对话</button>
+            <div class="section-block">
+                <SoftButton variant="primary" block @click="$router.push(`/chat/${personaId}`)">💬 进入对话</SoftButton>
             </div>
 
             <!-- 危险操作 -->
-            <div class="section danger-section">
-                <h3>⚠️ 操作</h3>
-                <button class="danger-btn" @click="clearMessages">清空对话框（保留记忆）</button>
-                <button class="danger-btn" @click="clearMemory">清空记忆</button>
-                <button class="danger-btn delete" @click="deletePersona">删除对话</button>
+            <div class="section-block danger-area">
+                <h3 class="section-label">⚠️ 操作</h3>
+                <SoftButton variant="secondary" block @click="clearMessages">清空对话框（保留记忆）</SoftButton>
+                <SoftButton variant="secondary" block @click="clearMemory">清空记忆</SoftButton>
+                <SoftButton variant="danger" block @click="deletePersona">删除对话</SoftButton>
             </div>
         </div>
 
@@ -81,6 +83,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/utils/api'
+import GlassCard from '@/components/ui/GlassCard.vue'
+import SoftButton from '@/components/ui/SoftButton.vue'
+import DreamInput from '@/components/ui/DreamInput.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -158,7 +163,7 @@ async function clearMemory() {
 async function deletePersona() {
     if (!confirm('确定删除这个对话？AI本身不会被删除。')) return
     await api(`/api/messages/${personaId}`, { method: 'DELETE' })
-    router.push('/contacts')
+    router.push('/about')
 }
 
 onMounted(() => {
@@ -179,68 +184,91 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-bg-secondary);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
 }
 
 .back-btn {
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 24px;
     color: var(--color-primary);
     cursor: pointer;
+    opacity: 0.75;
 }
 
 .detail-header h2 {
     flex: 1;
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--color-text);
 }
 
 .save-btn-top {
     background: none;
     border: none;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--color-primary);
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
+    letter-spacing: 0.03em;
 }
 
 .detail-content {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 0;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    padding: 20px 0;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
 }
 
-.section {
-    margin-bottom: 24px;
+.section-block {
+    margin-bottom: 22px;
+    animation: fadeIn 0.4s var(--ease-soft) backwards;
 }
 
-.section h3 {
-    font-size: 13px;
+.section-block:nth-child(2) {
+    animation-delay: 0.05s;
+}
+
+.section-block:nth-child(3) {
+    animation-delay: 0.1s;
+}
+
+.section-block:nth-child(4) {
+    animation-delay: 0.15s;
+}
+
+.section-block:nth-child(5) {
+    animation-delay: 0.2s;
+}
+
+.section-label {
+    font-size: 12px;
     color: var(--color-text-light);
     margin-bottom: 10px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
 }
 
 .avatar-row {
     display: flex;
-    gap: 12px;
+    gap: 14px;
     align-items: flex-start;
 }
 
 .avatar-preview {
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: var(--color-bg-secondary);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
+    font-size: 26px;
     overflow: hidden;
     flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(200, 130, 160, 0.1);
 }
 
 .avatar-preview img {
@@ -256,96 +284,55 @@ onMounted(() => {
     gap: 8px;
 }
 
-.avatar-actions input[type="text"] {
-    width: 100%;
-    height: 34px;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 8px;
-    padding: 0 10px;
-    font-size: 13px;
-    background: var(--color-white);
-    outline: none;
-}
-
-.avatar-actions input[type="file"] {
-    font-size: 12px;
+.file-input {
+    font-size: 11px;
     color: var(--color-text-light);
 }
 
-.input-group {
-    margin-bottom: 10px;
+.select-group {
+    margin-bottom: 14px;
 }
 
-.input-group label {
+.select-label {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--color-text-light);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    letter-spacing: 0.4px;
 }
 
-.input-group input,
-.input-group select {
-    width: 100%;
-    height: 38px;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 10px;
-    padding: 0 12px;
+.select-field {
+    width: auto;
+    height: 40px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0 14px;
     font-size: 14px;
-    background: var(--color-white);
+    background: var(--color-card);
     outline: none;
-}
-
-textarea {
-    width: 100%;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 12px;
-    padding: 12px;
-    font-size: 14px;
-    font-family: inherit;
-    background: var(--color-white);
-    outline: none;
-    resize: none;
-    line-height: 1.5;
-}
-
-.danger-section {
-    border-top: 1px solid var(--color-bg-secondary);
-    padding-top: 16px;
-}
-
-.danger-btn {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 8px;
-    border: 1px solid var(--color-bg-secondary);
-    background: var(--color-white);
-    border-radius: 10px;
-    font-size: 14px;
     color: var(--color-text);
-    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
-.danger-btn.delete {
-    color: #f44336;
-    border-color: #f44336;
+.select-field.full {
+    width: 100%;
+}
+
+.danger-area {
+    border-top: 1px solid var(--color-border);
+    padding-top: 18px;
+}
+
+.danger-area>* {
+    margin-bottom: 8px;
 }
 
 .save-msg {
     text-align: center;
     color: var(--color-primary);
-    font-size: 13px;
-    padding: 8px;
-}
-
-.chat-btn {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 12px;
-    background: var(--color-primary);
-    color: white;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
+    font-size: 12px;
+    padding: 10px;
+    opacity: 0.8;
 }
 </style>

@@ -29,8 +29,8 @@ function formatTime(ts) {
 <style scoped>
 .bubble-wrapper {
     display: flex;
-    margin-bottom: 14px;
-    animation: fadeIn 0.35s var(--ease-soft) backwards;
+    margin-bottom: 18px;
+    animation: fadeIn 0.4s var(--ease-soft) backwards;
 }
 
 .bubble-wrapper.user {

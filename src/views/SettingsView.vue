@@ -9,116 +9,114 @@
             <!-- API 配置 -->
             <div class="section">
                 <h3>🔑 API 配置</h3>
-                <div class="input-group">
-                    <label>API Key</label>
-                    <input type="password" v-model="apiConfig.key" placeholder="sk-..." />
-                </div>
-                <div class="input-group">
-                    <label>API 地址</label>
-                    <input type="text" v-model="apiConfig.baseUrl" placeholder="https://api.openai.com/v1" />
-                </div>
-                <div class="input-group">
-                    <label>模型名称</label>
-                    <input type="text" v-model="apiConfig.model" placeholder="gpt-4o-mini" />
-                </div>
-                <button class="save-btn" @click="saveApiConfig">保存 API 配置</button>
-                <p class="save-tip" v-if="apiSaved">已保存 ✓</p>
+                <GlassCard size="md">
+                    <DreamInput label="API Key" type="password" v-model="apiConfig.key" placeholder="sk-..." />
+                    <DreamInput label="API 地址" v-model="apiConfig.baseUrl" placeholder="https://api.openai.com/v1" />
+                    <DreamInput label="模型名称" v-model="apiConfig.model" placeholder="gpt-4o-mini" />
+                    <SoftButton variant="primary" block @click="saveApiConfig">保存 API 配置</SoftButton>
+                    <p class="save-tip" v-if="apiSaved">已保存 ✓</p>
 
-                <div class="api-actions">
-                    <button class="action-btn" @click="fetchModels">获取模型列表</button>
-                    <button class="action-btn" @click="testApiConnection">测试连接</button>
-                </div>
+                    <div class="api-actions">
+                        <SoftButton variant="glass" size="sm" @click="fetchModels">获取模型</SoftButton>
+                        <SoftButton variant="glass" size="sm" @click="testApiConnection">测试连接</SoftButton>
+                    </div>
 
-                <div v-if="modelList.length > 0" class="model-list">
-                    <p class="list-label">可用模型：</p>
-                    <div class="model-scroll">
-                        <div v-for="m in modelList" :key="m" class="model-item" @click="apiConfig.model = m">
-                            {{ m }}
+                    <div v-if="modelList.length > 0" class="model-list">
+                        <p class="list-label">可用模型：</p>
+                        <div class="model-scroll">
+                            <div v-for="m in modelList" :key="m" class="model-item" @click="apiConfig.model = m">
+                                {{ m }}
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <p v-if="apiTestResult" class="api-result" :class="apiTestResult.success ? 'success' : 'error'">
-                    {{ apiTestResult.message }}
-                </p>
+                    <p v-if="apiTestResult" class="api-result" :class="apiTestResult.success ? 'success' : 'error'">
+                        {{ apiTestResult.message }}
+                    </p>
+                </GlassCard>
             </div>
 
             <!-- 主动消息设置 -->
             <div class="section">
                 <h3>💬 主动消息</h3>
-                <div class="setting-row">
-                    <span>启用主动消息</span>
-                    <label class="toggle">
-                        <input type="checkbox" v-model="proactive.enabled" @change="saveProactive" />
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div v-if="proactive.enabled">
+                <GlassCard size="md">
                     <div class="setting-row">
-                        <span>未互动提醒</span>
-                        <select v-model="proactive.idleHours" @change="saveProactive">
-                            <option :value="6">6 小时</option>
-                            <option :value="12">12 小时</option>
-                            <option :value="24">24 小时</option>
-                        </select>
+                        <span>启用主动消息</span>
+                        <label class="toggle">
+                            <input type="checkbox" v-model="proactive.enabled" @change="saveProactive" />
+                            <span class="slider"></span>
+                        </label>
                     </div>
-                    <div class="setting-row">
-                        <span>每日最多主动</span>
-                        <select v-model="proactive.maxPerDay" @change="saveProactive">
-                            <option :value="1">1 次</option>
-                            <option :value="2">2 次</option>
-                            <option :value="3">3 次</option>
-                            <option :value="5">5 次</option>
-                        </select>
+
+                    <div v-if="proactive.enabled">
+                        <div class="setting-row">
+                            <span>未互动提醒</span>
+                            <select v-model="proactive.idleHours" @change="saveProactive">
+                                <option :value="6">6 小时</option>
+                                <option :value="12">12 小时</option>
+                                <option :value="24">24 小时</option>
+                            </select>
+                        </div>
+                        <div class="setting-row">
+                            <span>每日最多主动</span>
+                            <select v-model="proactive.maxPerDay" @change="saveProactive">
+                                <option :value="1">1 次</option>
+                                <option :value="2">2 次</option>
+                                <option :value="3">3 次</option>
+                                <option :value="5">5 次</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
 
-                <button class="action-btn" @click="testProactive">测试主动消息</button>
-                <p v-if="proactiveTestResult" class="api-result"
-                    :class="proactiveTestResult.success ? 'success' : 'error'">
-                    {{ proactiveTestResult.message }}
-                </p>
+                    <div class="action-group">
+                        <SoftButton variant="glass" block @click="testProactive">测试主动消息</SoftButton>
+                        <SoftButton variant="glass" block @click="testPush">测试推送通知</SoftButton>
+                    </div>
 
-                <button class="action-btn" @click="testPush">测试推送通知</button>
-                <p v-if="pushTestResult" class="api-result" :class="pushTestResult.success ? 'success' : 'error'">
-                    {{ pushTestResult.message }}
-                </p>
+                    <p v-if="proactiveTestResult" class="api-result"
+                        :class="proactiveTestResult.success ? 'success' : 'error'">
+                        {{ proactiveTestResult.message }}
+                    </p>
+                    <p v-if="pushTestResult" class="api-result" :class="pushTestResult.success ? 'success' : 'error'">
+                        {{ pushTestResult.message }}
+                    </p>
+                </GlassCard>
             </div>
-
 
             <!-- 用户偏好 -->
             <div class="section">
                 <h3>📝 我的偏好</h3>
+                <GlassCard size="md">
+                    <div class="setting-row">
+                        <span>AI 输出包含动作描写</span>
+                        <label class="toggle">
+                            <input type="checkbox" v-model="outputPrefs.actionDesc" @change="saveOutputPrefs" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <span>AI 分句输出</span>
+                        <label class="toggle">
+                            <input type="checkbox" v-model="outputPrefs.splitSentence" @change="saveOutputPrefs" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
 
-                <div class="setting-row">
-                    <span>AI 输出包含动作描写</span>
-                    <label class="toggle">
-                        <input type="checkbox" v-model="outputPrefs.actionDesc" @change="saveOutputPrefs" />
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="setting-row">
-                    <span>AI 分句输出（更有节奏感）</span>
-                    <label class="toggle">
-                        <input type="checkbox" v-model="outputPrefs.splitSentence" @change="saveOutputPrefs" />
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <textarea v-model="userPrompt" :placeholder="template" rows="8"></textarea>
-                <button class="save-btn" @click="saveUserPrompt">保存偏好</button>
-                <p class="save-tip" v-if="saved">已保存 ✓</p>
+                    <DreamInput type="textarea" v-model="userPrompt" :placeholder="template" :rows="8" />
+                    <SoftButton variant="primary" block @click="saveUserPrompt">保存偏好</SoftButton>
+                    <p class="save-tip" v-if="saved">已保存 ✓</p>
+                </GlassCard>
             </div>
-
 
             <!-- 导入导出 -->
             <div class="section">
                 <h3>💾 数据管理</h3>
-                <button class="action-btn" @click="exportData">导出数据 (JSON)</button>
-                <button class="action-btn" @click="triggerImport">导入数据 (JSON)</button>
-                <input type="file" ref="importInput" accept=".json" style="display:none" @change="importData" />
-                <button class="action-btn upload-btn" @click="syncToCloud">上传至云端</button>
+                <GlassCard size="md">
+                    <SoftButton variant="secondary" block @click="exportData">导出数据 (JSON)</SoftButton>
+                    <SoftButton variant="secondary" block @click="triggerImport">导入数据 (JSON)</SoftButton>
+                    <input type="file" ref="importInput" accept=".json" style="display:none" @change="importData" />
+                    <SoftButton variant="primary" block @click="syncToCloud">上传至云端</SoftButton>
+                </GlassCard>
             </div>
         </div>
     </div>
@@ -127,6 +125,9 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { api } from '@/utils/api'
+import GlassCard from '@/components/ui/GlassCard.vue'
+import SoftButton from '@/components/ui/SoftButton.vue'
+import DreamInput from '@/components/ui/DreamInput.vue'
 
 const personas = ref([])
 const activePersona = ref('')
@@ -405,92 +406,122 @@ async function syncToCloud() {
     flex-direction: column;
     height: 100%;
     padding-top: env(safe-area-inset-top, 44px);
+    overflow-y: auto;
 }
 
 .settings-header {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-bg-secondary);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .back-btn {
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 24px;
     color: var(--color-primary);
     cursor: pointer;
+    opacity: 0.75;
 }
 
 .settings-header h2 {
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--color-text);
 }
 
 .settings-content {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 0;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+    padding: 20px 0;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
 }
 
 .section {
-    margin-bottom: 28px;
+    margin-bottom: 32px;
+    animation: fadeIn 0.4s var(--ease-soft) backwards;
+}
+
+.section:nth-child(2) {
+    animation-delay: 0.05s;
+}
+
+.section:nth-child(3) {
+    animation-delay: 0.1s;
+}
+
+.section:nth-child(4) {
+    animation-delay: 0.15s;
+}
+
+.section:nth-child(5) {
+    animation-delay: 0.2s;
 }
 
 .section h3 {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--color-text-light);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
 }
 
 .input-group {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 .input-group label {
     display: block;
-    font-size: 12px;
+    font-size: 11px;
     color: var(--color-text-light);
-    margin-bottom: 4px;
+    margin-bottom: 5px;
+    letter-spacing: 0.3px;
 }
 
 .input-group input {
     width: 100%;
-    height: 38px;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 10px;
-    padding: 0 12px;
+    height: 40px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0 14px;
     font-size: 14px;
-    background: var(--color-white);
+    background: var(--color-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     outline: none;
+    color: var(--color-text);
+    transition: border-color var(--duration-normal) var(--ease-soft);
 }
 
 .input-group input:focus {
-    border-color: var(--color-primary);
+    border-color: rgba(212, 137, 158, 0.3);
 }
 
 .setting-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 14px;
-    background: var(--color-white);
-    border-radius: 10px;
-    margin-bottom: 6px;
+    padding: 14px 16px;
+    background: var(--color-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
     font-size: 14px;
     color: var(--color-text);
+    border: 1px solid var(--color-border);
 }
 
 .setting-row select {
-    padding: 4px 8px;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
     font-size: 13px;
     background: var(--color-bg);
     outline: none;
+    color: var(--color-text);
 }
 
 .toggle {
@@ -514,7 +545,7 @@ async function syncToCloud() {
     bottom: 0;
     background: var(--color-bg-secondary);
     border-radius: 24px;
-    transition: 0.3s;
+    transition: var(--duration-normal) var(--ease-soft);
 }
 
 .slider:before {
@@ -526,111 +557,75 @@ async function syncToCloud() {
     bottom: 3px;
     background: white;
     border-radius: 50%;
-    transition: 0.3s;
+    transition: var(--duration-normal) var(--ease-soft);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .toggle input:checked+.slider {
-    background: var(--color-primary);
+    background: linear-gradient(135deg, #e8a8be, #d4899e);
 }
 
 .toggle input:checked+.slider:before {
     transform: translateX(20px);
 }
 
-.persona-card {
-    background: var(--color-white);
-    border-radius: 12px;
-    padding: 14px;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.persona-card.active {
-    border-color: var(--color-primary);
-}
-
-.persona-card:active {
-    transform: scale(0.98);
-}
-
-.persona-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--color-text);
-}
-
-.persona-desc {
-    flex: 1;
-    font-size: 13px;
-    color: var(--color-text-light);
-}
-
-.check {
-    color: var(--color-primary);
-    font-weight: bold;
-}
-
 textarea {
     width: 100%;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 12px;
-    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
     font-size: 14px;
     font-family: inherit;
-    background: var(--color-white);
+    background: var(--color-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     outline: none;
     resize: none;
     line-height: 1.5;
+    color: var(--color-text);
 }
 
 textarea:focus {
-    border-color: var(--color-primary);
+    border-color: rgba(212, 137, 158, 0.3);
 }
 
 .save-btn {
-    margin-top: 10px;
-    padding: 10px 20px;
-    border-radius: 10px;
+    margin-top: 12px;
+    padding: 13px;
+    border-radius: var(--radius-sm);
     border: none;
-    background: var(--color-primary);
+    background: linear-gradient(135deg, #e8a8be, #d4899e);
     color: white;
     font-size: 14px;
     cursor: pointer;
     width: 100%;
+    box-shadow: 0 3px 12px rgba(212, 137, 158, 0.2);
 }
 
 .save-tip {
     text-align: center;
     color: var(--color-primary);
-    font-size: 13px;
+    font-size: 12px;
     margin-top: 8px;
+    opacity: 0.8;
 }
 
 .action-btn {
     width: 100%;
     padding: 12px;
     margin-bottom: 8px;
-    border: 1px solid var(--color-bg-secondary);
-    background: var(--color-white);
-    border-radius: 10px;
-    font-size: 14px;
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
     color: var(--color-text);
     cursor: pointer;
 }
 
 .action-btn:active {
-    background: var(--color-bg-secondary);
-}
-
-.upload-btn {
-    background: var(--color-primary);
-    color: white;
-    border-color: var(--color-primary);
+    background: rgba(212, 137, 158, 0.06);
 }
 
 .api-actions {
@@ -645,14 +640,15 @@ textarea:focus {
 }
 
 .model-list {
-    margin-top: 10px;
-    background: var(--color-white);
-    border-radius: 10px;
-    padding: 10px;
+    margin-top: 12px;
+    background: var(--color-card);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    border: 1px solid var(--color-border);
 }
 
 .list-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--color-text-light);
     margin-bottom: 6px;
 }
@@ -663,33 +659,33 @@ textarea:focus {
 }
 
 .model-item {
-    padding: 6px 10px;
+    padding: 7px 10px;
     font-size: 12px;
     color: var(--color-text);
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     word-break: break-all;
 }
 
 .model-item:active {
-    background: var(--color-primary);
+    background: linear-gradient(135deg, #e8a8be, #d4899e);
     color: white;
 }
 
 .api-result {
     font-size: 12px;
     margin-top: 8px;
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
 }
 
 .api-result.success {
-    color: #4caf50;
-    background: rgba(76, 175, 80, 0.1);
+    color: #7aab7a;
+    background: rgba(122, 171, 122, 0.08);
 }
 
 .api-result.error {
-    color: #f44336;
-    background: rgba(244, 67, 54, 0.1);
+    color: #c07070;
+    background: rgba(192, 112, 112, 0.08);
 }
 </style>

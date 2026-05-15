@@ -7,38 +7,39 @@
         </div>
 
         <div class="worldbook-list">
-            <div v-for="book in books" :key="book.id" class="book-item" @click="editBook(book)">
+            <GlassCard v-for="book in books" :key="book.id" size="md" class="book-card" @click="editBook(book)">
                 <p class="book-title">{{ book.title }}</p>
-                <p class="book-preview">{{ book.content.slice(0, 50) }}...</p>
+                <p class="book-preview">{{ book.content.slice(0, 60) }}...</p>
                 <button class="delete-btn" @click.stop="deleteBook(book.id)">×</button>
+            </GlassCard>
+            <div v-if="books.length === 0" class="empty-area">
+                <p class="empty-icon">📖</p>
+                <p class="empty-text">还没有世界书</p>
+                <p class="empty-sub">点右上角 + 创建一个</p>
             </div>
-            <p v-if="books.length === 0" class="empty">还没有世界书，点右上角 + 创建</p>
         </div>
 
         <!-- 编辑/新建弹窗 -->
-        <div v-if="showAdd || editingBook" class="modal-overlay" @click.self="closeModal">
-            <div class="modal">
-                <h3>{{ editingBook ? '编辑世界书' : '新建世界书' }}</h3>
-                <div class="input-group">
-                    <label>标题</label>
-                    <input v-model="bookForm.title" placeholder="世界书名称" />
-                </div>
-                <div class="input-group">
-                    <label>内容</label>
-                    <textarea v-model="bookForm.content" rows="12" placeholder="世界观设定、背景信息、规则..."></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button class="cancel-btn" @click="closeModal">取消</button>
-                    <button class="confirm-btn" @click="saveBook">保存</button>
-                </div>
+        <BlurModal :visible="showAdd || !!editingBook" @close="closeModal">
+            <h3>{{ editingBook ? '编辑世界书' : '新建世界书' }}</h3>
+            <DreamInput label="标题" v-model="bookForm.title" placeholder="世界书名称" />
+            <DreamInput label="内容" type="textarea" v-model="bookForm.content" :rows="10"
+                placeholder="世界观设定、背景信息、规则..." />
+            <div class="modal-actions">
+                <SoftButton variant="secondary" @click="closeModal">取消</SoftButton>
+                <SoftButton variant="primary" @click="saveBook">保存</SoftButton>
             </div>
-        </div>
+        </BlurModal>
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { api } from '@/utils/api'
+import GlassCard from '@/components/ui/GlassCard.vue'
+import SoftButton from '@/components/ui/SoftButton.vue'
+import DreamInput from '@/components/ui/DreamInput.vue'
+import BlurModal from '@/components/ui/BlurModal.vue'
 
 const books = ref([])
 const showAdd = ref(false)
@@ -113,174 +114,102 @@ onMounted(loadBooks)
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-bg-secondary);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
 }
 
 .back-btn {
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 24px;
     color: var(--color-primary);
     cursor: pointer;
+    opacity: 0.75;
 }
 
 .worldbook-header h2 {
     flex: 1;
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--color-text);
 }
 
 .add-btn {
     background: none;
     border: none;
-    font-size: 24px;
+    font-size: 22px;
     color: var(--color-primary);
     cursor: pointer;
+    opacity: 0.75;
 }
 
 .worldbook-list {
     flex: 1;
     overflow-y: auto;
-    padding: 12px 0;
+    padding: 16px 0;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
 }
 
-.book-item {
-    background: var(--color-white);
-    border-radius: 12px;
-    padding: 14px;
-    margin-bottom: 8px;
-    position: relative;
+.book-card {
+    margin-bottom: 12px;
     cursor: pointer;
-}
-
-.book-item:active {
-    opacity: 0.8;
+    position: relative;
+    animation: fadeIn 0.4s var(--ease-soft) backwards;
 }
 
 .book-title {
     font-size: 15px;
     font-weight: 500;
     color: var(--color-text);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 .book-preview {
     font-size: 12px;
     color: var(--color-text-light);
+    line-height: 1.5;
 }
 
 .delete-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 14px;
+    right: 14px;
     background: none;
     border: none;
-    font-size: 20px;
+    font-size: 18px;
     color: var(--color-text-light);
     cursor: pointer;
+    opacity: 0.5;
 }
 
-.empty {
+.empty-area {
     text-align: center;
-    color: var(--color-text-light);
-    font-size: 14px;
-    margin-top: 40px;
+    padding: 52px 20px;
+    animation: fadeIn 0.5s var(--ease-soft);
 }
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 20px;
-}
-
-.modal {
-    background: var(--color-bg);
-    border-radius: 16px;
-    padding: 20px;
-    width: 100%;
-    max-width: 340px;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-.modal h3 {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--color-text);
-    margin-bottom: 16px;
-    text-align: center;
-}
-
-.input-group {
+.empty-icon {
+    font-size: 32px;
     margin-bottom: 12px;
+    animation: softFloat 6s ease-in-out infinite;
 }
 
-.input-group label {
-    display: block;
-    font-size: 12px;
+.empty-text {
+    font-size: 14px;
     color: var(--color-text-light);
     margin-bottom: 4px;
 }
 
-.input-group input {
-    width: 100%;
-    height: 36px;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 8px;
-    padding: 0 12px;
-    font-size: 14px;
-    background: var(--color-white);
-    outline: none;
-}
-
-.input-group textarea {
-    width: 100%;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-size: 13px;
-    font-family: inherit;
-    background: var(--color-white);
-    outline: none;
-    resize: none;
-    line-height: 1.5;
+.empty-sub {
+    font-size: 12px;
+    color: var(--color-text-light);
+    opacity: 0.5;
 }
 
 .modal-actions {
     display: flex;
     gap: 10px;
-    margin-top: 16px;
-}
-
-.cancel-btn {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 10px;
-    background: var(--color-white);
-    font-size: 14px;
-    color: var(--color-text);
-    cursor: pointer;
-}
-
-.confirm-btn {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 10px;
-    background: var(--color-primary);
-    font-size: 14px;
-    color: white;
-    cursor: pointer;
+    margin-top: 18px;
 }
 </style>

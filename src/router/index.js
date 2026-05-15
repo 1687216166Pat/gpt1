@@ -7,6 +7,9 @@ import MemoryView from "../views/MemoryView.vue";
 import PersonaDetailView from "../views/PersonaDetailView.vue";
 import WorldBookView from "../views/WorldBookView.vue";
 
+//开发用，后续可以删掉
+import PlaygroundView from "../views/PlaygroundView.vue";
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -44,6 +47,11 @@ const router = createRouter({
       path: "/worldbook",
       name: "worldbook",
       component: WorldBookView,
+    },
+    {
+      path: "/playground",
+      name: "playground",
+      component: PlaygroundView,
     },
   ],
 });

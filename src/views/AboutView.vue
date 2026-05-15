@@ -5,9 +5,8 @@
             <h2>关于他</h2>
         </div>
 
-        <!-- 顶部切换 AI -->
         <div class="persona-tabs">
-            <button v-for="p in personas" :key="p.id" class="tab-btn" :class="{ active: currentPersona === p.id }"
+            <button v-for="p in personas" :key="p.id" class="tab-item" :class="{ active: currentPersona === p.id }"
                 @click="switchPersona(p.id)">
                 {{ p.note || p.name }}
             </button>
@@ -15,7 +14,7 @@
 
         <div class="about-content" v-if="loaded">
             <!-- 总览卡片 -->
-            <div class="profile-card">
+            <GlassCard size="lg" floating>
                 <div class="card-top">
                     <div class="card-avatar">
                         <img v-if="personaDetail.avatarUrl" :src="personaDetail.avatarUrl" />
@@ -29,7 +28,7 @@
                 <div class="card-meta">
                     <div class="meta-item">
                         <span class="meta-label">当前关系</span>
-                        <span class="meta-value">{{ currentRelation }}</span>
+                        <GlassTag variant="pink" size="sm">{{ currentRelation }}</GlassTag>
                     </div>
                     <div class="meta-item">
                         <span class="meta-label">最近时间线</span>
@@ -40,11 +39,11 @@
                         <span class="meta-value">{{ personaSummary }}</span>
                     </div>
                 </div>
-            </div>
+            </GlassCard>
 
-            <!-- 分页 -->
+            <!-- 分页导航 -->
             <div class="tab-nav">
-                <button v-for="tab in tabs" :key="tab.id" class="nav-btn" :class="{ active: activeTab === tab.id }"
+                <button v-for="tab in tabs" :key="tab.id" class="nav-item" :class="{ active: activeTab === tab.id }"
                     @click="activeTab = tab.id">
                     {{ tab.icon }} {{ tab.name }}
                 </button>
@@ -52,8 +51,8 @@
 
             <!-- 档案 -->
             <div v-if="activeTab === 'profile'" class="tab-content">
-                <div class="info-block">
-                    <h4>基本信息</h4>
+                <GlassCard size="md">
+                    <h4 class="block-title">基本信息</h4>
                     <div class="info-row" v-if="personaDetail.gender">
                         <span>性别</span>
                         <span>{{ { female: '女', male: '男', other: '其他' }[personaDetail.gender] || '未设置' }}</span>
@@ -62,73 +61,86 @@
                         <span>名字</span>
                         <span>{{ personaDetail.name }}</span>
                     </div>
-                </div>
-                <div class="info-block">
-                    <h4>人设</h4>
+                </GlassCard>
+
+                <GlassCard size="md">
+                    <h4 class="block-title">人设</h4>
                     <p class="content-text">{{ personaDetail.content || '暂无人设' }}</p>
-                </div>
-                <button class="edit-btn" @click="$router.push(`/persona-detail/${currentPersona}`)">编辑详情</button>
+                </GlassCard>
+
+                <SoftButton variant="primary" block @click="$router.push(`/chat/${currentPersona}`)">💬 进入对话
+                </SoftButton>
+                <SoftButton variant="ghost" block @click="$router.push(`/persona-detail/${currentPersona}`)">编辑详情
+                </SoftButton>
             </div>
 
             <!-- 关系 -->
             <div v-if="activeTab === 'relation'" class="tab-content">
                 <div v-if="relationData" class="relation-section">
-                    <!-- 雷达图 -->
                     <div class="radar-container">
                         <svg viewBox="0 0 300 300" class="radar-chart">
                             <polygon v-for="i in 4" :key="'grid-' + i" :points="getGridPoints(i * 25)" fill="none"
-                                stroke="var(--color-bg-secondary)" stroke-width="1" />
+                                stroke="var(--color-border)" stroke-width="1" />
                             <line v-for="(_, idx) in 5" :key="'axis-' + idx" x1="150" y1="150"
-                                :x2="getPoint(idx, 100).x" :y2="getPoint(idx, 100).y" stroke="var(--color-bg-secondary)"
+                                :x2="getPoint(idx, 100).x" :y2="getPoint(idx, 100).y" stroke="var(--color-border)"
                                 stroke-width="1" />
-                            <polygon :points="dataPoints" fill="rgba(232, 160, 191, 0.2)" stroke="var(--color-primary)"
+                            <polygon :points="dataPoints" fill="rgba(212, 137, 158, 0.15)" stroke="var(--color-primary)"
                                 stroke-width="2" />
                             <circle v-for="(dim, idx) in relationData.dimensions" :key="'dot-' + idx"
                                 :cx="getPoint(idx, dim.progress * 100).x" :cy="getPoint(idx, dim.progress * 100).y"
                                 r="4" fill="var(--color-primary)" />
                             <text v-for="(dim, idx) in relationData.dimensions" :key="'label-' + idx"
                                 :x="getPoint(idx, 118).x" :y="getPoint(idx, 118).y" text-anchor="middle"
-                                dominant-baseline="middle" font-size="11" fill="var(--color-text)">
+                                dominant-baseline="middle" font-size="10" fill="var(--color-text-light)">
                                 {{ dim.name }}
                             </text>
                         </svg>
                     </div>
-                    <!-- 维度列表 -->
-                    <div v-for="dim in relationData.dimensions" :key="dim.dimension" class="dim-item">
-                        <div class="dim-header">
-                            <span>{{ dim.name }}</span>
-                            <span class="dim-stage">{{ dim.stage }}</span>
-                        </div>
-                        <div class="dim-bar">
-                            <div class="dim-fill" :style="{ width: (dim.progress * 100) + '%' }"></div>
-                        </div>
+
+                    <div class="dim-list">
+                        <GlassCard v-for="dim in relationData.dimensions" :key="dim.dimension" size="sm">
+                            <div class="dim-header">
+                                <span class="dim-name">{{ dim.name }}</span>
+                                <GlassTag variant="pink" size="sm">{{ dim.stage }}</GlassTag>
+                            </div>
+                            <div class="dim-bar">
+                                <div class="dim-fill" :style="{ width: (dim.progress * 100) + '%' }"></div>
+                            </div>
+                        </GlassCard>
                     </div>
                 </div>
             </div>
 
             <!-- 时间线 -->
             <div v-if="activeTab === 'timeline'" class="tab-content">
-                <div class="placeholder">
-                    <p>🕐 时间线</p>
+                <div v-if="timelineItems.length > 0">
+                    <TimelineCard v-for="item in timelineItems" :key="item.id" :time="item.time">
+                        {{ item.text }}
+                    </TimelineCard>
+                </div>
+                <div v-else class="placeholder-area">
+                    <p class="placeholder-icon">🕐</p>
+                    <p class="placeholder-title">时间线</p>
                     <p class="placeholder-sub">记录你们共同的时间沉淀</p>
-                    <p class="placeholder-sub">即将开放...</p>
+                    <p class="placeholder-sub">随着对话积累，这里会慢慢出现痕迹...</p>
                 </div>
             </div>
 
             <!-- 侧写 -->
             <div v-if="activeTab === 'observe'" class="tab-content">
-                <div class="info-block">
-                    <h4>AI 对你的长期观察</h4>
+                <GlassCard size="md">
+                    <h4 class="block-title">AI 对你的长期观察</h4>
                     <p class="content-text" v-if="memoryProfile">{{ memoryProfile }}</p>
                     <p class="content-text empty" v-else>还没有足够的观察...</p>
-                </div>
-                <div class="info-block" v-if="patterns.length > 0">
-                    <h4>行为模式</h4>
+                </GlassCard>
+
+                <GlassCard v-if="patterns.length > 0" size="md">
+                    <h4 class="block-title">行为模式</h4>
                     <div v-for="p in patterns" :key="p.pattern_type" class="pattern-item">
                         <span>{{ p.description }}</span>
-                        <span class="pattern-freq">×{{ p.frequency }}</span>
+                        <GlassTag variant="purple" size="sm">×{{ p.frequency }}</GlassTag>
                     </div>
-                </div>
+                </GlassCard>
             </div>
         </div>
     </div>
@@ -137,6 +149,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { api } from '@/utils/api'
+import GlassCard from '@/components/ui/GlassCard.vue'
+import SoftButton from '@/components/ui/SoftButton.vue'
+import GlassTag from '@/components/ui/GlassTag.vue'
+import TimelineCard from '@/components/ui/TimelineCard.vue'
 
 const personas = ref([])
 const currentPersona = ref('')
@@ -146,6 +162,7 @@ const memoryProfile = ref('')
 const patterns = ref([])
 const loaded = ref(false)
 const activeTab = ref('profile')
+const timelineItems = ref([])
 
 const tabs = [
     { id: 'profile', name: '档案', icon: '📋' },
@@ -213,7 +230,6 @@ async function loadPersonas() {
     const data = await res.json()
     personas.value = data.personas
 
-    // 逐个获取备注
     for (let i = 0; i < personas.value.length; i++) {
         try {
             const detailRes = await api(`/api/persona/${personas.value[i].id}`)
@@ -233,11 +249,7 @@ async function switchPersona(id) {
 
 async function loadAll() {
     loaded.value = false
-    await Promise.all([
-        loadDetail(),
-        loadRelation(),
-        loadObserve(),
-    ])
+    await Promise.all([loadDetail(), loadRelation(), loadObserve()])
     loaded.value = true
 }
 
@@ -260,14 +272,17 @@ async function loadObserve() {
         const res = await api(`/api/memories/${currentPersona.value}`)
         const data = await res.json()
         memoryProfile.value = data.profile || ''
+
+        // 用近期记忆生成时间线
+        if (data.recent && data.recent.length > 0) {
+            timelineItems.value = data.recent.slice(0, 8).map(m => ({
+                id: m.id,
+                time: m.source_session,
+                text: m.content.split('\n')[0]
+            }))
+        }
     } catch { }
 
-    try {
-        const { getDB } = await import('@/utils/api')
-    } catch { }
-
-    // 获取行为模式（通过记忆接口暂时没有，用关系接口的数据）
-    // 需要后端加一个接口
     try {
         const res = await api(`/api/patterns/${currentPersona.value}`)
         patterns.value = await res.json()
@@ -291,74 +306,73 @@ onMounted(loadPersonas)
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-bg-secondary);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
 }
 
 .back-btn {
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 24px;
     color: var(--color-primary);
     cursor: pointer;
+    opacity: 0.75;
 }
 
 .about-header h2 {
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 500;
     color: var(--color-text);
 }
 
 .persona-tabs {
     display: flex;
     gap: 8px;
-    padding: 12px 0;
+    padding: 14px 0;
     overflow-x: auto;
     flex-shrink: 0;
 }
 
-.tab-btn {
-    padding: 6px 14px;
+.tab-item {
+    padding: 7px 16px;
     border-radius: 20px;
-    border: 1px solid var(--color-bg-secondary);
-    background: var(--color-white);
-    font-size: 13px;
-    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-size: 12px;
+    color: var(--color-text-light);
     cursor: pointer;
     white-space: nowrap;
+    transition: all var(--duration-normal) var(--ease-soft);
 }
 
-.tab-btn.active {
-    background: var(--color-primary);
+.tab-item.active {
+    background: linear-gradient(135deg, #e8a8be, #d4899e);
     color: white;
-    border-color: var(--color-primary);
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(212, 137, 158, 0.2);
 }
 
 .about-content {
     flex: 1;
     overflow-y: auto;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    padding: 8px 0 24px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
 }
 
 /* 总览卡片 */
-.profile-card {
-    background: var(--color-white);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
 .card-top {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
+    gap: 14px;
+    margin-bottom: 18px;
 }
 
 .card-avatar {
-    width: 50px;
-    height: 50px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     background: var(--color-bg-secondary);
     display: flex;
@@ -367,6 +381,7 @@ onMounted(loadPersonas)
     font-size: 24px;
     overflow: hidden;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(200, 130, 160, 0.1);
 }
 
 .card-avatar img {
@@ -375,27 +390,25 @@ onMounted(loadPersonas)
     object-fit: cover;
 }
 
-.card-info {
-    flex: 1;
-}
-
 .card-name {
     font-size: 17px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--color-text);
+    letter-spacing: 0.02em;
 }
 
 .card-status {
     font-size: 12px;
     color: var(--color-text-light);
-    margin-top: 2px;
+    margin-top: 3px;
     font-style: italic;
+    opacity: 0.7;
 }
 
 .card-meta {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
 .meta-item {
@@ -405,66 +418,71 @@ onMounted(loadPersonas)
 }
 
 .meta-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--color-text-light);
+    letter-spacing: 0.3px;
 }
 
 .meta-value {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--color-text);
-    font-weight: 500;
+    font-weight: 400;
+    max-width: 55%;
+    text-align: right;
 }
 
 /* 分页导航 */
 .tab-nav {
     display: flex;
     gap: 6px;
-    margin-bottom: 14px;
+    margin: 16px 0;
 }
 
-.nav-btn {
+.nav-item {
     flex: 1;
-    padding: 8px 4px;
-    border: 1px solid var(--color-bg-secondary);
-    border-radius: 10px;
-    background: var(--color-white);
-    font-size: 12px;
-    color: var(--color-text);
+    padding: 9px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-size: 11px;
+    color: var(--color-text-light);
     cursor: pointer;
     text-align: center;
+    transition: all var(--duration-normal) var(--ease-soft);
 }
 
-.nav-btn.active {
-    background: var(--color-primary);
+.nav-item.active {
+    background: linear-gradient(135deg, #e8a8be, #d4899e);
     color: white;
-    border-color: var(--color-primary);
+    border-color: transparent;
 }
 
 /* 分页内容 */
 .tab-content {
-    min-height: 200px;
+    animation: fadeIn 0.4s var(--ease-soft);
 }
 
-.info-block {
-    background: var(--color-white);
-    border-radius: 12px;
-    padding: 14px;
+.tab-content>* {
     margin-bottom: 12px;
 }
 
-.info-block h4 {
-    font-size: 13px;
+.block-title {
+    font-size: 11px;
     color: var(--color-text-light);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+    font-weight: 400;
 }
 
 .info-row {
     display: flex;
     justify-content: space-between;
-    padding: 6px 0;
-    font-size: 14px;
+    padding: 8px 0;
+    font-size: 13px;
     color: var(--color-text);
-    border-bottom: 1px solid var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .info-row:last-child {
@@ -472,33 +490,23 @@ onMounted(loadPersonas)
 }
 
 .content-text {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--color-text);
-    line-height: 1.6;
+    line-height: 1.7;
     white-space: pre-line;
 }
 
 .content-text.empty {
     color: var(--color-text-light);
     font-style: italic;
-}
-
-.edit-btn {
-    width: 100%;
-    padding: 12px;
-    border: 1px dashed var(--color-primary);
-    background: none;
-    color: var(--color-primary);
-    border-radius: 10px;
-    font-size: 14px;
-    cursor: pointer;
+    opacity: 0.6;
 }
 
 /* 关系 */
 .radar-container {
     display: flex;
     justify-content: center;
-    padding: 10px 0;
+    padding: 16px 0;
 }
 
 .radar-chart {
@@ -506,76 +514,78 @@ onMounted(loadPersonas)
     height: 200px;
 }
 
-.dim-item {
-    padding: 10px 0;
-    border-bottom: 1px solid var(--color-bg-secondary);
+.dim-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .dim-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 6px;
-    font-size: 13px;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
-.dim-stage {
-    color: var(--color-primary);
-    font-weight: 500;
+.dim-name {
+    font-size: 13px;
+    color: var(--color-text);
+    font-weight: 400;
 }
 
 .dim-bar {
-    height: 4px;
+    height: 3px;
     background: var(--color-bg-secondary);
     border-radius: 2px;
+    overflow: hidden;
 }
 
 .dim-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+    background: linear-gradient(90deg, #e8a8be, #d4899e);
     border-radius: 2px;
+    transition: width 0.8s var(--ease-soft);
 }
 
 /* 侧写 */
 .pattern-item {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0;
-    font-size: 14px;
+    align-items: center;
+    padding: 10px 0;
+    font-size: 13px;
     color: var(--color-text);
-    border-bottom: 1px solid var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
 }
 
-.pattern-freq {
-    color: var(--color-primary);
-    font-size: 12px;
+.pattern-item:last-child {
+    border-bottom: none;
 }
 
-/* 占位符 */
-.placeholder {
+/* 占位 */
+.placeholder-area {
     text-align: center;
-    padding: 40px 0;
-    color: var(--color-text-light);
+    padding: 52px 20px;
+    animation: fadeIn 0.5s var(--ease-soft);
 }
 
-.placeholder p:first-child {
-    font-size: 24px;
-    margin-bottom: 8px;
+.placeholder-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    animation: softFloat 6s ease-in-out infinite;
+}
+
+.placeholder-title {
+    font-size: 15px;
+    color: var(--color-text);
+    font-weight: 400;
+    margin-bottom: 6px;
 }
 
 .placeholder-sub {
-    font-size: 13px;
+    font-size: 12px;
+    color: var(--color-text-light);
+    opacity: 0.6;
     margin-top: 4px;
-}
-
-.profile-card {
-    background: var(--color-card);
-    border-radius: var(--radius-lg);
-    padding: 22px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--color-border);
-    animation: fadeIn 0.5s var(--ease-soft);
 }
 </style>
