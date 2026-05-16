@@ -1,20 +1,23 @@
 <template>
-    <div class="phone-screen" :class="[period, envClass]" :style="envStyle">
-        <div class="bg-decor">
-            <div class="decor-circle c1"></div>
-            <div class="decor-circle c2"></div>
-            <div class="decor-circle c3"></div>
+    <SplashScreen v-if="showSplash" @done="onSplashDone" />
+    <transition name="main-enter">
+        <div v-if="!showSplash" class="phone-screen" :class="[period, envClass]" :style="envStyle">
+            <div class="bg-decor">
+                <div class="decor-circle c1"></div>
+                <div class="decor-circle c2"></div>
+                <div class="decor-circle c3"></div>
+            </div>
+            <transition name="whisper">
+                <p v-if="showWhisper && envWhisper" class="env-whisper">{{ envWhisper }}</p>
+            </transition>
+            <NotificationBanner />
+            <main class="screen-content">
+                <RouterView />
+            </main>
         </div>
-        <!-- 环境低语 -->
-        <transition name="whisper">
-            <p v-if="showWhisper && envWhisper" class="env-whisper">{{ envWhisper }}</p>
-        </transition>
-        <NotificationBanner />
-        <main class="screen-content">
-            <RouterView />
-        </main>
-    </div>
+    </transition>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
@@ -23,10 +26,16 @@ import { useWebSocket } from '@/composables/useWebSocket'
 import { useTime } from '@/composables/useTime'
 import { useDeviceStatus } from '@/composables/useDeviceStatus'
 import { api } from '@/utils/api'
+import SplashScreen from '@/components/SplashScreen.vue'
 
+const showSplash = ref(true)
 const { connect, requestNotificationPermission, registerPushSubscription } = useWebSocket()
 const { period, startClock, stopClock } = useTime()
 const { startReporting, stopReporting } = useDeviceStatus()
+
+function onSplashDone() {
+    showSplash.value = false
+}
 
 // 环境状态
 const envData = ref({
@@ -238,4 +247,14 @@ onUnmounted(() => {
         transform: translateY(-8px) scale(var(--decor-scale, 1));
     }
 }
+
+.main-enter-enter-active {
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.main-enter-enter-from {
+    opacity: 0;
+    transform: scale(1.02) translateY(-4px);
+}
+
 </style>
