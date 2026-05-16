@@ -17,6 +17,9 @@ app.config.errorHandler = (err, vm, info) => {
 function syncAppHeight() {
   const h = window.innerHeight;
   document.documentElement.style.setProperty("--app-height", `${h}px`);
+  // 强制 body 和 html 高度
+  document.documentElement.style.height = h + "px";
+  document.body.style.height = h + "px";
 }
 
 syncAppHeight();
@@ -24,5 +27,14 @@ window.addEventListener("resize", syncAppHeight);
 window.addEventListener("orientationchange", () => {
   setTimeout(syncAppHeight, 100);
 });
+
+// iOS standalone 模式额外处理
+if (window.navigator.standalone) {
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+  document.body.style.position = "fixed";
+  document.body.style.width = "100%";
+  document.body.style.height = "100%";
+}
 
 app.mount("#app");
