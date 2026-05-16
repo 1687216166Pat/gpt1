@@ -699,4 +699,21 @@ router.get("/environment/:personaId", async (req, res) => {
   });
 });
 
+// 编辑单条消息
+router.put("/message/:id", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { content } = req.body;
+  await db.from("messages").update({ content }).eq("id", req.params.id);
+  res.json({ success: true });
+});
+
+// 删除单条消息
+router.delete("/message/:id", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  await db.from("messages").delete().eq("id", req.params.id);
+  res.json({ success: true });
+});
+
 module.exports = router;

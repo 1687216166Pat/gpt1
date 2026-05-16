@@ -39,8 +39,8 @@
             <div v-if="chatStore.hasMore" class="load-more" @click="loadOlder">
                 <span>加载更早的消息</span>
             </div>
-            <ChatBubble v-for="msg in chatStore.messages" :key="msg.id" :msg="msg" />
-            <TypingIndicator :visible="isTyping" />
+            <ChatBubble v-for="msg in chatStore.messages" :key="msg.id" :msg="msg" @edit="handleEdit"
+                @delete="handleDelete" @regenerate="handleRegenerate" />
         </div>
         <DebugPanel :info="debugInfo" />
         <ChatInput @send="handleSend" />
@@ -167,6 +167,38 @@ function loadOlder() {
 function handleScroll() {
     // 可以在这里做滚动到顶部自动加载
 }
+
+async function handleEdit(msgId, newContent) {
+    // 更新前端
+    const msg = chatStore.messages.find(m => m.id === msgId)
+    if (msg) msg.content = newContent
+    // 更新后端
+    await api(`/api/message/${msgId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newContent })
+    })
+}
+
+async function handleDelete(msgId) {
+    // 从前端移除
+    chatStore.messages = chatStore.messages.filter(m => m.id !== msgId)
+    // 从后端删除
+    await api(`/api/message/${msgId}`, { method: 'DELETE' })
+}
+
+async function handleRegenerate(msgId) {
+    // 删除这条AI回复
+    chatStore.messages = chatStore.messages.filter(m => m.id !== msgId)
+    await api(`/api/message/${msgId}`, { method: 'DELETE' })
+    // 获取最后一条用户消息重新发送
+    const lastUserMsg = [...chatStore.messages].reverse().find(m => m.role === 'user')
+    if (lastUserMsg) {
+        send({ type: 'chat', content: lastUserMsg.content, personaId: personaId.value })
+        isTyping.value = true
+    }
+}
+
 
 onMounted(async () => {
     document.querySelector('.screen-content').style.overflow = 'hidden'

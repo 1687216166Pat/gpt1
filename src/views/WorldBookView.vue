@@ -25,6 +25,13 @@
             <DreamInput label="标题" v-model="bookForm.title" placeholder="世界书名称" />
             <DreamInput label="内容" type="textarea" v-model="bookForm.content" :rows="10"
                 placeholder="世界观设定、背景信息、规则..." />
+
+            <!-- 导入文件 -->
+            <div class="import-area">
+                <p class="import-label">或从文件导入</p>
+                <input type="file" @change="handleFileImport" class="file-input" />
+            </div>
+
             <div class="modal-actions">
                 <SoftButton variant="secondary" @click="closeModal">取消</SoftButton>
                 <SoftButton variant="primary" @click="saveBook">保存</SoftButton>
@@ -97,6 +104,20 @@ function closeModal() {
     editingBook.value = null
     bookForm.title = ''
     bookForm.content = ''
+}
+
+async function handleFileImport(event) {
+    const file = event.target.files[0]
+    if (!file) return
+    try {
+        const text = await file.text()
+        if (!bookForm.title) {
+            bookForm.title = file.name.replace(/\.[^.]+$/, '')
+        }
+        bookForm.content = text
+    } catch (e) {
+        console.error('文件读取失败:', e)
+    }
 }
 
 onMounted(loadBooks)
@@ -211,5 +232,22 @@ onMounted(loadBooks)
     display: flex;
     gap: 10px;
     margin-top: 18px;
+}
+
+.import-area {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+}
+
+.import-label {
+    font-size: 11px;
+    color: var(--color-text-light);
+    margin-bottom: 8px;
+}
+
+.file-input {
+    font-size: 11px;
+    color: var(--color-text-light);
 }
 </style>

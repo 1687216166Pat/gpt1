@@ -7,38 +7,60 @@
         </div>
 
         <div class="detail-content">
-            <!-- 头像 -->
-            <div class="section-block">
-                <h3 class="section-label">头像</h3>
-                <GlassCard size="md">
-                    <div class="avatar-row">
+            <!-- 合并的身份卡片 -->
+            <GlassCard size="lg" class="identity-card">
+                <div class="identity-top">
+                    <div class="avatar-area">
                         <div class="avatar-preview">
                             <img v-if="detail.avatarUrl" :src="detail.avatarUrl" />
                             <span v-else>{{ detail.avatar || '💬' }}</span>
                         </div>
-                        <div class="avatar-actions">
-                            <DreamInput v-model="detail.avatarUrl" placeholder="图片URL或图床链接" />
-                            <input type="file" accept="image/*" @change="handleAvatarUpload" class="file-input" />
-                        </div>
+                        <button class="avatar-edit" @click="showAvatarEdit = !showAvatarEdit">✎</button>
                     </div>
-                </GlassCard>
-            </div>
+                    <div class="identity-info">
+                        <p class="display-name">{{ detail.note || detail.name || '未命名' }}</p>
+                        <p class="real-name" v-if="detail.note && detail.name">{{ detail.name }}</p>
+                    </div>
+                </div>
 
-            <!-- 基本信息 -->
-            <div class="section-block">
-                <h3 class="section-label">基本信息</h3>
-                <GlassCard size="md">
-                    <DreamInput label="助手名字" v-model="detail.name" placeholder="AI对自己的称呼" />
-                    <DreamInput label="备注" v-model="detail.note" placeholder="你给AI的备注" />
-                    <div class="select-group">
-                        <label class="select-label">性别</label>
-                        <select v-model="detail.gender" class="select-field">
+                <!-- 头像编辑（展开） -->
+                <div v-if="showAvatarEdit" class="avatar-edit-area">
+                    <DreamInput v-model="detail.avatarUrl" placeholder="图片URL或图床链接" />
+                    <input type="file" accept="image/*" @change="handleAvatarUpload" class="file-input" />
+                </div>
+
+                <!-- 基本信息行 -->
+                <div class="identity-details">
+                    <div class="detail-row">
+                        <span class="detail-label">对你的称呼</span>
+                        <input class="detail-value-input" v-model="detail.call_user" placeholder="例：主人、小然" />
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">性别</span>
+                        <select v-model="detail.gender" class="detail-select">
                             <option value="">未设置</option>
                             <option value="female">女</option>
                             <option value="male">男</option>
                             <option value="other">其他</option>
                         </select>
                     </div>
+                    <div class="detail-row">
+                        <span class="detail-label">TA眼中的关系</span>
+                        <input class="detail-value-input" v-model="detail.ai_relationship" placeholder="例：恋人、朋友" />
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">我对TA的关系</span>
+                        <input class="detail-value-input" v-model="detail.user_relationship" placeholder="例：恋人、家人" />
+                    </div>
+                </div>
+            </GlassCard>
+
+            <!-- 名字编辑 -->
+            <div class="section-block">
+                <h3 class="section-label">名字设置</h3>
+                <GlassCard size="md">
+                    <DreamInput label="显示名字（备注）" v-model="detail.note" placeholder="聊天页面顶部显示的名字" />
+                    <DreamInput label="真实名字" v-model="detail.name" placeholder="AI对自己的称呼" />
                 </GlassCard>
             </div>
 
@@ -92,6 +114,7 @@ const router = useRouter()
 const personaId = route.params.personaId
 const saveMsg = ref('')
 const worldBooks = ref([])
+const showAvatarEdit = ref(false)
 
 const detail = reactive({
     name: '',
@@ -101,6 +124,9 @@ const detail = reactive({
     gender: '',
     content: '',
     worldBookId: '',
+    call_user: '',
+    ai_relationship: '',
+    user_relationship: '',
 })
 
 async function loadDetail() {
@@ -335,9 +361,140 @@ onMounted(() => {
     opacity: 0.8;
 }
 
-.dream-input, .dream-textarea {
+.dream-input,
+.dream-textarea {
     word-break: break-all;
     overflow-wrap: break-word;
 }
 
+/* 身份卡片 */
+.identity-card {
+    margin-bottom: 20px;
+}
+
+.identity-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.avatar-area {
+    position: relative;
+}
+
+.avatar-preview {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--color-bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(200, 130, 160, 0.1);
+}
+
+.avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-edit {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.identity-info {
+    flex: 1;
+}
+
+.display-name {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--color-text);
+}
+
+.real-name {
+    font-size: 12px;
+    color: var(--color-text-light);
+    margin-top: 2px;
+    opacity: 0.6;
+}
+
+.avatar-edit-area {
+    padding: 12px 0;
+    border-top: 1px solid var(--color-border);
+    margin-bottom: 12px;
+}
+
+.file-input {
+    font-size: 11px;
+    color: var(--color-text-light);
+    margin-top: 8px;
+}
+
+.identity-details {
+    border-top: 1px solid var(--color-border);
+    padding-top: 14px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: 13px;
+    color: var(--color-text-light);
+    flex-shrink: 0;
+}
+
+.detail-value-input {
+    text-align: right;
+    border: none;
+    background: none;
+    font-size: 13px;
+    color: var(--color-text);
+    outline: none;
+    width: 50%;
+    font-family: inherit;
+}
+
+.detail-value-input::placeholder {
+    color: var(--color-text-light);
+    opacity: 0.4;
+}
+
+.detail-select {
+    border: none;
+    background: none;
+    font-size: 13px;
+    color: var(--color-text);
+    outline: none;
+    text-align: right;
+    appearance: none;
+    -webkit-appearance: none;
+}
 </style>
