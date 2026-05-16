@@ -465,8 +465,18 @@ router.put("/persona/:personaId", async (req, res) => {
   const { getDB } = require("../db/index");
   const db = getDB();
   const id = req.params.personaId;
-  const { name, content, avatar, avatarUrl, note, gender, worldBookId } =
-    req.body;
+  const {
+    name,
+    content,
+    avatar,
+    avatarUrl,
+    note,
+    gender,
+    worldBookId,
+    call_user,
+    ai_relationship,
+    user_relationship,
+  } = req.body;
 
   const { data: existing } = await db
     .from("custom_personas")
@@ -475,27 +485,53 @@ router.put("/persona/:personaId", async (req, res) => {
     .limit(1);
 
   if (existing && existing.length > 0) {
-    await db
+    // 自定义人格：只更新传了值的字段
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (content !== undefined) updateData.content = content;
+    if (avatar !== undefined) updateData.avatar = avatar;
+    if (note !== undefined) updateData.note = note;
+    if (gender !== undefined) updateData.gender = gender;
+    if (worldBookId !== undefined) updateData.world_book_id = worldBookId;
+    if (call_user !== undefined) updateData.call_user = call_user;
+    if (ai_relationship !== undefined)
+      updateData.ai_relationship = ai_relationship;
+    if (user_relationship !== undefined)
+      updateData.user_relationship = user_relationship;
+    if (content) updateData.description = content.slice(0, 30);
+
+    const { error } = await db
       .from("custom_personas")
-      .update({
-        name,
-        content,
-        avatar: avatar || "💬",
-        description: content ? content.slice(0, 30) : "",
-        note: note || "",
-        gender: gender || "",
-        world_book_id: worldBookId || "",
-      })
+      .update(updateData)
       .eq("id", id);
+    if (error) {
+      console.error("[PUT persona] 更新失败:", error);
+      return res.status(500).json({ error: error.message });
+    }
   } else {
-    await db.from("user_profile").upsert(
+    // 内置人格：存到 user_profile
+    const configData = {
+      name,
+      note,
+      gender,
+      avatarUrl,
+      worldBookId,
+      call_user,
+      ai_relationship,
+      user_relationship,
+    };
+    const { error } = await db.from("user_profile").upsert(
       {
         key: `persona_config_${id}`,
-        value: JSON.stringify({ name, note, gender, avatarUrl, worldBookId }),
+        value: JSON.stringify(configData),
         updated_at: new Date().toISOString(),
       },
       { onConflict: "key" },
     );
+    if (error) {
+      console.error("[PUT persona] 保存配置失败:", error);
+      return res.status(500).json({ error: error.message });
+    }
   }
 
   res.json({ success: true });
