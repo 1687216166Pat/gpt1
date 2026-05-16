@@ -521,6 +521,7 @@ module.exports = {
   updateDimensionsFromChat,
   evaluateRelationship,
   buildRelationshipContext,
+  getRelationshipAtmosphere,
   initDimensions,
   addScore,
   DIMENSION_NAMES,

@@ -2,8 +2,10 @@
 import { ref } from "vue";
 
 let socket = null;
+let lastMsgId = "";
 const isConnected = ref(false);
 const messageHandlers = new Set();
+let processedIds = new Set();
 
 function getWsUrl() {
   // 生产环境直连 Railway
@@ -15,8 +17,19 @@ function getWsUrl() {
 }
 
 function connect() {
-  if (socket && socket.readyState === WebSocket.OPEN) return;
-  if (socket && socket.readyState === WebSocket.CONNECTING) return;
+  if (
+    socket &&
+    (socket.readyState === WebSocket.OPEN ||
+      socket.readyState === WebSocket.CONNECTING)
+  )
+    return;
+
+  // 关闭旧连接
+  if (socket) {
+    socket.onclose = null; // 防止触发重连
+    socket.close();
+    socket = null;
+  }
 
   socket = new WebSocket(getWsUrl());
 
@@ -27,6 +40,17 @@ function connect() {
 
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
+
+    // 生成消息唯一标识并去重
+    const msgId = data.timestamp + (data.content || "").slice(0, 30);
+    if (processedIds.has(msgId)) return;
+    processedIds.add(msgId);
+    // 防止内存泄漏，只保留最近50条
+    if (processedIds.size > 50) {
+      const arr = [...processedIds];
+      processedIds = new Set(arr.slice(-30));
+    }
+
     messageHandlers.forEach((handler) => handler(data));
 
     if (document.hidden && (data.type === "chat" || data.type === "push")) {

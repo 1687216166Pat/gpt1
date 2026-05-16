@@ -15,12 +15,19 @@ const emit = defineEmits(['send'])
 const text = ref('')
 const inputRef = ref(null)
 
+let sending = false
+
 function sendMessage(e) {
     if (e && e.type === 'keydown') e.preventDefault()
     if (!text.value.trim()) return
+    if (sending) return
+    sending = true
     emit('send', text.value.trim())
     text.value = ''
-    nextTick(() => autoResize())
+    nextTick(() => {
+        autoResize()
+        sending = false
+    })
 }
 
 function autoResize() {

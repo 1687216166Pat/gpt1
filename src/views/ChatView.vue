@@ -168,12 +168,13 @@ function handleScroll() {
     // 可以在这里做滚动到顶部自动加载
 }
 
-
 onMounted(async () => {
-    // 禁止父容器滚动
     document.querySelector('.screen-content').style.overflow = 'hidden'
 
+    // 先移除再注册，防止重复
+    removeHandler(handleIncoming)
     onMessage(handleIncoming)
+
     loadPersonaName()
     await chatStore.loadPersonaMessages(personaId.value)
     scrollToBottom()

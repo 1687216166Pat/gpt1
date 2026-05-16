@@ -594,4 +594,109 @@ router.get("/atmosphere/:personaId", async (req, res) => {
   res.json(data);
 });
 
+router.get("/environment/:personaId", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const personaId = req.params.personaId;
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+  const hour = now.getHours();
+
+  // 时间氛围
+  let timePhase = "day";
+  if (hour >= 5 && hour < 9) timePhase = "morning";
+  else if (hour >= 9 && hour < 17) timePhase = "day";
+  else if (hour >= 17 && hour < 21) timePhase = "evening";
+  else if (hour >= 21 || hour < 2) timePhase = "night";
+  else timePhase = "deep_night";
+
+  // 最近互动频率
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recentMsgs } = await db
+    .from("messages")
+    .select("timestamp")
+    .eq("persona_id", personaId)
+    .gte("timestamp", threeDaysAgo);
+
+  const recentCount = recentMsgs ? recentMsgs.length : 0;
+
+  // 最后一次互动时间
+  const { data: lastMsg } = await db
+    .from("messages")
+    .select("timestamp")
+    .eq("persona_id", personaId)
+    .eq("role", "user")
+    .order("id", { ascending: false })
+    .limit(1);
+
+  const hoursSinceLastMsg = lastMsg && lastMsg.length > 0
+    ? (Date.now() - new Date(lastMsg[0].timestamp).getTime()) / (1000 * 60 * 60)
+    : 999;
+
+  // 深夜使用频率
+  const { data: nightPatterns } = await db
+    .from("memory_patterns")
+    .select("frequency")
+    .eq("persona_id", personaId)
+    .eq("pattern_type", "late_night")
+    .limit(1);
+
+  const nightFreq = nightPatterns && nightPatterns.length > 0 ? nightPatterns[0].frequency : 0;
+
+  // 生成环境状态
+  let presence = "normal";
+  let whisper = "";
+  let warmth = 0.3;
+  let floatSpeed = 1;
+  let blurIntensity = 1;
+
+  // 时间影响
+  if (timePhase === "deep_night") {
+    warmth = 0.1;
+    floatSpeed = 0.6;
+    blurIntensity = 1.3;
+    if (nightFreq >= 3) {
+      whisper = "最近你似乎总会待到很晚";
+    } else {
+      whisper = "深夜的时候，这里会变得很安静";
+    }
+  } else if (timePhase === "night") {
+    warmth = 0.2;
+    floatSpeed = 0.7;
+    blurIntensity = 1.1;
+    whisper = "夜晚的空气好像让这里更柔和了";
+  } else if (timePhase === "morning") {
+    warmth = 0.4;
+    floatSpeed = 0.9;
+    blurIntensity = 0.9;
+    whisper = "今天看起来会是很安静的一天";
+  }
+
+  // 互动频率影响
+  if (hoursSinceLastMsg > 72) {
+    presence = "quiet";
+    warmth = Math.max(0, warmth - 0.1);
+    floatSpeed = 0.5;
+    whisper = "这里已经安静好几天了";
+  } else if (hoursSinceLastMsg > 24) {
+    presence = "waiting";
+    whisper = whisper || "最近这里变得有点安静";
+  } else if (recentCount > 30) {
+    presence = "active";
+    warmth = Math.min(1, warmth + 0.2);
+    floatSpeed = 1.1;
+    whisper = whisper || "最近这里似乎越来越像习惯了";
+  }
+
+  res.json({
+    timePhase,
+    presence,
+    whisper,
+    warmth,
+    floatSpeed,
+    blurIntensity,
+    hoursSinceLastMsg: Math.floor(hoursSinceLastMsg),
+    recentCount,
+  });
+});
+
 module.exports = router;

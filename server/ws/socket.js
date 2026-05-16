@@ -15,9 +15,8 @@ function initWebSocket(server) {
     ws.on("message", async (data) => {
       try {
         const msg = JSON.parse(data);
-
         if (msg.type === "chat") {
-          await handleChat(msg.content, ws, msg.personaId);
+          await handleChat(msg.content, ws, msg.personaId, clients);
         }
       } catch (err) {
         console.error("消息处理错误:", err);
@@ -28,6 +27,10 @@ function initWebSocket(server) {
       clients.delete(ws);
     });
   });
+}
+
+function getClients() {
+  return clients;
 }
 
 function pushToAll(message) {
@@ -44,9 +47,8 @@ function pushToAll(message) {
     }
   });
 
-  // 同时发 Push 通知
   const preview = message.length > 60 ? message.slice(0, 60) + "..." : message;
   pushNotification("AI 助手", preview);
 }
 
-module.exports = { initWebSocket, pushToAll };
+module.exports = { initWebSocket, pushToAll, getClients };

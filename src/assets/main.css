@@ -38,10 +38,9 @@
 
 html {
   height: 100%;
+  height: var(--app-height, 100%);
   background: var(--color-bg);
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
@@ -49,25 +48,32 @@ html {
   line-height: 1.55;
   color: var(--color-text);
   letter-spacing: 0.01em;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   height: 100%;
+  height: var(--app-height, 100%);
   background: var(--color-bg);
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 #app {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  height: -webkit-fill-available;
+  width: 100%;
+  height: var(--app-height, 100vh);
   background: var(--color-bg);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 /* 桌面预览 */
@@ -77,15 +83,14 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    height: 100vh;
   }
 
   #app {
     width: 375px;
     height: 812px;
     border-radius: 44px;
-    box-shadow:
-      0 24px 80px rgba(180, 120, 150, 0.15),
-      0 8px 24px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 24px 80px rgba(180, 120, 150, 0.15), 0 8px 24px rgba(0, 0, 0, 0.06);
     position: relative;
   }
 }

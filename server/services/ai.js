@@ -79,7 +79,7 @@ function detectEmotion(userMessage) {
   return "正常";
 }
 
-async function handleChat(userMessage, ws, personaId) {
+async function handleChat(userMessage, ws, personaId, clients) {
   const db = getDB();
   const pid = personaId || "xiaorou";
   const nowISO = new Date().toISOString();
@@ -103,6 +103,7 @@ async function handleChat(userMessage, ws, personaId) {
   const timeContext = getTimeContext();
   const fullPrompt = getFullPrompt();
   const memoryContext = await buildMemoryContextAsync(pid, userMessage);
+  const relationshipContext = await buildRelationshipContext(pid);
 
   // 获取最新手机状态
   const { getLatestStatus } = require("./phone");
@@ -198,49 +199,62 @@ ${phoneContext}`;
 
   if (apiError || !data || !data.choices || !data.choices[0]) {
     console.error("AI 返回异常:", apiError || data);
-    ws.send(
-      JSON.stringify({
-        type: "chat",
-        role: "ai",
-        content: "抱歉，我暂时无法回复。",
-        timestamp: new Date().toISOString(),
-        debug: {
-          layer1: {
-            model: process.env.AI_MODEL,
-            status: "error",
-            error: apiError || "无有效回复",
-            estimatedTokens,
-            actualTokens: null,
-            elapsed,
-          },
-          layer2: {
-            persona: pid,
-            memoryContext: memoryContext ? memoryContext.slice(0, 300) : "无",
-            memoryLength: memoryContext ? memoryContext.length : 0,
-          },
-          layer3: {
-            historyCount: history.length,
-            systemPromptLength: systemContent.length,
-            timeContext: timeContext.trim(),
-          },
-          memory: {
-            messagesSinceSummary: getCounter(pid).sinceLastSummary,
-            totalMessages: getCounter(pid).total,
-            nextTriggerIn: 100 - getCounter(pid).sinceLastSummary,
-            longTermProfile: "未知",
-            recentMemories: "未知",
-          },
+    const errorPayload = JSON.stringify({
+      type: "chat",
+      role: "ai",
+      content: "抱歉，我暂时无法回复。",
+      timestamp: new Date().toISOString(),
+      debug: {
+        layer1: {
+          model: process.env.AI_MODEL,
+          status: "error",
+          error: apiError || "无有效回复",
+          estimatedTokens,
+          actualTokens: null,
+          elapsed,
         },
-      }),
-    );
+        layer2: {
+          persona: pid,
+          memoryContext: memoryContext ? memoryContext.slice(0, 300) : "无",
+          memoryLength: memoryContext ? memoryContext.length : 0,
+        },
+        layer3: {
+          historyCount: history.length,
+          systemPromptLength: systemContent.length,
+          timeContext: timeContext.trim(),
+        },
+        memory: {
+          messagesSinceSummary: getCounter(pid).sinceLastSummary,
+          totalMessages: getCounter(pid).total,
+          nextTriggerIn: 100 - getCounter(pid).sinceLastSummary,
+          longTermProfile: "未知",
+          recentMemories: "未知",
+        },
+      },
+    });
+
+    if (clients) {
+      clients.forEach((client) => {
+        if (client.readyState === 1) {
+          client.send(errorPayload);
+        }
+      });
+    } else {
+      ws.send(errorPayload);
+    }
     return;
   }
 
-  let aiReply = data.choices[0].message.content;
+  let aiReply = data.choices[0].message.content || "";
   // 过滤思维链
   aiReply = aiReply.replace(/\[思考\][\s\S]*?\[思考\]/g, "").trim();
   aiReply = aiReply.replace(/\[思考\][\s\S]*/g, "").trim();
   aiReply = aiReply.replace(/[\s\S]*?<\/think>/g, "").trim();
+
+  // 如果过滤后为空，用原始内容
+  if (!aiReply) {
+    aiReply = data.choices[0].message.content || "...";
+  }
 
   // 存 AI 回复
   await db.from("messages").insert({
@@ -278,42 +292,52 @@ ${phoneContext}`;
 
   // 获取记忆计数器
   const counter = getCounter(pid);
+  console.log("[handleChat] 发送回复:", aiReply.slice(0, 50));
 
-  ws.send(
-    JSON.stringify({
-      type: "chat",
-      role: "ai",
-      content: aiReply,
-      timestamp: new Date().toISOString(),
-      debug: {
-        layer1: {
-          model: process.env.AI_MODEL,
-          status: "success",
-          error: null,
-          estimatedTokens,
-          actualTokens: data.usage || null,
-          elapsed,
-        },
-        layer2: {
-          persona: pid,
-          memoryContext: memoryContext ? memoryContext.slice(0, 300) : "无",
-          memoryLength: memoryContext ? memoryContext.length : 0,
-        },
-        layer3: {
-          historyCount: history.length,
-          systemPromptLength: systemContent.length,
-          timeContext: timeContext.trim(),
-        },
-        memory: {
-          messagesSinceSummary: counter.sinceLastSummary,
-          totalMessages: counter.total,
-          nextTriggerIn: 100 - counter.sinceLastSummary,
-          longTermProfile: memoryContext.includes("[长期印象]") ? "有" : "无",
-          recentMemories: memoryContext.includes("[近期印象]") ? "有" : "无",
-        },
+  const payload = JSON.stringify({
+    type: "chat",
+    role: "ai",
+    content: aiReply,
+    timestamp: new Date().toISOString(),
+    debug: {
+      layer1: {
+        model: process.env.AI_MODEL,
+        status: "success",
+        error: null,
+        estimatedTokens,
+        actualTokens: data.usage || null,
+        elapsed,
       },
-    }),
-  );
+      layer2: {
+        persona: pid,
+        memoryContext: memoryContext ? memoryContext.slice(0, 300) : "无",
+        memoryLength: memoryContext ? memoryContext.length : 0,
+      },
+      layer3: {
+        historyCount: history.length,
+        systemPromptLength: systemContent.length,
+        timeContext: timeContext.trim(),
+      },
+      memory: {
+        messagesSinceSummary: counter.sinceLastSummary,
+        totalMessages: counter.total,
+        nextTriggerIn: 100 - counter.sinceLastSummary,
+        longTermProfile: memoryContext.includes("[长期印象]") ? "有" : "无",
+        recentMemories: memoryContext.includes("[近期印象]") ? "有" : "无",
+      },
+    },
+  });
+
+  // 发给所有客户端
+  if (clients) {
+    clients.forEach((client) => {
+      if (client.readyState === 1) {
+        client.send(payload);
+      }
+    });
+  } else {
+    ws.send(payload);
+  }
 
   const preview = aiReply.length > 60 ? aiReply.slice(0, 60) + "..." : aiReply;
   pushNotification("AI 助手", preview);
