@@ -82,6 +82,8 @@ function detectEmotion(userMessage) {
 async function handleChat(userMessage, ws, personaId, clients) {
   const db = getDB();
   const pid = personaId || "xiaorou";
+  const personaNames = { xiaorou: "小柔", cool: "阿冷", assistant: "助手" };
+  const pName = personaNames[pid] || "AI 助手";
   const nowISO = new Date().toISOString();
 
   // 存用户消息
@@ -339,8 +341,22 @@ ${phoneContext}`;
     ws.send(payload);
   }
 
-  const preview = aiReply.length > 60 ? aiReply.slice(0, 60) + "..." : aiReply;
-  pushNotification("AI 助手", preview);
+  // 分句推送
+  const pushLines = aiReply
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (pushLines.length > 1) {
+    pushLines.forEach((line, idx) => {
+      setTimeout(() => {
+        pushNotification(pName, line);
+      }, idx * 800);
+    });
+  } else {
+    const preview =
+      aiReply.length > 60 ? aiReply.slice(0, 60) + "..." : aiReply;
+    pushNotification(pName, preview);
+  }
 }
 
 module.exports = { handleChat };
