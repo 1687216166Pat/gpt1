@@ -138,6 +138,30 @@ ${dialogue.slice(-3000)}
   }
 }
 
+async function initCounters() {
+  const db = getDB();
+  const { data } = await db
+    .from("messages")
+    .select("persona_id")
+    .order("id", { ascending: false })
+    .limit(200);
+
+  if (data) {
+    const counts = {};
+    data.forEach((m) => {
+      counts[m.persona_id] = (counts[m.persona_id] || 0) + 1;
+    });
+    Object.keys(counts).forEach((pid) => {
+      if (!messageCounters[pid]) {
+        messageCounters[pid] = {
+          total: counts[pid],
+          sinceLastSummary: counts[pid] % 100,
+        };
+      }
+    });
+  }
+}
+
 // ========== 每日沉淀层（零点触发） ==========
 
 async function dailyConsolidate(personaId) {
@@ -595,4 +619,5 @@ module.exports = {
   detectPatterns,
   triggerShortTermSummary,
   getCounter,
+  initCounters,
 };

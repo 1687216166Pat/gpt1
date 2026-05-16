@@ -8,7 +8,7 @@ const fs = require("fs");
 const { initWebSocket } = require("./ws/socket");
 const { initDB } = require("./db/index");
 const apiRoutes = require("./routes/api");
-const { consolidateMemories } = require("./services/memory");
+const { consolidateMemories, initCounters } = require("./services/memory");
 const { checkProactiveMessages } = require("./services/proactive");
 const { getPersonaList } = require("./services/prompt");
 
@@ -17,6 +17,7 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 
 initDB();
+setTimeout(initCounters, 2000);
 
 // 启动时从数据库加载 API 配置
 setTimeout(async () => {
@@ -75,9 +76,8 @@ setInterval(() => {
     new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }),
   );
   if (now.getHours() === 0 && now.getMinutes() === 0) {
-    const { getPersonaList } = require("./services/prompt");
-    const { dailyConsolidate } = require("./services/memory");
     const personas = getPersonaList();
+    const { dailyConsolidate } = require("./services/memory");
     personas.forEach((p) => dailyConsolidate(p.id));
     console.log("[记忆] 零点沉淀已触发");
   }
