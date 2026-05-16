@@ -483,18 +483,18 @@ onMounted(loadPersonas)
 .tab-nav {
     display: flex;
     gap: 4px;
-    margin: 18px 0;
+    margin: 16px 0;
     padding: 4px;
-    background: var(--color-card);
+    background: rgba(255, 248, 252, 0.3);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-radius: 16px;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .nav-item {
     flex: 1;
-    padding: 10px 4px;
+    padding: 9px 4px;
     border: none;
     border-radius: 13px;
     background: transparent;
@@ -503,15 +503,14 @@ onMounted(loadPersonas)
     cursor: pointer;
     text-align: center;
     transition: all 0.4s var(--ease-soft);
-    letter-spacing: 0.02em;
 }
 
 .nav-item.active {
-    background: var(--color-card);
+    background: rgba(255, 255, 255, 0.6);
     color: var(--color-text);
-    box-shadow: 0 2px 8px rgba(200, 130, 160, 0.08);
-    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(200, 130, 160, 0.06);
 }
+
 
 /* 分页内容 */
 .tab-content {

@@ -66,6 +66,35 @@
                     </div>
                 </GlassCard>
             </div>
+
+            <!-- 主题模式 -->
+<div class="section-block">
+    <h3 class="section-label">◑ 主题模式</h3>
+    <GlassCard size="md">
+        <div class="option-row" :class="{ active: themeMode === 'auto' }" @click="setTheme('auto')">
+            <div class="option-info">
+                <p class="option-title">跟随时间</p>
+                <p class="option-desc">根据当前时间自动切换</p>
+            </div>
+            <span class="option-check" v-if="themeMode === 'auto'">✓</span>
+        </div>
+        <div class="option-row" :class="{ active: themeMode === 'light' }" @click="setTheme('light')">
+            <div class="option-info">
+                <p class="option-title">浅色模式</p>
+                <p class="option-desc">始终保持明亮</p>
+            </div>
+            <span class="option-check" v-if="themeMode === 'light'">✓</span>
+        </div>
+        <div class="option-row" :class="{ active: themeMode === 'dark' }" @click="setTheme('dark')">
+            <div class="option-info">
+                <p class="option-title">深夜模式</p>
+                <p class="option-desc">始终保持梦境氛围</p>
+            </div>
+            <span class="option-check" v-if="themeMode === 'dark'">✓</span>
+        </div>
+    </GlassCard>
+</div>
+
         </div>
     </div>
 </template>
@@ -81,6 +110,7 @@ const wallpaperUrl = ref('')
 const fontUrl = ref('')
 const fontName = ref('')
 const chatEntryMode = ref('direct')
+const themeMode = ref('auto')
 
 onMounted(() => {
     // 加载已保存的设置
@@ -89,6 +119,7 @@ onMounted(() => {
     fontName.value = localStorage.getItem('custom_font_name') || ''
     fontUrl.value = localStorage.getItem('custom_font_url') || ''
     chatEntryMode.value = localStorage.getItem('chat_entry_mode') || 'direct'
+ themeMode.value = localStorage.getItem('theme_mode') || 'auto'
 })
 
 function handleWallpaperUpload(event) {
@@ -115,6 +146,13 @@ function clearWallpaper() {
     wallpaperUrl.value = ''
     localStorage.removeItem('custom_wallpaper')
     document.querySelector('.phone-screen').style.backgroundImage = ''
+}
+
+function setTheme(mode) {
+    themeMode.value = mode
+    localStorage.setItem('theme_mode', mode)
+    // 通知 App.vue 更新主题
+    window.dispatchEvent(new CustomEvent('theme-change', { detail: mode }))
 }
 
 function handleFontUpload(event) {

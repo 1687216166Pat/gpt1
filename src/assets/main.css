@@ -38,7 +38,8 @@
   scrollbar-color: transparent transparent;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -57,7 +58,6 @@ html, body {
   flex-direction: column;
   overflow: hidden;
 }
-
 
 /* 桌面预览 */
 @media (min-width: 500px) {
@@ -171,60 +171,56 @@ select {
   }
 }
 
-/* ========== 夜间模式 - 深夜陪伴空间 ========== */
+/* ========== 深夜模式 - 梦境空间 ========== */
 
 .phone-screen.night {
-  --color-bg: #1e1a22;
-  --color-bg-secondary: #262028;
-  --color-text: rgba(255, 248, 252, 0.9);
-  --color-text-light: rgba(200, 180, 195, 0.7);
-  --color-white: rgba(255, 245, 250, 0.04);
-  --color-card: rgba(255, 240, 248, 0.035);
-  --color-border: rgba(200, 160, 180, 0.08);
-  --color-primary: #c8889a;
+  --color-bg: #1c1824;
+  --color-bg-secondary: #241e2c;
+  --color-text: rgba(240, 230, 245, 0.88);
+  --color-text-light: rgba(180, 165, 195, 0.6);
+  --color-white: rgba(240, 220, 245, 0.04);
+  --color-card: rgba(240, 220, 245, 0.035);
+  --color-border: rgba(180, 140, 200, 0.06);
+  --color-primary: rgba(200, 150, 180, 0.85);
 }
 
 .phone-screen.midnight {
-  --color-bg: #16121a;
-  --color-bg-secondary: #1e1822;
-  --color-text: rgba(255, 248, 252, 0.88);
-  --color-text-light: rgba(190, 170, 185, 0.65);
-  --color-white: rgba(255, 240, 248, 0.03);
-  --color-card: rgba(255, 235, 245, 0.025);
-  --color-border: rgba(180, 140, 165, 0.06);
-  --color-primary: #b87a90;
+  --color-bg: #14101a;
+  --color-bg-secondary: #1c1624;
+  --color-text: rgba(235, 225, 245, 0.85);
+  --color-text-light: rgba(170, 155, 190, 0.55);
+  --color-white: rgba(230, 210, 240, 0.025);
+  --color-card: rgba(230, 210, 240, 0.02);
+  --color-border: rgba(160, 120, 180, 0.05);
+  --color-primary: rgba(190, 140, 170, 0.8);
 }
 
 /* ========== 夜间模式增强 ========== */
 
-/* 夜间玻璃感 - 更雾更深 */
+/* 夜间玻璃卡片 - 梦幻紫雾 */
 .phone-screen.night .glass-card,
 .phone-screen.midnight .glass-card {
-  background: rgba(255, 240, 248, 0.03);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(200, 160, 180, 0.06);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  background: rgba(240, 220, 245, 0.025);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(180, 140, 200, 0.06);
+  box-shadow: 0 4px 24px rgba(100, 60, 140, 0.08);
 }
 
 /* 夜间按钮 */
 .phone-screen.night .soft-btn.primary,
 .phone-screen.midnight .soft-btn.primary {
-  background: linear-gradient(
-    135deg,
-    rgba(200, 136, 154, 0.8),
-    rgba(180, 110, 135, 0.7)
-  );
-  box-shadow: 0 3px 12px rgba(180, 110, 135, 0.15);
+  background: linear-gradient(135deg, rgba(180, 130, 170, 0.5), rgba(150, 100, 150, 0.4));
+  box-shadow: 0 3px 12px rgba(150, 100, 150, 0.1);
 }
 
 .phone-screen.night .soft-btn.glass,
 .phone-screen.midnight .soft-btn.glass,
 .phone-screen.night .soft-btn.secondary,
 .phone-screen.midnight .soft-btn.secondary {
-  background: rgba(255, 240, 248, 0.04);
-  border-color: rgba(200, 160, 180, 0.08);
-  color: rgba(255, 248, 252, 0.8);
+  background: rgba(240, 220, 245, 0.03);
+  border-color: rgba(180, 140, 200, 0.06);
+  color: rgba(240, 230, 245, 0.8);
 }
 
 /* 夜间输入框 */
@@ -234,49 +230,44 @@ select {
 .phone-screen.midnight .dream-textarea,
 .phone-screen.night textarea,
 .phone-screen.midnight textarea {
-  background: rgba(255, 240, 248, 0.03);
-  border-color: rgba(200, 160, 180, 0.08);
-  color: rgba(255, 248, 252, 0.9);
+  background: rgba(240, 220, 245, 0.025);
+  border-color: rgba(180, 140, 200, 0.06);
+  color: rgba(240, 230, 245, 0.9);
 }
 
 .phone-screen.night .dream-input:focus,
 .phone-screen.midnight .dream-input:focus,
 .phone-screen.night .dream-textarea:focus,
 .phone-screen.midnight .dream-textarea:focus {
-  border-color: rgba(200, 136, 154, 0.2);
-  box-shadow: 0 0 0 3px rgba(200, 136, 154, 0.04);
+  border-color: rgba(180, 140, 200, 0.15);
+  box-shadow: 0 0 0 3px rgba(180, 140, 200, 0.04);
 }
 
 .phone-screen.night .dream-input::placeholder,
 .phone-screen.midnight .dream-input::placeholder,
 .phone-screen.night .dream-textarea::placeholder,
 .phone-screen.midnight .dream-textarea::placeholder {
-  color: rgba(200, 180, 195, 0.4);
+  color: rgba(180, 165, 195, 0.35);
 }
 
 /* 夜间聊天气泡 */
 .phone-screen.night .bubble-wrapper.user .bubble,
 .phone-screen.midnight .bubble-wrapper.user .bubble {
-  background: linear-gradient(
-    135deg,
-    rgba(200, 136, 154, 0.6),
-    rgba(180, 110, 135, 0.5)
-  );
-  box-shadow: 0 2px 8px rgba(180, 110, 135, 0.1);
+  background: linear-gradient(135deg, rgba(180, 130, 170, 0.4), rgba(150, 100, 150, 0.3));
+  box-shadow: 0 2px 8px rgba(150, 100, 150, 0.08);
 }
 
 .phone-screen.night .bubble-wrapper.ai .bubble,
 .phone-screen.midnight .bubble-wrapper.ai .bubble {
-  background: rgba(255, 240, 248, 0.04);
-  border: 1px solid rgba(200, 160, 180, 0.06);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(240, 220, 245, 0.03);
+  border: 1px solid rgba(180, 140, 200, 0.05);
 }
 
 /* 夜间标签 */
 .phone-screen.night .glass-tag,
 .phone-screen.midnight .glass-tag {
-  background: rgba(200, 160, 180, 0.08);
-  border-color: rgba(200, 160, 180, 0.1);
+  background: rgba(180, 140, 200, 0.06);
+  border-color: rgba(180, 140, 200, 0.08);
 }
 
 /* 夜间 tab 导航 */
@@ -284,137 +275,110 @@ select {
 .phone-screen.midnight .tab-item,
 .phone-screen.night .nav-item,
 .phone-screen.midnight .nav-item {
-  background: rgba(255, 240, 248, 0.03);
-  border-color: rgba(200, 160, 180, 0.06);
-  color: rgba(200, 180, 195, 0.6);
+  background: rgba(240, 220, 245, 0.02);
+  border-color: rgba(180, 140, 200, 0.05);
+  color: rgba(180, 165, 195, 0.5);
 }
 
 .phone-screen.night .tab-item.active,
 .phone-screen.midnight .tab-item.active,
 .phone-screen.night .nav-item.active,
 .phone-screen.midnight .nav-item.active {
-  background: linear-gradient(
-    135deg,
-    rgba(200, 136, 154, 0.5),
-    rgba(180, 110, 135, 0.4)
-  );
-  color: rgba(255, 248, 252, 0.9);
+  background: linear-gradient(135deg, rgba(180, 130, 170, 0.35), rgba(150, 100, 150, 0.25));
+  color: rgba(240, 230, 245, 0.9);
   border-color: transparent;
-  box-shadow: 0 2px 8px rgba(180, 110, 135, 0.1);
+  box-shadow: 0 2px 8px rgba(150, 100, 150, 0.08);
 }
 
 /* 夜间设置行 */
 .phone-screen.night .setting-row,
 .phone-screen.midnight .setting-row {
-  background: rgba(255, 240, 248, 0.03);
-  border-color: rgba(200, 160, 180, 0.06);
-  color: rgba(255, 248, 252, 0.85);
+  background: rgba(240, 220, 245, 0.02);
+  border-color: rgba(180, 140, 200, 0.05);
+  color: rgba(240, 230, 245, 0.85);
 }
 
 /* 夜间 toggle */
 .phone-screen.night .slider,
 .phone-screen.midnight .slider {
-  background: rgba(200, 160, 180, 0.15);
+  background: rgba(180, 140, 200, 0.12);
 }
 
-/* 夜间背景装饰 - 更暗更柔 */
+/* 夜间背景装饰 - 梦幻紫粉 */
 .phone-screen.night .decor-circle,
 .phone-screen.midnight .decor-circle {
-  opacity: 0.08;
-  filter: blur(80px);
+  opacity: 0.12;
+  filter: blur(70px);
+  animation-duration: 18s;
 }
 
 .phone-screen.night .c1,
 .phone-screen.midnight .c1 {
-  background: #6a4060;
+  background: rgba(140, 80, 160, 0.4);
 }
 
 .phone-screen.night .c2,
 .phone-screen.midnight .c2 {
-  background: #404060;
+  background: rgba(100, 70, 140, 0.35);
 }
 
 .phone-screen.night .c3,
 .phone-screen.midnight .c3 {
-  background: #604050;
+  background: rgba(160, 90, 130, 0.3);
 }
 
-/* 夜间图标 - 更柔和 */
+/* 夜间图标 */
 .phone-screen.night .app-icon-wrapper,
 .phone-screen.midnight .app-icon-wrapper {
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 4px 16px rgba(80, 40, 100, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation-duration: 12s;
 }
 
 /* 夜间环境低语 */
 .phone-screen.night .env-whisper,
 .phone-screen.midnight .env-whisper {
-  color: rgba(200, 180, 195, 0.35);
-}
-
-/* 夜间动效减慢 */
-.phone-screen.night .decor-circle,
-.phone-screen.midnight .decor-circle {
-  animation-duration: 16s;
-}
-
-.phone-screen.night .app-icon-wrapper,
-.phone-screen.midnight .app-icon-wrapper {
-  animation-duration: 10s;
+  color: rgba(180, 165, 195, 0.3);
 }
 
 /* 夜间聊天输入框 */
 .phone-screen.night .chat-input-area textarea,
 .phone-screen.midnight .chat-input-area textarea {
-  background: rgba(255, 240, 248, 0.03);
-  border-color: rgba(200, 160, 180, 0.08);
-  color: rgba(255, 248, 252, 0.9);
+  background: rgba(240, 220, 245, 0.025);
+  border-color: rgba(180, 140, 200, 0.06);
+  color: rgba(240, 230, 245, 0.9);
 }
 
 .phone-screen.night .chat-input-area button,
 .phone-screen.midnight .chat-input-area button {
-  background: linear-gradient(
-    135deg,
-    rgba(200, 136, 154, 0.7),
-    rgba(180, 110, 135, 0.6)
-  );
-  box-shadow: 0 3px 10px rgba(180, 110, 135, 0.12);
-}
-
-/* 夜间分隔线 */
-.phone-screen.night [style*="border-bottom"],
-.phone-screen.midnight [style*="border-bottom"] {
-  border-color: rgba(200, 160, 180, 0.05) !important;
+  background: linear-gradient(135deg, rgba(180, 130, 170, 0.5), rgba(150, 100, 150, 0.4));
+  box-shadow: 0 3px 10px rgba(150, 100, 150, 0.08);
 }
 
 /* 夜间 select */
 .phone-screen.night select,
 .phone-screen.midnight select {
-  background: rgba(255, 240, 248, 0.04);
-  border-color: rgba(200, 160, 180, 0.08);
-  color: rgba(255, 248, 252, 0.85);
+  background: rgba(240, 220, 245, 0.03);
+  border-color: rgba(180, 140, 200, 0.06);
+  color: rgba(240, 230, 245, 0.85);
 }
 
 /* 夜间雷达图 */
 .phone-screen.night .radar-chart text,
 .phone-screen.midnight .radar-chart text {
-  fill: rgba(200, 180, 195, 0.6);
+  fill: rgba(180, 165, 195, 0.5);
 }
 
 /* 夜间进度条 */
 .phone-screen.night .dim-bar,
 .phone-screen.midnight .dim-bar {
-  background: rgba(200, 160, 180, 0.08);
+  background: rgba(180, 140, 200, 0.06);
 }
 
 .phone-screen.night .dim-fill,
 .phone-screen.midnight .dim-fill {
-  background: linear-gradient(
-    90deg,
-    rgba(200, 136, 154, 0.6),
-    rgba(180, 110, 135, 0.5)
-  );
+  background: linear-gradient(90deg, rgba(180, 130, 170, 0.5), rgba(150, 100, 150, 0.4));
 }
 
 /* ========== 全局组件规则 ========== */

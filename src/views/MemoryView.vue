@@ -3,6 +3,12 @@
         <div class="memory-header">
             <button class="back-btn" @click="goBack">‹</button>
             <h2>{{ viewTitle }}</h2>
+            <button class="add-memory-btn" @click="showAddMemory = true" v-if="currentView === 'main'">
+                <svg viewBox="0 0 24 24" fill="none" class="add-icon">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.2" opacity="0.4" />
+                    <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+            </button>
         </div>
 
         <div class="persona-tabs" v-if="currentView === 'main'">
@@ -72,13 +78,38 @@
             <!-- 日视图 -->
             <template v-if="currentView === 'date'">
                 <div v-if="dayMemories.length > 0">
-                    <GlassCard v-for="mem in dayMemories" :key="mem.id" size="sm">
+                    <GlassCard v-for="mem in dayMemories" :key="mem.id" size="sm" class="memory-item-card">
                         <p class="content-text">{{ mem.content }}</p>
+                        <div class="memory-actions">
+                            <button class="mem-action-btn" @click="startEditMemory(mem)">编辑</button>
+                            <button class="mem-action-btn danger" @click="deleteMemory(mem.id)">删除</button>
+                        </div>
                     </GlassCard>
                 </div>
                 <p v-else class="empty-text">这天没有记忆</p>
             </template>
         </div>
+
+        <!-- 添加记忆弹窗 -->
+        <BlurModal :visible="showAddMemory" @close="showAddMemory = false">
+            <h3>添加记忆</h3>
+            <DreamInput type="textarea" v-model="newMemoryContent" :rows="4" placeholder="写下你想让TA记住的事..." />
+            <div class="modal-actions">
+                <SoftButton variant="secondary" @click="showAddMemory = false">取消</SoftButton>
+                <SoftButton variant="primary" @click="addMemory" :disabled="!newMemoryContent.trim()">保存</SoftButton>
+            </div>
+        </BlurModal>
+
+        <!-- 编辑记忆弹窗 -->
+        <BlurModal :visible="showEditMemory" @close="showEditMemory = false">
+            <h3>编辑记忆</h3>
+            <DreamInput type="textarea" v-model="editMemoryContent" :rows="4" />
+            <div class="modal-actions">
+                <SoftButton variant="secondary" @click="showEditMemory = false">取消</SoftButton>
+                <SoftButton variant="primary" @click="saveEditMemory">保存</SoftButton>
+            </div>
+        </BlurModal>
+
     </div>
 </template>
 
@@ -87,7 +118,10 @@ import { ref, computed, onMounted } from 'vue'
 import { api } from '@/utils/api'
 import GlassCard from '@/components/ui/GlassCard.vue'
 import SoftButton from '@/components/ui/SoftButton.vue'
+import BlurModal from '@/components/ui/BlurModal.vue'
+import DreamInput from '@/components/ui/DreamInput.vue'
 
+// ========== 状态 ==========
 const personas = ref([])
 const currentPersona = ref('')
 const profile = ref('')
@@ -100,6 +134,13 @@ const selectedYear = ref('')
 const selectedMonth = ref('')
 const selectedDate = ref('')
 
+const showAddMemory = ref(false)
+const showEditMemory = ref(false)
+const newMemoryContent = ref('')
+const editMemoryContent = ref('')
+const editMemoryId = ref(null)
+
+// ========== 计算属性 ==========
 const viewTitle = computed(() => {
     if (currentView.value === 'main') return '记忆库'
     if (currentView.value === 'year') return `${selectedYear.value}年`
@@ -134,20 +175,7 @@ const monthDays = computed(() => {
     return [...days].sort()
 })
 
-async function loadPersonas() {
-    try {
-        const res = await api('/api/prompts/personas')
-        const data = await res.json()
-        personas.value = data.personas.map(p => ({ id: p.id, name: p.name }))
-        if (personas.value.length > 0) {
-            currentPersona.value = data.active || personas.value[0].id
-            await loadAll()
-        }
-    } catch (e) {
-        console.error('加载失败:', e)
-    }
-}
-
+// ========== 数据加载 ==========
 async function loadAll() {
     await Promise.all([loadProfile(), loadHeatmap(), loadDateTree()])
 }
@@ -157,23 +185,49 @@ async function loadProfile() {
         const res = await api(`/api/memories/${currentPersona.value}`)
         const data = await res.json()
         profile.value = data.profile || ''
-    } catch { }
+    } catch {}
 }
 
 async function loadHeatmap() {
     try {
         const res = await api(`/api/memories/${currentPersona.value}/heatmap`)
         heatmapData.value = await res.json()
-    } catch { }
+    } catch {}
 }
 
 async function loadDateTree() {
     try {
         const res = await api(`/api/memories/${currentPersona.value}/dates`)
         dateTree.value = await res.json()
-    } catch { }
+    } catch {}
 }
 
+async function loadPersonas() {
+    try {
+        const res = await api('/api/prompts/personas')
+        const data = await res.json()
+        personas.value = data.personas.map(p => ({ id: p.id, name: p.name }))
+
+        // 优先用最近聊天的人格
+        try {
+            const latestRes = await api('/api/messages/latest-persona')
+            const latestData = await latestRes.json()
+            if (latestData.personaId) {
+                currentPersona.value = latestData.personaId
+            } else {
+                currentPersona.value = data.active || personas.value[0].id
+            }
+        } catch {
+            currentPersona.value = data.active || personas.value[0].id
+        }
+
+        await loadAll()
+    } catch (e) {
+        console.error('加载失败:', e)
+    }
+}
+
+// ========== 导航 ==========
 function switchPersona(id) {
     currentPersona.value = id
     currentView.value = 'main'
@@ -211,6 +265,56 @@ function goBack() {
     else window.history.length > 1 ? history.back() : location.href = '/'
 }
 
+// ========== 记忆操作 ==========
+async function addMemory() {
+    if (!newMemoryContent.value.trim()) return
+    try {
+        const today = new Date().toISOString().slice(0, 10)
+        await api(`/api/memories/${currentPersona.value}/custom`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newMemoryContent.value.trim(), date: today })
+        })
+        newMemoryContent.value = ''
+        showAddMemory.value = false
+        await loadAll()
+    } catch (e) {
+        console.error('添加记忆失败:', e)
+    }
+}
+
+function startEditMemory(mem) {
+    editMemoryId.value = mem.id
+    editMemoryContent.value = mem.content
+    showEditMemory.value = true
+}
+
+async function saveEditMemory() {
+    if (!editMemoryContent.value.trim()) return
+    try {
+        await api(`/api/memories/recent/${editMemoryId.value}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: editMemoryContent.value.trim() })
+        })
+        showEditMemory.value = false
+        await loadAll()
+    } catch (e) {
+        console.error('编辑记忆失败:', e)
+    }
+}
+
+async function deleteMemory(id) {
+    if (!confirm('删除这条记忆？')) return
+    try {
+        await api(`/api/memories/recent/${id}`, { method: 'DELETE' })
+        await loadAll()
+    } catch (e) {
+        console.error('删除记忆失败:', e)
+    }
+}
+
+// ========== 初始化 ==========
 onMounted(loadPersonas)
 </script>
 
@@ -344,5 +448,62 @@ onMounted(loadPersonas)
     color: var(--color-text-light);
     font-size: 13px;
     opacity: 0.6;
+}
+
+.add-memory-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-left: auto;
+    padding: 4px;
+    opacity: 0.6;
+    transition: opacity 0.3s var(--ease-soft);
+}
+
+.add-memory-btn:active {
+    opacity: 0.9;
+}
+
+.add-icon {
+    width: 22px;
+    height: 22px;
+    color: var(--color-primary);
+}
+
+.memory-item-card {
+    margin-bottom: 10px;
+}
+
+.memory-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    justify-content: flex-end;
+}
+
+.mem-action-btn {
+    background: none;
+    border: none;
+    font-size: 11px;
+    color: var(--color-text-light);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.mem-action-btn:active {
+    opacity: 1;
+}
+
+.mem-action-btn.danger {
+    color: #c07070;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
 }
 </style>

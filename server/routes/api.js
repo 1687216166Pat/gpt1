@@ -598,7 +598,9 @@ router.get("/environment/:personaId", async (req, res) => {
   const { getDB } = require("../db/index");
   const db = getDB();
   const personaId = req.params.personaId;
-  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }));
+  const now = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Shanghai" }),
+  );
   const hour = now.getHours();
 
   // 时间氛围
@@ -610,7 +612,9 @@ router.get("/environment/:personaId", async (req, res) => {
   else timePhase = "deep_night";
 
   // 最近互动频率
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const threeDaysAgo = new Date(
+    Date.now() - 3 * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const { data: recentMsgs } = await db
     .from("messages")
     .select("timestamp")
@@ -628,9 +632,11 @@ router.get("/environment/:personaId", async (req, res) => {
     .order("id", { ascending: false })
     .limit(1);
 
-  const hoursSinceLastMsg = lastMsg && lastMsg.length > 0
-    ? (Date.now() - new Date(lastMsg[0].timestamp).getTime()) / (1000 * 60 * 60)
-    : 999;
+  const hoursSinceLastMsg =
+    lastMsg && lastMsg.length > 0
+      ? (Date.now() - new Date(lastMsg[0].timestamp).getTime()) /
+        (1000 * 60 * 60)
+      : 999;
 
   // 深夜使用频率
   const { data: nightPatterns } = await db
@@ -640,7 +646,8 @@ router.get("/environment/:personaId", async (req, res) => {
     .eq("pattern_type", "late_night")
     .limit(1);
 
-  const nightFreq = nightPatterns && nightPatterns.length > 0 ? nightPatterns[0].frequency : 0;
+  const nightFreq =
+    nightPatterns && nightPatterns.length > 0 ? nightPatterns[0].frequency : 0;
 
   // 生成环境状态
   let presence = "normal";
@@ -713,6 +720,28 @@ router.delete("/message/:id", async (req, res) => {
   const { getDB } = require("../db/index");
   const db = getDB();
   await db.from("messages").delete().eq("id", req.params.id);
+  res.json({ success: true });
+});
+
+// 用户自定义添加记忆
+router.post("/memories/:personaId/custom", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { content, date } = req.body;
+  await db.from("memories_recent").insert({
+    persona_id: req.params.personaId,
+    content,
+    source_session: date || new Date().toISOString().slice(0, 10),
+  });
+  res.json({ success: true });
+});
+
+// 编辑记忆
+router.put("/memories/recent/:id", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { content } = req.body;
+  await db.from("memories_recent").update({ content }).eq("id", req.params.id);
   res.json({ success: true });
 });
 

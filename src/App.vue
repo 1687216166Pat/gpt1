@@ -1,7 +1,7 @@
 <template>
     <SplashScreen v-if="showSplash" @done="onSplashDone" />
     <transition name="main-enter">
-        <div v-if="!showSplash" class="phone-screen" :class="[period, envClass]" :style="envStyle">
+        <div v-show="!showSplash" class="phone-screen" :class="[effectivePeriod, envClass]" :style="envStyle">
             <div class="bg-decor">
                 <div class="decor-circle c1"></div>
                 <div class="decor-circle c2"></div>
@@ -32,10 +32,16 @@ const showSplash = ref(true)
 const { connect, requestNotificationPermission, registerPushSubscription } = useWebSocket()
 const { period, startClock, stopClock } = useTime()
 const { startReporting, stopReporting } = useDeviceStatus()
+const themeOverride = ref(localStorage.getItem('theme_mode') || 'auto')
 
 function onSplashDone() {
     showSplash.value = false
 }
+
+// 监听主题切换
+window.addEventListener('theme-change', (e) => {
+    themeOverride.value = e.detail
+})
 
 // 环境状态
 const envData = ref({
@@ -60,6 +66,12 @@ const envStyle = computed(() => {
         '--decor-opacity': 0.2 + d.warmth * 0.2,
         '--decor-scale': 0.9 + d.warmth * 0.2,
     }
+})
+
+const effectivePeriod = computed(() => {
+    if (themeOverride.value === 'light') return 'forenoon'
+    if (themeOverride.value === 'dark') return 'midnight'
+    return period.value
 })
 
 async function loadEnvironment() {
