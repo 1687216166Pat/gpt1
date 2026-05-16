@@ -745,4 +745,36 @@ router.put("/memories/recent/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+// 手动添加时间线事件
+router.post("/timeline/:personaId", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { content, tags } = req.body;
+  await db.from("timeline_events").insert({
+    persona_id: req.params.personaId,
+    content,
+    period: "最近",
+    event_type: "memory",
+    tags: tags || "",
+  });
+  res.json({ success: true });
+});
+
+// 编辑时间线事件
+router.put("/timeline/event/:id", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { content } = req.body;
+  await db.from("timeline_events").update({ content }).eq("id", req.params.id);
+  res.json({ success: true });
+});
+
+// 删除时间线事件
+router.delete("/timeline/event/:id", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  await db.from("timeline_events").delete().eq("id", req.params.id);
+  res.json({ success: true });
+});
+
 module.exports = router;

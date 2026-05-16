@@ -119,6 +119,15 @@
                     <p class="timeline-subtitle">{{ timelineAtmosphere }}</p>
                 </div>
 
+                <!-- 添加按钮 -->
+                <div class="add-entry-row" @click="showAddTimeline = true">
+                    <svg viewBox="0 0 24 24" fill="none" class="add-entry-icon">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1" opacity="0.4" />
+                        <path d="M12 9v6M9 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                    </svg>
+                    <span>记录一个瞬间</span>
+                </div>
+
                 <!-- 时间线内容 -->
                 <div v-if="timelineGroups.length > 0" class="timeline-flow">
                     <div v-for="group in timelineGroups" :key="group.period" class="timeline-group">
@@ -126,9 +135,16 @@
                         <div class="timeline-cards">
                             <GlassCard v-for="event in group.events" :key="event.id" size="sm" class="timeline-event">
                                 <p class="event-content">{{ event.content }}</p>
-                                <div class="event-tags" v-if="event.tags.length > 0">
-                                    <GlassTag v-for="tag in event.tags" :key="tag" variant="pink" size="sm">{{ tag }}
-                                    </GlassTag>
+                                <div class="event-footer">
+                                    <div class="event-tags" v-if="event.tags && event.tags.length > 0">
+                                        <GlassTag v-for="tag in event.tags" :key="tag" variant="pink" size="sm">{{ tag
+                                        }}</GlassTag>
+                                    </div>
+                                    <div class="event-actions">
+                                        <button class="event-action-btn" @click="startEditTimeline(event)">✎</button>
+                                        <button class="event-action-btn danger"
+                                            @click="deleteTimelineEvent(event.id)">×</button>
+                                    </div>
                                 </div>
                             </GlassCard>
                         </div>
@@ -140,14 +156,16 @@
                     <p class="empty-icon">🌙</p>
                     <p class="empty-title">还没有留下痕迹</p>
                     <p class="empty-sub">随着时间流动，这里会慢慢出现</p>
-                    <p class="empty-sub">那些值得被记住的瞬间...</p>
                 </div>
             </div>
 
             <!-- 侧写 -->
             <div v-if="activeTab === 'observe'" class="tab-content">
                 <GlassCard size="md">
-                    <h4 class="block-title">对你的长期观察</h4>
+                    <div class="observe-header">
+                        <h4 class="block-title">对你的长期观察</h4>
+                        <button class="edit-observe-btn" @click="startEditProfile">✎</button>
+                    </div>
                     <p class="content-text" v-if="memoryProfile">{{ memoryProfile }}</p>
                     <p class="content-text empty" v-else>还没有足够的观察...</p>
                 </GlassCard>
@@ -159,7 +177,59 @@
                         <GlassTag variant="purple" size="sm">×{{ p.frequency }}</GlassTag>
                     </div>
                 </GlassCard>
+
+                <!-- 手动添加观察 -->
+                <div class="add-entry-row" @click="showAddObserve = true">
+                    <svg viewBox="0 0 24 24" fill="none" class="add-entry-icon">
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1" opacity="0.4" />
+                        <path d="M12 9v6M9 12h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                    </svg>
+                    <span>添加一条观察</span>
+                </div>
             </div>
+            <!-- 添加时间线弹窗 -->
+            <BlurModal :visible="showAddTimeline" @close="showAddTimeline = false">
+                <h3>记录一个瞬间</h3>
+                <DreamInput type="textarea" v-model="newTimelineContent" :rows="3" placeholder="发生了什么值得记住的事..." />
+                <DreamInput v-model="newTimelineTag" placeholder="标签（可选，如：深夜/温暖）" />
+                <div class="modal-actions">
+                    <SoftButton variant="secondary" @click="showAddTimeline = false">取消</SoftButton>
+                    <SoftButton variant="primary" @click="addTimelineEvent" :disabled="!newTimelineContent.trim()">保存
+                    </SoftButton>
+                </div>
+            </BlurModal>
+
+            <!-- 编辑时间线弹窗 -->
+            <BlurModal :visible="showEditTimeline" @close="showEditTimeline = false">
+                <h3>编辑记录</h3>
+                <DreamInput type="textarea" v-model="editTimelineContent" :rows="3" />
+                <div class="modal-actions">
+                    <SoftButton variant="secondary" @click="showEditTimeline = false">取消</SoftButton>
+                    <SoftButton variant="primary" @click="saveEditTimeline">保存</SoftButton>
+                </div>
+            </BlurModal>
+
+            <!-- 添加观察弹窗 -->
+            <BlurModal :visible="showAddObserve" @close="showAddObserve = false">
+                <h3>添加一条观察</h3>
+                <DreamInput type="textarea" v-model="newObserveContent" :rows="3" placeholder="你观察到了什么..." />
+                <div class="modal-actions">
+                    <SoftButton variant="secondary" @click="showAddObserve = false">取消</SoftButton>
+                    <SoftButton variant="primary" @click="addObserve" :disabled="!newObserveContent.trim()">保存
+                    </SoftButton>
+                </div>
+            </BlurModal>
+
+            <!-- 编辑侧写弹窗 -->
+            <BlurModal :visible="showEditProfile" @close="showEditProfile = false">
+                <h3>编辑长期观察</h3>
+                <DreamInput type="textarea" v-model="editProfileContent" :rows="6" />
+                <div class="modal-actions">
+                    <SoftButton variant="secondary" @click="showEditProfile = false">取消</SoftButton>
+                    <SoftButton variant="primary" @click="saveEditProfile">保存</SoftButton>
+                </div>
+            </BlurModal>
+
         </div>
     </div>
 </template>
@@ -171,6 +241,8 @@ import GlassCard from '@/components/ui/GlassCard.vue'
 import SoftButton from '@/components/ui/SoftButton.vue'
 import GlassTag from '@/components/ui/GlassTag.vue'
 import TimelineCard from '@/components/ui/TimelineCard.vue'
+import BlurModal from '@/components/ui/BlurModal.vue'
+import DreamInput from '@/components/ui/DreamInput.vue'
 
 const personas = ref([])
 const currentPersona = ref('')
@@ -182,6 +254,16 @@ const loaded = ref(false)
 const activeTab = ref('profile')
 const timelineItems = ref([])
 const timelineGroups = ref([])
+const showAddTimeline = ref(false)
+const showEditTimeline = ref(false)
+const showAddObserve = ref(false)
+const showEditProfile = ref(false)
+const newTimelineContent = ref('')
+const newTimelineTag = ref('')
+const editTimelineId = ref(null)
+const editTimelineContent = ref('')
+const newObserveContent = ref('')
+const editProfileContent = ref('')
 
 const tabs = [
     { id: 'profile', name: '档案', icon: '📋' },
@@ -336,6 +418,95 @@ async function loadObserve() {
         patterns.value = await res.json()
     } catch {
         patterns.value = []
+    }
+}
+
+// 时间线操作
+async function addTimelineEvent() {
+    if (!newTimelineContent.value.trim()) return
+    try {
+        await api(`/api/timeline/${currentPersona.value}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content: newTimelineContent.value.trim(),
+                tags: newTimelineTag.value.trim()
+            })
+        })
+        newTimelineContent.value = ''
+        newTimelineTag.value = ''
+        showAddTimeline.value = false
+        await loadTimeline()
+    } catch (e) {
+        console.error('添加时间线失败:', e)
+    }
+}
+
+function startEditTimeline(event) {
+    editTimelineId.value = event.id
+    editTimelineContent.value = event.content
+    showEditTimeline.value = true
+}
+
+async function saveEditTimeline() {
+    if (!editTimelineContent.value.trim()) return
+    try {
+        await api(`/api/timeline/event/${editTimelineId.value}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: editTimelineContent.value.trim() })
+        })
+        showEditTimeline.value = false
+        await loadTimeline()
+    } catch (e) {
+        console.error('编辑时间线失败:', e)
+    }
+}
+
+async function deleteTimelineEvent(id) {
+    if (!confirm('删除这条记录？')) return
+    try {
+        await api(`/api/timeline/event/${id}`, { method: 'DELETE' })
+        await loadTimeline()
+    } catch (e) {
+        console.error('删除时间线失败:', e)
+    }
+}
+
+// 侧写操作
+function startEditProfile() {
+    editProfileContent.value = memoryProfile.value
+    showEditProfile.value = true
+}
+
+async function saveEditProfile() {
+    try {
+        await api(`/api/memories/${currentPersona.value}/profile`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: editProfileContent.value.trim() })
+        })
+        memoryProfile.value = editProfileContent.value.trim()
+        showEditProfile.value = false
+    } catch (e) {
+        console.error('编辑侧写失败:', e)
+    }
+}
+
+async function addObserve() {
+    if (!newObserveContent.value.trim()) return
+    try {
+        const today = new Date().toISOString().slice(0, 10)
+        await api(`/api/memories/${currentPersona.value}/custom`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newObserveContent.value.trim(), date: today })
+        })
+        newObserveContent.value = ''
+        showAddObserve.value = false
+        await loadObserve()
+    } catch (e) {
+        console.error('添加观察失败:', e)
     }
 }
 
@@ -745,5 +916,97 @@ onMounted(loadPersonas)
     opacity: 0.5;
     margin-top: 4px;
     line-height: 1.6;
+}
+
+/* 添加入口行 */
+.add-entry-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+    background: var(--color-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px dashed var(--color-border);
+    cursor: pointer;
+    transition: all 0.3s var(--ease-soft);
+    color: var(--color-text-light);
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.add-entry-row:active {
+    opacity: 0.9;
+    border-color: var(--color-primary);
+}
+
+.add-entry-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--color-primary);
+}
+
+/* 事件底部 */
+.event-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.event-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.event-action-btn {
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: var(--color-text-light);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+}
+
+.event-action-btn:active {
+    opacity: 0.8;
+}
+
+.event-action-btn.danger {
+    color: #c07070;
+}
+
+/* 侧写头部 */
+.observe-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.edit-observe-btn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    color: var(--color-primary);
+    cursor: pointer;
+    opacity: 0.5;
+    padding: 4px 8px;
+    transition: opacity 0.2s;
+}
+
+.edit-observe-btn:active {
+    opacity: 0.9;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
 }
 </style>
