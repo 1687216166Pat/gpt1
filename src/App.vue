@@ -128,15 +128,12 @@ onUnmounted(() => {
 }
 
 .phone-screen.night {
-    background: linear-gradient(180deg, #f0e0ea 0%, #f5eaf0 40%);
+    background: linear-gradient(180deg, #221e28 0%, #1e1a22 40%, #1a1620 100%);
 }
 
 .phone-screen.midnight {
-    background: linear-gradient(180deg, #382830 0%, #2a2228 50%);
+    background: linear-gradient(180deg, #1a1520 0%, #16121a 40%, #120e16 100%);
 }
-
-/* 环境状态修正 */
-
 
 .screen-content {
     flex: 1;
