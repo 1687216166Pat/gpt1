@@ -1080,22 +1080,30 @@ router.post("/mcp", async (req, res) => {
         tools: [
           {
             name: "sync_user_message",
-            description: "将用户发送的消息同步到网页端",
+            description: "将微信用户消息同步到网页端",
             inputSchema: {
               type: "object",
               properties: {
-                content: { type: "string", description: "用户发送的消息内容" },
+                content: { type: "string", description: "用户消息内容" },
+                bot: {
+                  type: "string",
+                  description: "bot标识：wechat 或 direct",
+                },
               },
               required: ["content"],
             },
           },
           {
             name: "sync_ai_reply",
-            description: "将AI的回复同步到网页端",
+            description: "将AI回复同步到网页端",
             inputSchema: {
               type: "object",
               properties: {
-                content: { type: "string", description: "AI回复的消息内容" },
+                content: { type: "string", description: "AI回复内容" },
+                bot: {
+                  type: "string",
+                  description: "bot标识：wechat 或 direct",
+                },
               },
               required: ["content"],
             },
@@ -1111,44 +1119,77 @@ router.post("/mcp", async (req, res) => {
     const args = params.arguments || {};
 
     if (toolName === "sync_user_message") {
+      const personaId = args.bot === "direct" ? "pawzo_direct" : "wechat_sync";
       await db.from("messages").insert({
-        persona_id: "wechat_sync",
+        persona_id: personaId,
         role: "user",
         content: args.content,
         timestamp: new Date().toISOString(),
       });
       await receiveMessage({
-        platform: "wechat",
+        platform: args.bot === "direct" ? "pawzo" : "wechat",
         sender: "user",
         role: "user",
         content: args.content,
-        conversation_id: "wechat_sync",
+        conversation_id: personaId,
       });
       return res.json({
         jsonrpc: "2.0",
         id,
-        result: { content: [{ type: "text", text: "已同步用户消息" }] },
+        result: { content: [{ type: "text", text: "已同步" }] },
       });
     }
 
     if (toolName === "sync_ai_reply") {
+      const personaId = args.bot === "direct" ? "pawzo_direct" : "wechat_sync";
       await db.from("messages").insert({
-        persona_id: "wechat_sync",
+        persona_id: personaId,
         role: "ai",
         content: args.content,
         timestamp: new Date().toISOString(),
       });
       await receiveMessage({
-        platform: "wechat",
+        platform: args.bot === "direct" ? "pawzo" : "wechat",
         sender: "pawzo",
         role: "assistant",
         content: args.content,
-        conversation_id: "wechat_sync",
+        conversation_id: personaId,
       });
+
+      // 触发记忆和关系系统
+      try {
+        const { processMemory, detectPatterns } = require("../services/memory");
+        const {
+          updateDimensionsFromChat,
+        } = require("../services/relationship");
+        const { checkTimelineEvent } = require("../services/timeline");
+
+        // 获取最近一条用户消息作为上下文
+        const { data: lastUserMsg } = await db
+          .from("messages")
+          .select("content")
+          .eq("persona_id", personaId)
+          .eq("role", "user")
+          .order("id", { ascending: false })
+          .limit(1);
+
+        const userMsg =
+          lastUserMsg && lastUserMsg.length > 0 ? lastUserMsg[0].content : "";
+
+        if (userMsg) {
+          detectPatterns(personaId, userMsg);
+          updateDimensionsFromChat(personaId, userMsg);
+          processMemory(personaId, userMsg, args.content);
+          checkTimelineEvent(personaId, userMsg, args.content);
+        }
+      } catch (e) {
+        console.error("[MCP] 记忆/关系处理失败:", e.message);
+      }
+
       return res.json({
         jsonrpc: "2.0",
         id,
-        result: { content: [{ type: "text", text: "已同步AI回复" }] },
+        result: { content: [{ type: "text", text: "已同步" }] },
       });
     }
 
