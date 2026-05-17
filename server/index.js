@@ -11,6 +11,7 @@ const apiRoutes = require("./routes/api");
 const { consolidateMemories, initCounters } = require("./services/memory");
 const { checkProactiveMessages } = require("./services/proactive");
 const { getPersonaList } = require("./services/prompt");
+const { checkScheduledMessages } = require("./services/scheduler");
 
 const app = express();
 const server = http.createServer(app);
@@ -18,6 +19,9 @@ const PORT = process.env.PORT || 3001;
 
 initDB();
 setTimeout(initCounters, 2000);
+
+// 每 30 秒检查一次定时消息
+setInterval(checkScheduledMessages, 30 * 1000);
 
 // 启动时从数据库加载 API 配置
 setTimeout(async () => {

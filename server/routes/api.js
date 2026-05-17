@@ -171,6 +171,15 @@ router.post("/push/subscribe", (req, res) => {
   res.json({ success: true });
 });
 
+router.post("/push/clear", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const { clearSubscriptions } = require("../services/push");
+  const db = getDB();
+  await db.from("user_profile").delete().eq("key", "push_subscriptions");
+  clearSubscriptions();
+  res.json({ success: true });
+});
+
 router.get("/push/vapid-key", (req, res) => {
   res.json({ key: process.env.VAPID_PUBLIC_KEY });
 });
@@ -1054,6 +1063,13 @@ router.post("/sync/wechat/batch", async (req, res) => {
   }
 
   res.json({ success: true, count: messages.length });
+});
+
+router.post("/push/clear", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  await db.from("user_profile").delete().eq("key", "push_subscriptions");
+  res.json({ success: true });
 });
 
 module.exports = router;

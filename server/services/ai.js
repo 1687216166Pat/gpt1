@@ -87,8 +87,33 @@ function detectEmotion(userMessage) {
 async function handleChat(userMessage, ws, personaId) {
   const db = getDB();
   const pid = personaId || "xiaorou";
-  const personaNames = { xiaorou: "小柔", cool: "阿冷", assistant: "助手" };
-  const pName = personaNames[pid] || "AI 助手";
+
+  // 获取推送用的名字（备注优先）
+  let pName = "AI 助手";
+  try {
+    const { data: pDetail } = await db
+      .from("custom_personas")
+      .select("name, note")
+      .eq("id", pid)
+      .limit(1);
+    if (pDetail && pDetail.length > 0) {
+      pName = pDetail[0].note || pDetail[0].name || "AI 助手";
+    } else {
+      // 内置人格
+      const { data: configRow } = await db
+        .from("user_profile")
+        .select("value")
+        .eq("key", `persona_config_${pid}`)
+        .limit(1);
+      if (configRow && configRow.length > 0) {
+        const config = JSON.parse(configRow[0].value);
+        pName = config.note || config.name || personaNames[pid] || "AI 助手";
+      } else {
+        pName = personaNames[pid] || "AI 助手";
+      }
+    }
+  } catch {}
+
   const nowISO = new Date().toISOString();
 
   // 存用户消息
@@ -427,6 +452,24 @@ async function handleChat(userMessage, ws, personaId) {
     timestamp: new Date().toISOString(),
   });
 
+  // 检测定时提醒意图
+  const { parseTimeIntent, createScheduledMessage } = require("./scheduler");
+
+  // 检查用户消息里的时间
+  const userTime = parseTimeIntent(userMessage);
+  if (userTime) {
+    // 用户说了时间，让 AI 到时候提醒
+    const reminderContent = `时间到了哦。你之前说的事情，该做了。`;
+    await createScheduledMessage(pid, reminderContent, userTime.toISOString());
+  }
+
+  // 检查 AI 回复里的时间承诺
+  const aiTime = parseTimeIntent(aiReply);
+  if (aiTime) {
+    const reminderContent = `我说过到时候会提醒你的。时间到了。`;
+    await createScheduledMessage(pid, reminderContent, aiTime.toISOString());
+  }
+
   // 同步AI回复到消息总线
   await busReceive({
     platform: "web",
@@ -471,6 +514,7 @@ async function handleChat(userMessage, ws, personaId) {
     role: "ai",
     content: aiReply,
     timestamp: new Date().toISOString(),
+    personaName: pName,
     debug: {
       layer1: {
         model: process.env.AI_MODEL,

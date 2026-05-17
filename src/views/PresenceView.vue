@@ -140,17 +140,30 @@ async function loadData() {
             aiOnline.value = hoursSince < 2
         }
     } catch { }
-    
+
     // 加载手机状态
     try {
         const res = await api('/api/phone/status')
         const data = await res.json()
         if (Array.isArray(data) && data.length > 0) {
+            // 从 device 类型提取电量
+            const deviceStatus = data.find(s => s.status_type === 'device')
+            if (deviceStatus) {
+                try {
+                    const deviceData = JSON.parse(deviceStatus.status_data)
+                    if (deviceData.battery) myBattery.value = deviceData.battery
+                    if (deviceData.charging) myEnvironment.value = '充电中'
+                    else if (deviceData.hidden) myEnvironment.value = '屏幕关闭'
+                    else myEnvironment.value = '使用中'
+                } catch { }
+            }
+
+            // 转换成人话（过滤掉 device 类型）
             phoneStatuses.value = humanizeStatus(data.slice(0, 15))
 
-            // 从上报数据更新我的状态
+            // 从其他上报数据更新状态
             const batteryStatus = data.find(s => s.status_type === 'battery')
-            if (batteryStatus) myBattery.value = parseInt(batteryStatus.status_data) || 0
+            if (batteryStatus) myBattery.value = parseInt(batteryStatus.status_data) || myBattery.value
 
             const sleepStatus = data.find(s => s.status_type === 'sleep')
             if (sleepStatus) {
@@ -193,6 +206,9 @@ function humanizeStatus(statuses) {
     const now = Date.now()
 
     statuses.forEach(s => {
+        // 跳过自动上报的 device 类型原始数据
+        if (s.status_type === 'device') return
+
         const time = new Date(s.timestamp)
         const diff = now - time.getTime()
         const mins = Math.floor(diff / (1000 * 60))
@@ -229,8 +245,8 @@ function humanizeStatus(statuses) {
                 text = `${timeText}${s.status_data}`
                 break
             default:
-                label = '📋 其他'
-                text = `${timeText} ${s.status_data || s.status_type}`
+                // 跳过不认识的类型
+                return
         }
 
         result.push({ label, text })
@@ -238,7 +254,6 @@ function humanizeStatus(statuses) {
 
     return result
 }
-
 
 onMounted(loadData)
 </script>

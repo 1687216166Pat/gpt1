@@ -166,25 +166,51 @@ async function getTimeline(personaId) {
 
   if (!data || data.length === 0) return [];
 
-  // 按时间段分组
+  // 按日期分组
   const groups = {};
   data.forEach((event) => {
-    const period = fuzzyTime(event.created_at);
-    if (!groups[period]) groups[period] = [];
-    groups[period].push({
+    const date = new Date(event.created_at).toISOString().slice(0, 10);
+    if (!groups[date]) groups[date] = [];
+    groups[date].push({
       id: event.id,
       content: event.content,
       type: event.event_type,
-      tags: event.tags ? event.tags.split("/") : [],
+      tags: event.tags ? event.tags.split("/").filter(Boolean) : [],
+      time: new Date(event.created_at).toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Asia/Shanghai",
+      }),
       createdAt: event.created_at,
     });
   });
 
-  // 转成数组
-  return Object.entries(groups).map(([period, events]) => ({
-    period,
-    events,
-  }));
+  // 转成数组，按日期倒序
+  return Object.entries(groups)
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([date, events]) => ({
+      date,
+      dateLabel: formatDateLabel(date),
+      events: events.sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+      ),
+    }));
+}
+
+function formatDateLabel(dateStr) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const yesterday = new Date(now - 86400000).toISOString().slice(0, 10);
+
+  if (dateStr === today) return "今天";
+  if (dateStr === yesterday) return "昨天";
+
+  const diff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+  if (diff < 7) return `${diff}天前`;
+  if (diff < 30) return `${Math.floor(diff / 7)}周前`;
+
+  return `${date.getMonth() + 1}月${date.getDate()}日`;
 }
 
 module.exports = { checkTimelineEvent, getTimeline, fuzzyTime };

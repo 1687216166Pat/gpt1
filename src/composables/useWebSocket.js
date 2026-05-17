@@ -51,7 +51,7 @@ function connect() {
     messageHandlers.forEach((handler) => handler(data));
 
     if (document.hidden && (data.type === "chat" || data.type === "push")) {
-      sendSystemNotification(data.content);
+      sendSystemNotification(data.content, data.personaName || "AI 助手");
     }
   };
 
@@ -86,9 +86,9 @@ function requestNotificationPermission() {
   }
 }
 
-function sendSystemNotification(content) {
+function sendSystemNotification(content, title) {
   if ("Notification" in window && Notification.permission === "granted") {
-    const notif = new Notification("AI 助手", {
+    const notif = new Notification(title || "AI 助手", {
       body: content.length > 60 ? content.slice(0, 60) + "..." : content,
     });
     notif.onclick = () => {

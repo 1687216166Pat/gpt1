@@ -113,13 +113,11 @@
 
             <!-- 时间线 -->
             <div v-if="activeTab === 'timeline'" class="tab-content timeline-area">
-                <!-- 氛围区 -->
                 <div class="timeline-atmosphere">
                     <p class="timeline-title">留下来的痕迹</p>
                     <p class="timeline-subtitle">{{ timelineAtmosphere }}</p>
                 </div>
 
-                <!-- 添加按钮 -->
                 <div class="add-entry-row" @click="showAddTimeline = true">
                     <svg viewBox="0 0 24 24" fill="none" class="add-entry-icon">
                         <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1" opacity="0.4" />
@@ -128,30 +126,36 @@
                     <span>记录一个瞬间</span>
                 </div>
 
-                <!-- 时间线内容 -->
                 <div v-if="timelineGroups.length > 0" class="timeline-flow">
-                    <div v-for="group in timelineGroups" :key="group.period" class="timeline-group">
-                        <p class="period-label">{{ group.period }}</p>
-                        <div class="timeline-cards">
-                            <GlassCard v-for="event in group.events" :key="event.id" size="sm" class="timeline-event">
-                                <p class="event-content">{{ event.content }}</p>
-                                <div class="event-footer">
-                                    <div class="event-tags" v-if="event.tags && event.tags.length > 0">
-                                        <GlassTag v-for="tag in event.tags" :key="tag" variant="pink" size="sm">{{ tag
-                                            }}</GlassTag>
+                    <div v-for="group in timelineGroups" :key="group.date" class="timeline-day">
+                        <div class="day-header">
+                            <div class="day-dot"></div>
+                            <span class="day-label">{{ group.dateLabel }}</span>
+                            <span class="day-date">{{ group.date }}</span>
+                        </div>
+                        <div class="day-events">
+                            <div v-for="event in group.events" :key="event.id" class="timeline-event-item">
+                                <span class="event-time">{{ event.time }}</span>
+                                <GlassCard size="sm" class="event-card">
+                                    <p class="event-content">{{ event.content }}</p>
+                                    <div class="event-footer">
+                                        <div class="event-tags" v-if="event.tags.length > 0">
+                                            <GlassTag v-for="tag in event.tags" :key="tag" variant="pink" size="sm">{{
+                                                tag }}</GlassTag>
+                                        </div>
+                                        <div class="event-actions">
+                                            <button class="event-action-btn"
+                                                @click="startEditTimeline(event)">✎</button>
+                                            <button class="event-action-btn danger"
+                                                @click="deleteTimelineEvent(event.id)">×</button>
+                                        </div>
                                     </div>
-                                    <div class="event-actions">
-                                        <button class="event-action-btn" @click="startEditTimeline(event)">✎</button>
-                                        <button class="event-action-btn danger"
-                                            @click="deleteTimelineEvent(event.id)">×</button>
-                                    </div>
-                                </div>
-                            </GlassCard>
+                                </GlassCard>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 空状态 -->
                 <div v-else class="timeline-empty">
                     <p class="empty-icon">🌙</p>
                     <p class="empty-title">还没有留下痕迹</p>
@@ -345,7 +349,7 @@ async function loadPersonas() {
             const detailRes = await api(`/api/persona/${personas.value[i].id}`)
             const detail = await detailRes.json()
             personas.value[i].note = detail.note || ''
-        } catch {}
+        } catch { }
     }
 
     // 置顶排序（置顶的排前面，但不影响默认选中）
@@ -1020,4 +1024,119 @@ onMounted(loadPersonas)
     gap: 10px;
     margin-top: 16px;
 }
+
+/* 时间轴 */
+.timeline-flow {
+    position: relative;
+    padding-left: 16px;
+}
+
+.timeline-flow::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--color-border);
+}
+
+.timeline-day {
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.day-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    position: relative;
+}
+
+.day-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e8a8be, #d4899e);
+    position: absolute;
+    left: -21px;
+    box-shadow: 0 0 6px rgba(212, 137, 158, 0.3);
+}
+
+.day-label {
+    font-size: 13px;
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.day-date {
+    font-size: 10px;
+    color: var(--color-text-light);
+    opacity: 0.4;
+}
+
+.day-events {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timeline-event-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.event-time {
+    font-size: 10px;
+    color: var(--color-text-light);
+    opacity: 0.5;
+    min-width: 36px;
+    padding-top: 10px;
+    flex-shrink: 0;
+}
+
+.event-card {
+    flex: 1;
+}
+
+.event-content {
+    font-size: 13px;
+    color: var(--color-text);
+    line-height: 1.6;
+}
+
+.event-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.event-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.event-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.event-action-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: var(--color-text-light);
+    cursor: pointer;
+    padding: 2px 6px;
+    opacity: 0.4;
+}
+
+.event-action-btn.danger {
+    color: #c07070;
+}
+
 </style>

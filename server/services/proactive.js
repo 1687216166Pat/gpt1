@@ -61,7 +61,24 @@ async function setProactiveSettings(personaId, settings) {
 
 async function checkProactiveMessages() {
   const { getPersonaList } = require("./prompt");
-  const personas = getPersonaList();
+  const allPersonas = getPersonaList();
+  const settings = await getProactiveSettings();
+  if (!settings.enabled) return;
+
+  // 只给启用的角色发
+  const enabledIds = settings.enabledPersonas || [];
+  const personas =
+    enabledIds.length > 0
+      ? allPersonas.filter((p) => enabledIds.includes(p.id))
+      : allPersonas;
+
+  // 计算间隔（转换成小时）
+  let minInterval = settings.minInterval || 4;
+  if (settings.intervalUnit === "minutes") {
+    minInterval = (settings.intervalValue || 60) / 60;
+  } else {
+    minInterval = settings.intervalValue || 4;
+  }
 
   for (const persona of personas) {
     const settings = await getProactiveSettings(persona.id);

@@ -8,16 +8,23 @@ export const useChatStore = defineStore("chat", () => {
   const hasMore = ref(false);
   const pageSize = 10;
 
-  function addMessage(msg) {
+function addMessage(msg) {
+    // 去重：相同内容+相同角色+3秒内不重复添加
+    const lastMsg = messages.value[messages.value.length - 1]
+    if (lastMsg && lastMsg.content === msg.content && lastMsg.role === msg.role) {
+        const timeDiff = Math.abs(new Date(msg.timestamp || Date.now()) - new Date(lastMsg.timestamp || Date.now()))
+        if (timeDiff < 3000) return
+    }
+
     const newMsg = {
-      id: msg.id || Date.now() + Math.random(),
-      role: msg.role,
-      content: msg.content,
-      timestamp: msg.timestamp || new Date().toISOString(),
+        id: msg.id || Date.now() + Math.random(),
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp || new Date().toISOString(),
     };
     messages.value.push(newMsg);
     allMessages.value.push(newMsg);
-  }
+}
 
 async function loadPersonaMessages(personaId) {
     if (!personaId) return;

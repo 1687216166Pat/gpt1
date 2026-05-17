@@ -119,25 +119,30 @@ onMounted(() => {
                 screen.style.backgroundSize = 'cover'
                 screen.style.backgroundPosition = 'center'
             }
-        }, 100)
+        }, 500)
     }
 
     // 加载自定义字体
-    const savedFontUrl = localStorage.getItem('custom_font_url')
-    const savedFontName = localStorage.getItem('custom_font_name')
-    if (savedFontUrl && savedFontName) {
-        const style = document.createElement('style')
-        style.textContent = `
+    setTimeout(() => {
+        const savedFontUrl = localStorage.getItem('custom_font_url')
+        const savedFontName = localStorage.getItem('custom_font_name')
+        if (savedFontUrl && savedFontName) {
+            const style = document.createElement('style')
+            style.id = 'custom-font-style'
+            style.textContent = `
             @font-face {
                 font-family: '${savedFontName}';
-                src: url('${savedFontUrl}');
+                src: url('${savedFontUrl}') format('woff2'), url('${savedFontUrl}');
+                font-display: swap;
             }
             html, body, #app, * {
                 font-family: '${savedFontName}', -apple-system, BlinkMacSystemFont, sans-serif !important;
             }
         `
-        document.head.appendChild(style)
-    }
+            document.head.appendChild(style)
+        }
+    }, 500)
+
 })
 
 onUnmounted(() => {

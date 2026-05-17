@@ -128,7 +128,7 @@
         <BlurModal :visible="showCardEditor" @close="showCardEditor = false">
             <h3>字卡管理</h3>
             <div class="card-input-row">
-                <DreamInput v-model="newCard" placeholder="写一张新字卡..." />
+                <DreamInput type="textarea" v-model="newCard" :rows="3" placeholder="写字卡...用换行或 ；/ 分隔可批量添加" />
                 <SoftButton variant="primary" size="sm" @click="addCard" :disabled="!newCard.trim()">添加</SoftButton>
             </div>
             <div class="card-list">
@@ -261,7 +261,16 @@ function pickTodayCard() {
 
 function addCard() {
     if (!newCard.value.trim()) return
-    cards.value.push(newCard.value.trim())
+    // 用换行、；、/、、分隔
+    const items = newCard.value
+        .split(/[\n;；/、]/)
+        .map(s => s.trim())
+        .filter(Boolean)
+    items.forEach(item => {
+        if (!cards.value.includes(item)) {
+            cards.value.push(item)
+        }
+    })
     localStorage.setItem('word_cards', JSON.stringify(cards.value))
     newCard.value = ''
     pickTodayCard()
@@ -698,15 +707,17 @@ onMounted(() => {
     justify-content: center;
     align-items: center;
     gap: 36px;
-    padding: 16px 0;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+    padding: 12px 40px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
     background: var(--color-card);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
     border-top: 1px solid var(--color-border);
     border-radius: 22px 22px 0 0;
-    margin: 0 -22px;
-    margin-top: auto;
+    margin: 0 auto;
+    width: 75%;
+    max-width: 280px;
+    flex-shrink: 0;
 }
 
 .dock-item {
@@ -756,7 +767,6 @@ onMounted(() => {
     scrollbar-width: none;
     scroll-behavior: smooth;
 }
-
 
 .pages-container::-webkit-scrollbar {
     display: none;

@@ -90,4 +90,13 @@ async function pushNotification(title, body) {
 // 延迟加载订阅
 setTimeout(loadSubscriptions, 3000);
 
-module.exports = { addSubscription, removeSubscription, pushNotification };
+function clearSubscriptions() {
+  subscriptions = [];
+}
+
+module.exports = {
+  addSubscription,
+  removeSubscription,
+  pushNotification,
+  clearSubscriptions,
+};

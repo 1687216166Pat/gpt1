@@ -42,15 +42,6 @@
                 <h3>◐ 陪伴频率</h3>
                 <p class="section-sub">决定谁会在什么时候更自然地出现</p>
                 <GlassCard size="md">
-                    <!-- 选择AI -->
-                    <div class="setting-row">
-                        <span>设置对象</span>
-                        <select v-model="proactivePersona" @change="loadProactiveForPersona">
-                            <option value="">全局默认</option>
-                            <option v-for="p in personas" :key="p.id" :value="p.id">{{ p.name }}</option>
-                        </select>
-                    </div>
-
                     <div class="setting-row">
                         <span>启用主动消息</span>
                         <label class="toggle">
@@ -60,25 +51,53 @@
                     </div>
 
                     <div v-if="proactive.enabled">
+                        <!-- 选择角色 -->
+                        <div class="setting-row column">
+                            <span>启用的角色</span>
+                            <div class="persona-checks">
+                                <div v-for="p in personas" :key="p.id" class="persona-check-item"
+                                    @click="toggleProactivePersona(p.id)">
+                                    <div class="check-box"
+                                        :class="{ checked: proactive.enabledPersonas.includes(p.id) }">
+                                        <span v-if="proactive.enabledPersonas.includes(p.id)">✓</span>
+                                    </div>
+                                    <span>{{ p.name }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 间隔设置 -->
+                        <div class="setting-row">
+                            <span>发送间隔</span>
+                            <div class="interval-input">
+                                <input type="number" v-model.number="proactive.intervalValue" min="1" max="99"
+                                    class="interval-number" @change="saveProactive" />
+                                <select v-model="proactive.intervalUnit" @change="saveProactive">
+                                    <option value="minutes">分钟</option>
+                                    <option value="hours">小时</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 每日最多 -->
+                        <div class="setting-row">
+                            <span>每日最多</span>
+                            <div class="interval-input">
+                                <input type="number" v-model.number="proactive.maxPerDay" min="1" max="50"
+                                    class="interval-number" @change="saveProactive" />
+                                <span class="unit-text">次</span>
+                            </div>
+                        </div>
+
+                        <!-- 未互动提醒 -->
                         <div class="setting-row">
                             <span>未互动提醒</span>
                             <select v-model="proactive.idleHours" @change="saveProactive">
+                                <option :value="1">1 小时</option>
+                                <option :value="3">3 小时</option>
                                 <option :value="6">6 小时</option>
                                 <option :value="12">12 小时</option>
                                 <option :value="24">24 小时</option>
-                            </select>
-                        </div>
-                        <div class="setting-row">
-                            <span>启用的AI</span>
-                            <span class="setting-hint">{{ enabledAiNames }}</span>
-                        </div>
-                        <div class="setting-row">
-                            <span>每日最多主动</span>
-                            <select v-model="proactive.maxPerDay" @change="saveProactive">
-                                <option :value="1">1 次</option>
-                                <option :value="2">2 次</option>
-                                <option :value="3">3 次</option>
-                                <option :value="5">5 次</option>
                             </select>
                         </div>
                     </div>
@@ -209,10 +228,10 @@ const apiConfig = reactive({
 const proactive = reactive({
     enabled: true,
     idleHours: 12,
-    nightReminder: true,
-    memoryReminder: true,
     maxPerDay: 3,
-    minInterval: 4
+    intervalValue: 4,
+    intervalUnit: 'hours',
+    enabledPersonas: [],
 })
 
 const outputPrefs = reactive({
@@ -281,12 +300,25 @@ onMounted(async () => {
     } catch (e) {
         console.error('加载设置失败:', e)
     }
+
+    try {
+        const pRes = await api('/api/prompts/personas')
+        const pData = await pRes.json()
+        personas.value = pData.personas
+    } catch { }
+
 })
 
 async function reRegisterPush() {
+    // 先清除后端旧订阅
+    try {
+        await api('/api/push/clear', { method: 'POST' })
+    } catch {}
+    // 重新注册
     await registerPushSubscription()
-    alert('推送注册完成')
+    pushTestResult.value = { success: true, message: '已清除旧订阅并重新注册' }
 }
+
 
 async function saveApiConfig() {
     localStorage.setItem('api_config', JSON.stringify(apiConfig))
@@ -448,6 +480,13 @@ async function exportData() {
 
 function triggerImport() {
     importInput.value.click()
+}
+
+function toggleProactivePersona(id) {
+    const idx = proactive.enabledPersonas.indexOf(id)
+    if (idx > -1) proactive.enabledPersonas.splice(idx, 1)
+    else proactive.enabledPersonas.push(id)
+    saveProactive()
 }
 
 async function importData(event) {
@@ -828,5 +867,71 @@ textarea:focus {
     margin-bottom: 14px;
     font-style: italic;
     letter-spacing: 0.03em;
+}
+
+.setting-row.column {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.persona-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
+.persona-check-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: var(--color-bg);
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-text);
+}
+
+.check-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+}
+
+.check-box.checked {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.interval-input {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.interval-number {
+    width: 50px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0 8px;
+    font-size: 13px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    outline: none;
+    text-align: center;
+}
+
+.unit-text {
+    font-size: 12px;
+    color: var(--color-text-light);
 }
 </style>
