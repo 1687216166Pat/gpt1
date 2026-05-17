@@ -339,44 +339,33 @@ function getGridPoints(radius) {
 }
 
 async function loadPersonas() {
-    const res = await api('/api/prompts/personas')
-    const data = await res.json()
-    personas.value = data.personas.map ? data.personas.map(p => ({ id: p.id, name: p.name })) : data.personas
-
-    // 获取备注（如果是 AboutView）
-    for (let i = 0; i < personas.value.length; i++) {
-        try {
-            const detailRes = await api(`/api/persona/${personas.value[i].id}`)
-            const detail = await detailRes.json()
-            personas.value[i].note = detail.note || ''
-        } catch { }
-    }
-
-    // 置顶排序（置顶的排前面，但不影响默认选中）
-    const pinnedList = JSON.parse(localStorage.getItem('pinned_personas') || '[]')
-    personas.value.sort((a, b) => {
-        const aPinned = pinnedList.includes(a.id)
-        const bPinned = pinnedList.includes(b.id)
-        if (aPinned && !bPinned) return -1
-        if (!aPinned && bPinned) return 1
-        return 0
-    })
-
-    // 默认选中：最近聊天的 AI（不是置顶的）
     try {
-        const latestRes = await api('/api/messages/latest-persona')
-        const latestData = await latestRes.json()
-        if (latestData.personaId) {
-            currentPersona.value = latestData.personaId
-        } else {
-            currentPersona.value = data.active || personas.value[0]?.id || 'xiaorou'
-        }
-    } catch {
-        currentPersona.value = data.active || personas.value[0]?.id || 'xiaorou'
-    }
+        const res = await api('/api/personas/all')
+        personas.value = await res.json()
 
-    await loadAll()
+        // 置顶排序
+        const pinnedList = JSON.parse(localStorage.getItem('pinned_personas') || '[]')
+        personas.value.sort((a, b) => {
+            if (pinnedList.includes(a.id) && !pinnedList.includes(b.id)) return -1
+            if (!pinnedList.includes(a.id) && pinnedList.includes(b.id)) return 1
+            return 0
+        })
+
+        // 选择默认人格
+        try {
+            const latestRes = await api('/api/messages/latest-persona')
+            const latestData = await latestRes.json()
+            currentPersona.value = latestData.personaId || personas.value[0]?.id || 'xiaorou'
+        } catch {
+            currentPersona.value = personas.value[0]?.id || 'xiaorou'
+        }
+
+        await loadAll()
+    } catch (e) {
+        console.error('加载失败:', e)
+    }
 }
+
 
 async function switchPersona(id) {
     currentPersona.value = id

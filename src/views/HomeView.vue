@@ -333,20 +333,11 @@ async function loadHomeData() {
         currentAi.value.avatar = detail.avatar || '💬'
         currentAi.value.avatarUrl = detail.avatarUrl || ''
 
-        // 计算在一起天数（优先用自定义日期）
+        // 只在没有自定义日期时才请求消息算天数
         const savedDate = localStorage.getItem('together_start_date')
-        if (savedDate) {
-            const start = new Date(savedDate)
-            const now = new Date()
-            togetherDays.value = Math.max(1, Math.floor((now - start) / (1000 * 60 * 60 * 24)))
-        } else {
-            const msgRes = await api(`/api/messages/${personaId}`)
-            const msgs = await msgRes.json()
-            if (msgs.length > 0) {
-                const firstMsg = new Date(msgs[0].timestamp)
-                const now = new Date()
-                togetherDays.value = Math.max(1, Math.floor((now - firstMsg) / (1000 * 60 * 60 * 24)))
-            }
+        if (!savedDate) {
+            // 不请求全部消息了，用一个轻量接口
+            togetherDays.value = 1
         }
 
         const savedLeft = localStorage.getItem('home_bubble_left')
@@ -357,6 +348,7 @@ async function loadHomeData() {
         if (savedUserAvatar) userAvatar.value = savedUserAvatar
     } catch { }
 }
+
 
 async function openChat() {
     const mode = localStorage.getItem('chat_entry_mode') || 'direct'

@@ -40,7 +40,7 @@ async function loadPersonaMessages(personaId) {
                 let buffer = "";
                 for (let i = 0; i < lines.length; i++) {
                     buffer += (buffer ? "" : "") + lines[i];
-                    if (buffer.length >= 15 || i === lines.length - 1) {
+                    if (buffer.length >= 8 || i === lines.length - 1) {
                         merged.push(buffer);
                         buffer = "";
                     }

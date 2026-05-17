@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icon-192.png", "icon-512.png", "icon-180.png"],
       manifest: {
-        name: "AI Phone",
-        short_name: "AI Phone",
-        description: "AI 手机助手",
+        name: "Melt",
+        short_name: "Melt",
+        description: "我们的小屋",
         theme_color: "#fdf6f0",
         background_color: "#fdf6f0",
         display: "standalone",
@@ -21,12 +21,12 @@ export default defineConfig({
         scope: "/",
         icons: [
           {
-            src: "/icon-192.png",
+            src: "/9f8d996ebf059662d3bb7a560cb461c3.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "/icon-512.png",
+            src: "/9f8d996ebf059662d3bb7a560cb461c3.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",

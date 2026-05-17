@@ -132,22 +132,24 @@ function handleSend(text) {
 
 
 function handleIncoming(data) {
-    // 处理总线消息（微信同步）
-    if (data.type === 'bus_message' && data.message.conversation_id === personaId.value) {
-        chatStore.addMessage({
-            role: data.message.role === 'assistant' ? 'ai' : 'user',
-            content: data.message.content,
-            timestamp: new Date(data.message.timestamp).toISOString(),
-        })
-        scrollToBottom()
+    // 处理总线消息（只有微信同步人格才处理）
+    if (data.type === 'bus_message') {
+        if (data.message.conversation_id === personaId.value && personaId.value === 'wechat_sync') {
+            chatStore.addMessage({
+                role: data.message.role === 'assistant' ? 'ai' : 'user',
+                content: data.message.content,
+                timestamp: new Date(data.message.timestamp).toISOString(),
+            })
+            scrollToBottom()
+        }
         return
     }
+
     if (data.type === 'chat' || data.type === 'push') {
         isTyping.value = false
 
         const lines = data.content.split('\n').map(l => l.trim()).filter(Boolean)
 
-        // 强制合并：短于15字的行和下一行合并
         const merged = []
         let buffer = ''
         for (let i = 0; i < lines.length; i++) {
@@ -158,7 +160,6 @@ function handleIncoming(data) {
             }
         }
 
-        // 限制最大气泡数
         let final = merged
         if (merged.length > maxBubbles.value) {
             final = []
@@ -168,17 +169,13 @@ function handleIncoming(data) {
             }
         }
 
-        if (final.length > 1) {
-            final.forEach((line, idx) => {
-                setTimeout(() => {
-                    chatStore.addMessage({ role: 'ai', content: line, timestamp: data.timestamp })
-                    scrollToBottom()
-                }, idx * 500)
-            })
-        } else {
-            chatStore.addMessage({ role: 'ai', content: data.content.replace(/\n/g, ''), timestamp: data.timestamp })
-            scrollToBottom()
-        }
+        // 统一用拆分逻辑
+        final.forEach((line, idx) => {
+            setTimeout(() => {
+                chatStore.addMessage({ role: 'ai', content: line, timestamp: data.timestamp })
+                scrollToBottom()
+            }, idx * 500)
+        })
 
         if (data.debug) {
             debugInfo.value = data.debug

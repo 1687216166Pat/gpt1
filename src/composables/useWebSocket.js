@@ -51,7 +51,7 @@ function connect() {
     messageHandlers.forEach((handler) => handler(data));
 
     if (document.hidden && (data.type === "chat" || data.type === "push")) {
-      sendSystemNotification(data.content, data.personaName || "AI 助手");
+      sendSystemNotification(data.content, data.personaName);
     }
   };
 

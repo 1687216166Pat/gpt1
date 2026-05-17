@@ -123,50 +123,32 @@ async function createPersona() {
 
 async function loadPersonas() {
     try {
-        const res = await api('/api/prompts/personas')
-        const data = await res.json()
+        const res = await api('/api/personas/all')
+        personas.value = await res.json()
 
-        const detailed = await Promise.all(
-            data.personas.map(async (p) => {
-                let note = ''
-                let avatarUrl = ''
-                let avatar = p.avatar || '💬'
-                let lastMessage = ''
-
-                try {
-                    const detailRes = await api(`/api/persona/${p.id}`)
-                    const detail = await detailRes.json()
-                    note = detail.note || ''
-                    avatarUrl = detail.avatarUrl || ''
-                    avatar = detail.avatar || avatar
-                } catch {}
-
-                try {
-                    const msgRes = await api(`/api/messages/${p.id}`)
-                    const msgs = await msgRes.json()
-                    if (msgs.length > 0) {
-                        const last = msgs[msgs.length - 1]
-                        const prefix = last.role === 'ai' ? '' : '我: '
-                        const content = last.content.split('\n')[0]
-                        lastMessage = prefix + (content.length > 25 ? content.slice(0, 25) + '...' : content)
-                    }
-                } catch {}
-
-                return { ...p, note, avatarUrl, avatar, lastMessage }
-            })
-        )
-
-        // 加载置顶状态（放在 detailed 声明之后）
+        // 置顶排序
         const pinnedList = JSON.parse(localStorage.getItem('pinned_personas') || '[]')
-        detailed.forEach(p => {
-            p.pinned = pinnedList.includes(p.id)
+        personas.value.sort((a, b) => {
+            if (pinnedList.includes(a.id) && !pinnedList.includes(b.id)) return -1
+            if (!pinnedList.includes(a.id) && pinnedList.includes(b.id)) return 1
+            return 0
         })
 
-        personas.value = detailed
+        // 选择默认人格
+        try {
+            const latestRes = await api('/api/messages/latest-persona')
+            const latestData = await latestRes.json()
+            currentPersona.value = latestData.personaId || personas.value[0]?.id || 'xiaorou'
+        } catch {
+            currentPersona.value = personas.value[0]?.id || 'xiaorou'
+        }
+
+        await loadAll()
     } catch (e) {
         console.error('加载失败:', e)
     }
 }
+
 
 onMounted(loadPersonas)
 </script>

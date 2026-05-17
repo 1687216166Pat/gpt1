@@ -1072,4 +1072,34 @@ router.post("/push/clear", async (req, res) => {
   res.json({ success: true });
 });
 
+router.get("/personas/all", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const { getPersonaList } = require("../services/prompt");
+  const db = getDB();
+
+  const list = getPersonaList();
+
+  // 批量获取所有配置
+  const { data: configs } = await db
+    .from("user_profile")
+    .select("key, value")
+    .like("key", "persona_config_%");
+
+  const configMap = {};
+  if (configs) {
+    configs.forEach(row => {
+      const id = row.key.replace("persona_config_", "");
+      configMap[id] = JSON.parse(row.value);
+    });
+  }
+
+  // 合并
+  const result = list.map(p => ({
+    ...p,
+    ...(configMap[p.id] || {}),
+  }));
+
+  res.json(result);
+});
+
 module.exports = router;

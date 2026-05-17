@@ -67,36 +67,32 @@ const currentPersona = ref('')
 
 async function loadPersonas() {
     try {
-        const res = await api('/api/prompts/personas')
-        const data = await res.json()
-        personas.value = data.personas.map(p => ({ id: p.id, name: p.name }))
+        const res = await api('/api/personas/all')
+        personas.value = await res.json()
 
         // 置顶排序
         const pinnedList = JSON.parse(localStorage.getItem('pinned_personas') || '[]')
         personas.value.sort((a, b) => {
-            const aPinned = pinnedList.includes(a.id)
-            const bPinned = pinnedList.includes(b.id)
-            if (aPinned && !bPinned) return -1
-            if (!aPinned && bPinned) return 1
+            if (pinnedList.includes(a.id) && !pinnedList.includes(b.id)) return -1
+            if (!pinnedList.includes(a.id) && pinnedList.includes(b.id)) return 1
             return 0
         })
 
-        // 优先选择置顶的
-        if (pinnedList.length > 0) {
-            currentPersona.value = pinnedList[0]
-        } else {
-            try {
-                const latestRes = await api('/api/messages/latest-persona')
-                const latestData = await latestRes.json()
-                currentPersona.value = latestData.personaId || personas.value[0]?.id || ''
-            } catch {
-                currentPersona.value = personas.value[0]?.id || ''
-            }
+        // 选择默认人格
+        try {
+            const latestRes = await api('/api/messages/latest-persona')
+            const latestData = await latestRes.json()
+            currentPersona.value = latestData.personaId || personas.value[0]?.id || 'xiaorou'
+        } catch {
+            currentPersona.value = personas.value[0]?.id || 'xiaorou'
         }
 
-        await loadLog()
-    } catch { }
+        await loadAll()
+    } catch (e) {
+        console.error('加载失败:', e)
+    }
 }
+
 
 
 function switchPersona(id) {
