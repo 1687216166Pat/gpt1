@@ -8,13 +8,13 @@
             @mousemove="handleMouseMove" @mouseup="handleMouseUp" @mouseleave="handleMouseUp">
             <!-- 第一页 -->
             <div class="page">
-                <!-- 纸条组件 -->
-                <div class="folder-note">
+                <!-- 字卡组件 -->
+                <div class="folder-note" @click="showCardEditor = true">
                     <div class="folder-back">
-                        <p class="note-text">{{ aiNote }}</p>
+                        <p class="note-text">{{ todayCard }}</p>
                     </div>
                     <div class="folder-front">
-                        <span class="folder-front-text">{{ currentAi.note || currentAi.name || '...' }}今天想说...</span>
+                        <span class="folder-front-text">{{ currentAi.note || currentAi.name || '...' }}今天选了这张</span>
                         <div class="folder-tab-ext"></div>
                     </div>
                 </div>
@@ -23,7 +23,7 @@
                 <div class="main-content">
                     <!-- 左侧：纪念日 + 小app -->
                     <div class="left-column">
-                        <GlassCard size="md" class="days-card">
+                        <GlassCard size="md" class="days-card" @click="showDaysEdit = true">
                             <div class="days-decor">
                                 <span class="decor-heart d1">♡</span>
                                 <span class="decor-heart d2">♡</span>
@@ -112,6 +112,32 @@
             <span class="dot" :class="{ active: currentPage === 1 }"></span>
         </div>
 
+        <!-- 纪念日编辑弹窗 -->
+        <BlurModal :visible="showDaysEdit" @close="showDaysEdit = false">
+            <h3>设置纪念日</h3>
+            <DreamInput label="开始日期" type="date" v-model="startDate" />
+            <div class="modal-actions">
+                <SoftButton variant="secondary" @click="showDaysEdit = false">取消</SoftButton>
+                <SoftButton variant="primary" @click="saveDaysDate">保存</SoftButton>
+            </div>
+        </BlurModal>
+
+        <!-- 字卡编辑弹窗 -->
+        <BlurModal :visible="showCardEditor" @close="showCardEditor = false">
+            <h3>字卡管理</h3>
+            <div class="card-input-row">
+                <DreamInput v-model="newCard" placeholder="写一张新字卡..." />
+                <SoftButton variant="primary" size="sm" @click="addCard" :disabled="!newCard.trim()">添加</SoftButton>
+            </div>
+            <div class="card-list">
+                <div v-for="(card, idx) in cards" :key="idx" class="card-item">
+                    <span class="card-text">{{ card }}</span>
+                    <button class="card-delete" @click="removeCard(idx)">×</button>
+                </div>
+                <p v-if="cards.length === 0" class="empty-text">还没有字卡，添加一些吧</p>
+            </div>
+        </BlurModal>
+
         <!-- Dock 栏 -->
         <div class="dock-bar">
             <div class="dock-item" @click="openChat">
@@ -167,6 +193,9 @@ import { useTime } from '@/composables/useTime'
 import { api } from '@/utils/api'
 import GlassCard from '@/components/ui/GlassCard.vue'
 import AppIcon from '@/components/ui/AppIcon.vue'
+import BlurModal from '@/components/ui/BlurModal.vue'
+import DreamInput from '@/components/ui/DreamInput.vue'
+import SoftButton from '@/components/ui/SoftButton.vue'
 
 const router = useRouter()
 const { dateStr } = useTime()
@@ -186,6 +215,12 @@ const rightBubbleText = ref('我也是')
 const userAvatar = ref('🌙')
 
 const currentPage = ref(0)
+const showCardEditor = ref(false)
+const cards = ref([])
+const newCard = ref('')
+const todayCard = ref('还没有字卡...')
+const startDate = ref('')
+const showDaysEdit = ref(false)
 
 const pagesContainer = ref(null)
 let isDragging = false
@@ -196,6 +231,60 @@ function handlePageScroll(e) {
     const container = e.target
     const pageWidth = container.offsetWidth
     currentPage.value = Math.round(container.scrollLeft / pageWidth)
+}
+
+function loadCards() {
+    const saved = localStorage.getItem('word_cards')
+    if (saved) {
+        cards.value = JSON.parse(saved)
+        pickTodayCard()
+    }
+}
+
+function pickTodayCard() {
+    if (cards.value.length === 0) {
+        todayCard.value = '还没有字卡...'
+        return
+    }
+    // 用日期作为种子，每天固定选一张
+    const today = new Date().toISOString().slice(0, 10)
+    let hash = 0
+    for (let i = 0; i < today.length; i++) {
+        hash = ((hash << 5) - hash) + today.charCodeAt(i)
+        hash |= 0
+    }
+    const idx = Math.abs(hash) % cards.value.length
+    todayCard.value = cards.value[idx]
+}
+
+function addCard() {
+    if (!newCard.value.trim()) return
+    cards.value.push(newCard.value.trim())
+    localStorage.setItem('word_cards', JSON.stringify(cards.value))
+    newCard.value = ''
+    pickTodayCard()
+}
+
+function removeCard(idx) {
+    cards.value.splice(idx, 1)
+    localStorage.setItem('word_cards', JSON.stringify(cards.value))
+    pickTodayCard()
+}
+
+function saveDaysDate() {
+    if (!startDate.value) return
+    localStorage.setItem('together_start_date', startDate.value)
+    calculateDays()
+    showDaysEdit.value = false
+}
+
+function calculateDays() {
+    const saved = localStorage.getItem('together_start_date')
+    if (saved) {
+        const start = new Date(saved)
+        const now = new Date()
+        togetherDays.value = Math.max(1, Math.floor((now - start) / (1000 * 60 * 60 * 24)))
+    }
 }
 
 function handleMouseDown(e) {
@@ -233,12 +322,20 @@ async function loadHomeData() {
         currentAi.value.avatar = detail.avatar || '💬'
         currentAi.value.avatarUrl = detail.avatarUrl || ''
 
-        const msgRes = await api(`/api/messages/${personaId}`)
-        const msgs = await msgRes.json()
-        if (msgs.length > 0) {
-            const firstMsg = new Date(msgs[0].timestamp)
+        // 计算在一起天数（优先用自定义日期）
+        const savedDate = localStorage.getItem('together_start_date')
+        if (savedDate) {
+            const start = new Date(savedDate)
             const now = new Date()
-            togetherDays.value = Math.max(1, Math.floor((now - firstMsg) / (1000 * 60 * 60 * 24)))
+            togetherDays.value = Math.max(1, Math.floor((now - start) / (1000 * 60 * 60 * 24)))
+        } else {
+            const msgRes = await api(`/api/messages/${personaId}`)
+            const msgs = await msgRes.json()
+            if (msgs.length > 0) {
+                const firstMsg = new Date(msgs[0].timestamp)
+                const now = new Date()
+                togetherDays.value = Math.max(1, Math.floor((now - firstMsg) / (1000 * 60 * 60 * 24)))
+            }
         }
 
         const savedLeft = localStorage.getItem('home_bubble_left')
@@ -270,8 +367,11 @@ function openCompanionSpace() {
 function openPhone() { }
 
 onMounted(() => {
+    loadCards()
+    calculateDays()
     loadHomeData()
 })
+
 </script>
 
 <style scoped>
@@ -773,6 +873,46 @@ onMounted(() => {
     to {
         transform: rotate(360deg);
     }
+}
+
+.card-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    margin-bottom: 14px;
+}
+
+.card-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.card-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.card-item:last-child {
+    border-bottom: none;
+}
+
+.card-text {
+    font-size: 13px;
+    color: var(--color-text);
+    flex: 1;
+}
+
+.card-delete {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: var(--color-text-light);
+    cursor: pointer;
+    opacity: 0.4;
+    padding: 4px 8px;
 }
 
 /* 版本号 */

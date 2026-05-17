@@ -73,6 +73,7 @@
                     <div class="action-group">
                         <SoftButton variant="glass" block @click="testProactive">测试主动消息</SoftButton>
                         <SoftButton variant="glass" block @click="testPush">测试推送通知</SoftButton>
+                        <SoftButton variant="glass" block @click="reRegisterPush">重新注册推送</SoftButton>
                     </div>
 
                     <p v-if="proactiveTestResult" class="api-result"
@@ -158,6 +159,7 @@ import { api } from '@/utils/api'
 import GlassCard from '@/components/ui/GlassCard.vue'
 import SoftButton from '@/components/ui/SoftButton.vue'
 import DreamInput from '@/components/ui/DreamInput.vue'
+import { useWebSocket } from '@/composables/useWebSocket'
 
 const personas = ref([])
 const activePersona = ref('')
@@ -191,7 +193,7 @@ const modelList = ref([])
 const apiTestResult = ref(null)
 const proactiveTestResult = ref(null)
 const webhookUrl = ref(import.meta.env.VITE_API_URL || window.location.origin)
-
+const { registerPushSubscription } = useWebSocket()
 
 onMounted(async () => {
     // 加载 API 配置（本地存储）
@@ -228,6 +230,10 @@ onMounted(async () => {
     }
 })
 
+async function reRegisterPush() {
+    await registerPushSubscription()
+    alert('推送注册完成')
+}
 
 async function saveApiConfig() {
     localStorage.setItem('api_config', JSON.stringify(apiConfig))
