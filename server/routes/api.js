@@ -477,7 +477,7 @@ router.put("/persona/:personaId", async (req, res) => {
     ai_relationship,
     user_relationship,
   } = req.body;
-  
+
   const { data: existing } = await db
     .from("custom_personas")
     .select("id")
@@ -574,23 +574,74 @@ router.get("/worldbooks", async (req, res) => {
   res.json(data || []);
 });
 
+// 创建世界书
 router.post("/worldbooks", async (req, res) => {
   const { getDB } = require("../db/index");
   const db = getDB();
-  const { title, content } = req.body;
+  const { title, content, position, keywords, keyword_enabled } = req.body;
   const id = "wb_" + Date.now().toString(36);
-  await db.from("world_books").insert({ id, title, content });
+  await db.from("world_books").insert({
+    id,
+    title,
+    content,
+    position: position || "before_char",
+    keywords: keywords || "",
+    keyword_enabled: keyword_enabled || false,
+  });
   res.json({ success: true, id });
 });
 
+// 更新世界书
 router.put("/worldbooks/:id", async (req, res) => {
   const { getDB } = require("../db/index");
   const db = getDB();
-  const { title, content } = req.body;
-  await db
+  const {
+    title,
+    content,
+    position,
+    keywords,
+    keyword_enabled,
+    bind_type,
+    bind_personas,
+  } = req.body;
+  const updateData = {};
+  if (title !== undefined) updateData.title = title;
+  if (content !== undefined) updateData.content = content;
+  if (position !== undefined) updateData.position = position;
+  if (keywords !== undefined) updateData.keywords = keywords;
+  if (keyword_enabled !== undefined)
+    updateData.keyword_enabled = keyword_enabled;
+  if (bind_type !== undefined) updateData.bind_type = bind_type;
+  if (bind_personas !== undefined) updateData.bind_personas = bind_personas;
+
+  console.log("[PUT worldbook] id:", req.params.id, "updateData:", updateData);
+
+  const { data, error } = await db
     .from("world_books")
-    .update({ title, content })
-    .eq("id", req.params.id);
+    .update(updateData)
+    .eq("id", req.params.id)
+    .select();
+
+  console.log("[PUT worldbook] result:", { data, error });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// 批量绑定世界书
+router.post("/worldbooks/bind", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { bookIds, bindType, bindPersonas } = req.body;
+  for (const id of bookIds) {
+    await db
+      .from("world_books")
+      .update({
+        bind_type: bindType,
+        bind_personas: bindPersonas || "",
+      })
+      .eq("id", id);
+  }
   res.json({ success: true });
 });
 

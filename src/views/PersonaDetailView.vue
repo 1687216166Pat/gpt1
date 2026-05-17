@@ -74,12 +74,23 @@
 
             <!-- 世界书绑定 -->
             <div class="section-block">
-                <h3 class="section-label">世界书绑定</h3>
-                <GlassCard size="md">
-                    <select v-model="detail.worldBookId" class="select-field full">
-                        <option value="">不绑定</option>
-                        <option v-for="book in worldBooks" :key="book.id" :value="book.id">{{ book.title }}</option>
-                    </select>
+                <h3 class="section-label" @click="showWorldBooks = !showWorldBooks" style="cursor:pointer">
+                    世界书绑定 {{ showWorldBooks ? '▾' : '▸' }}
+                    <span class="wb-count" v-if="detail.worldBookIds && detail.worldBookIds.length">{{
+                        detail.worldBookIds.length }}本</span>
+                </h3>
+                <GlassCard v-if="showWorldBooks" size="md" class="wb-card">
+                    <div class="wb-scroll">
+                        <div v-for="book in worldBooks" :key="book.id" class="wb-check-row"
+                            @click="toggleWorldBook(book.id)">
+                            <div class="wb-checkbox"
+                                :class="{ checked: detail.worldBookIds && detail.worldBookIds.includes(book.id) }">
+                                <span v-if="detail.worldBookIds && detail.worldBookIds.includes(book.id)">✓</span>
+                            </div>
+                            <span class="wb-name">{{ book.title }}</span>
+                        </div>
+                        <p v-if="worldBooks.length === 0" class="empty-text">暂无世界书</p>
+                    </div>
                 </GlassCard>
             </div>
 
@@ -132,6 +143,7 @@ const personaId = route.params.personaId
 const saveMsg = ref('')
 const worldBooks = ref([])
 const showAvatarEdit = ref(false)
+const showWorldBooks = ref(false)
 
 const detail = reactive({
     name: '',
@@ -153,6 +165,10 @@ async function loadDetail() {
         const res = await api(`/api/persona/${personaId}`)
         const data = await res.json()
         Object.assign(detail, data)
+        // 确保数字字段正确
+        if (data.min_messages) detail.minMessages = data.min_messages
+        if (data.max_messages) detail.maxMessages = data.max_messages
+        if (data.world_book_id) detail.worldBookId = data.world_book_id
     } catch (e) {
         console.error('加载详情失败:', e)
     }
@@ -172,7 +188,20 @@ async function saveDetail() {
         await api(`/api/persona/${personaId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(detail)
+            body: JSON.stringify({
+                name: detail.name,
+                avatar: detail.avatar,
+                avatarUrl: detail.avatarUrl,
+                note: detail.note,
+                gender: detail.gender,
+                content: detail.content,
+                worldBookId: detail.worldBookId,
+                call_user: detail.call_user,
+                ai_relationship: detail.ai_relationship,
+                user_relationship: detail.user_relationship,
+                minMessages: detail.minMessages,
+                maxMessages: detail.maxMessages,
+            })
         })
         saveMsg.value = '已保存 ✓'
         setTimeout(() => { saveMsg.value = '' }, 2000)
@@ -189,6 +218,13 @@ function handleAvatarUpload(event) {
         detail.avatarUrl = e.target.result
     }
     reader.readAsDataURL(file)
+}
+
+function toggleWorldBook(id) {
+    if (!detail.worldBookIds) detail.worldBookIds = []
+    const idx = detail.worldBookIds.indexOf(id)
+    if (idx > -1) detail.worldBookIds.splice(idx, 1)
+    else detail.worldBookIds.push(id)
 }
 
 async function clearMessages() {
@@ -221,6 +257,10 @@ onMounted(() => {
 .detail-page * {
     max-width: 100%;
     overflow-wrap: break-word;
+}
+
+.detail-page {
+    padding-top: calc(env(safe-area-inset-top, 44px) + 16px);
 }
 
 .detail-header {
@@ -515,5 +555,58 @@ onMounted(() => {
     text-align: right;
     appearance: none;
     -webkit-appearance: none;
+}
+
+.wb-check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    cursor: pointer;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.wb-check-row:last-child {
+    border-bottom: none;
+}
+
+.wb-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 1.5px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: white;
+    transition: all 0.2s;
+}
+
+.wb-checkbox.checked {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.wb-name {
+    font-size: 13px;
+    color: var(--color-text);
+}
+
+.wb-card {
+    max-height: 160px;
+    overflow: hidden;
+}
+
+.wb-scroll {
+    max-height: 140px;
+    overflow-y: auto;
+}
+
+.wb-count {
+    font-size: 10px;
+    color: var(--color-primary);
+    margin-left: 6px;
+    opacity: 0.7;
 }
 </style>

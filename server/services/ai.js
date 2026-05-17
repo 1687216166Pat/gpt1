@@ -245,15 +245,64 @@ async function handleChat(userMessage, ws, personaId) {
     }
   }
 
-  let systemContent = `${fullPrompt}
-${defaultWorldBook}
-${timeContext}
-${memoryContext}
-${relationshipContext}
-${phoneContext}`;
+  // 加载世界书
+  let worldBookBefore = "";
+  let worldBookAfter = "";
+  let worldBookBeforeUser = "";
+  let worldBookTail = "";
+  let worldBookOverride = "";
 
-  systemContent += `\n[重要] 严格遵守上述所有输出风格规则，每次回复都必须执行。`;
-  systemContent += `\n[输出条数] 回复分${minMsg}-${maxMsg}条消息，每条必须是完整的句子。`;
+  try {
+    const { data: books } = await db.from("world_books").select("*");
+    if (books) {
+      books.forEach((book) => {
+        // 检查绑定
+        const isGlobal = book.bind_type === "global" || !book.bind_type;
+        const isBound = book.bind_personas && book.bind_personas.includes(pid);
+        if (!isGlobal && !isBound) return;
+
+        // 检查关键词触发
+        if (book.keyword_enabled && book.keywords) {
+          const kws = book.keywords.split(",").map((k) => k.trim());
+          const hasKeyword = kws.some((kw) => userMessage.includes(kw));
+          if (!hasKeyword) return;
+        }
+
+        // 按位置分类
+        switch (book.position) {
+          case "override":
+            worldBookOverride += "\n" + book.content;
+            break;
+          case "before_char":
+            worldBookBefore += "\n" + book.content;
+            break;
+          case "after_char":
+            worldBookAfter += "\n" + book.content;
+            break;
+          case "before_user":
+            worldBookBeforeUser += "\n" + book.content;
+            break;
+          case "tail":
+            worldBookTail += "\n" + book.content;
+            break;
+        }
+      });
+    }
+  } catch {}
+
+let systemContent = '';
+if (worldBookOverride) systemContent += worldBookOverride + '\n';
+if (worldBookBefore) systemContent += worldBookBefore + '\n';
+systemContent += fullPrompt + '\n';
+if (worldBookAfter) systemContent += worldBookAfter + '\n';
+systemContent += defaultWorldBook + '\n';
+systemContent += timeContext + '\n';
+systemContent += memoryContext + '\n';
+systemContent += relationshipContext + '\n';
+systemContent += phoneContext + '\n';
+if (worldBookBeforeUser) systemContent += worldBookBeforeUser + '\n';
+if (worldBookTail) systemContent += worldBookTail + '\n';
+systemContent += `\n[重要] 严格遵守上述所有规则。`;
 
   const messages = [
     { role: "system", content: systemContent },
