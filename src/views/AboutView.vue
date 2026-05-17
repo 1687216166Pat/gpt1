@@ -138,7 +138,7 @@
                                 <div class="event-footer">
                                     <div class="event-tags" v-if="event.tags && event.tags.length > 0">
                                         <GlassTag v-for="tag in event.tags" :key="tag" variant="pink" size="sm">{{ tag
-                                        }}</GlassTag>
+                                            }}</GlassTag>
                                     </div>
                                     <div class="event-actions">
                                         <button class="event-action-btn" @click="startEditTimeline(event)">✎</button>
@@ -344,24 +344,35 @@ async function loadPersonas() {
             const detailRes = await api(`/api/persona/${personas.value[i].id}`)
             const detail = await detailRes.json()
             personas.value[i].note = detail.note || ''
-        } catch { }
+        } catch {}
     }
 
-    // 优先用最近聊天的人格
-    try {
-        const latestRes = await api('/api/messages/latest-persona')
-        const latestData = await latestRes.json()
-        if (latestData.personaId) {
-            currentPersona.value = latestData.personaId
-        } else {
-            currentPersona.value = data.active || (personas.value[0] && personas.value[0].id) || 'xiaorou'
+    // 置顶排序
+    const pinnedList = JSON.parse(localStorage.getItem('pinned_personas') || '[]')
+    personas.value.sort((a, b) => {
+        const aPinned = pinnedList.includes(a.id)
+        const bPinned = pinnedList.includes(b.id)
+        if (aPinned && !bPinned) return -1
+        if (!aPinned && bPinned) return 1
+        return 0
+    })
+
+    // 选择默认显示的人格：置顶 > 最近聊天 > 默认
+    if (pinnedList.length > 0) {
+        currentPersona.value = pinnedList[0]
+    } else {
+        try {
+            const latestRes = await api('/api/messages/latest-persona')
+            const latestData = await latestRes.json()
+            currentPersona.value = latestData.personaId || data.active || personas.value[0]?.id || 'xiaorou'
+        } catch {
+            currentPersona.value = data.active || personas.value[0]?.id || 'xiaorou'
         }
-    } catch {
-        currentPersona.value = data.active || (personas.value[0] && personas.value[0].id) || 'xiaorou'
     }
 
     await loadAll()
 }
+
 
 async function switchPersona(id) {
     currentPersona.value = id

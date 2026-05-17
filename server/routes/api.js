@@ -133,12 +133,16 @@ router.post("/prompts/user", async (req, res) => {
 
 // 主动消息
 router.get("/proactive/settings", async (req, res) => {
-  const settings = await getProactiveSettings();
+  const personaId = req.query.persona || null;
+  const settings = await getProactiveSettings(personaId);
   res.json(settings);
 });
 
 router.post("/proactive/settings", async (req, res) => {
-  await setProactiveSettings(req.body);
+  const personaId = req.body.personaId || null;
+  const settings = { ...req.body };
+  delete settings.personaId;
+  await setProactiveSettings(personaId, settings);
   res.json({ success: true });
 });
 
@@ -869,6 +873,97 @@ router.delete("/timeline/event/:id", async (req, res) => {
   const db = getDB();
   await db.from("timeline_events").delete().eq("id", req.params.id);
   res.json({ success: true });
+});
+
+const {
+  receiveMessage,
+  getHistory,
+  getUnsyncedMessages,
+  getDailyLog,
+  markSynced,
+} = require("../services/bus");
+
+// 消息总线：接收消息
+router.post("/bus/message", async (req, res) => {
+  const msg = await receiveMessage(req.body);
+  if (msg) {
+    res.json({ success: true, message: msg });
+  } else {
+    res.json({ success: false, reason: "duplicate" });
+  }
+});
+
+// 消息总线：获取历史
+router.get("/bus/history/:conversationId", async (req, res) => {
+  const data = await getHistory(
+    req.params.conversationId,
+    parseInt(req.query.limit) || 50,
+  );
+  res.json(data);
+});
+
+// 消息总线：获取未同步消息
+router.get("/bus/unsynced/:platform/:conversationId", async (req, res) => {
+  const data = await getUnsyncedMessages(
+    req.params.platform,
+    req.params.conversationId,
+  );
+  res.json(data);
+});
+
+// 消息总线：标记已同步
+router.post("/bus/synced", async (req, res) => {
+  const { msgId, platform } = req.body;
+  await markSynced(msgId, platform);
+  res.json({ success: true });
+});
+
+// 消息总线：获取日志（语料库）
+router.get("/bus/log/:date", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const date = req.params.date;
+  const persona = req.query.persona;
+
+  const startOfDay = new Date(`${date}T00:00:00Z`).getTime();
+  const endOfDay = new Date(`${date}T23:59:59Z`).getTime();
+
+  let query = db
+    .from("message_bus")
+    .select("*")
+    .gte("timestamp", startOfDay)
+    .lte("timestamp", endOfDay)
+    .order("timestamp", { ascending: true });
+
+  if (persona) {
+    query = query.eq("conversation_id", persona);
+  }
+
+  const { data } = await query;
+  res.json({ date, messages: data || [] });
+});
+
+// 微信消息 Webhook（供微信机器人调用）
+router.post("/bus/wechat/incoming", async (req, res) => {
+  const { content, sender } = req.body;
+  const msg = await receiveMessage({
+    platform: "wechat",
+    sender: sender || "user",
+    role: "user",
+    content,
+    conversation_id: "default",
+  });
+  res.json({ success: true, message: msg });
+});
+
+// 微信获取待发送的AI回复
+router.get("/bus/wechat/pending", async (req, res) => {
+  const data = await getUnsyncedMessages("wechat", "default");
+  // 只返回 AI 的回复
+  const aiMessages = data.filter(
+    (m) => m.role === "assistant" && m.platform !== "wechat",
+  );
+  res.json(aiMessages);
 });
 
 module.exports = router;

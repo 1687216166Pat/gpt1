@@ -40,8 +40,17 @@
             <!-- 主动消息设置 -->
             <div class="section">
                 <h3>◐ 陪伴频率</h3>
-                <p class="section-sub">决定他会在什么时候更自然地出现</p>
+                <p class="section-sub">决定谁会在什么时候更自然地出现</p>
                 <GlassCard size="md">
+                    <!-- 选择AI -->
+                    <div class="setting-row">
+                        <span>设置对象</span>
+                        <select v-model="proactivePersona" @change="loadProactiveForPersona">
+                            <option value="">全局默认</option>
+                            <option v-for="p in personas" :key="p.id" :value="p.id">{{ p.name }}</option>
+                        </select>
+                    </div>
+
                     <div class="setting-row">
                         <span>启用主动消息</span>
                         <label class="toggle">
@@ -58,6 +67,10 @@
                                 <option :value="12">12 小时</option>
                                 <option :value="24">24 小时</option>
                             </select>
+                        </div>
+                        <div class="setting-row">
+                            <span>启用的AI</span>
+                            <span class="setting-hint">{{ enabledAiNames }}</span>
                         </div>
                         <div class="setting-row">
                             <span>每日最多主动</span>
@@ -154,7 +167,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { api } from '@/utils/api'
 import GlassCard from '@/components/ui/GlassCard.vue'
 import SoftButton from '@/components/ui/SoftButton.vue'
@@ -168,6 +181,7 @@ const template = ref('')
 const saved = ref(false)
 const apiSaved = ref(false)
 const importInput = ref(null)
+const proactivePersona = ref('')
 
 const apiConfig = reactive({
     key: '',
@@ -192,8 +206,13 @@ const outputPrefs = reactive({
 const modelList = ref([])
 const apiTestResult = ref(null)
 const proactiveTestResult = ref(null)
+const enabledAiNames = computed(() => {
+    return '全部'
+})
 const webhookUrl = ref(import.meta.env.VITE_API_URL || window.location.origin)
 const { registerPushSubscription } = useWebSocket()
+
+
 
 onMounted(async () => {
     // 加载 API 配置（本地存储）
@@ -206,6 +225,23 @@ onMounted(async () => {
     const savedPrefs = localStorage.getItem('output_prefs')
     if (savedPrefs) {
         Object.assign(outputPrefs, JSON.parse(savedPrefs))
+    }
+
+    async function loadProactiveForPersona() {
+        try {
+            const query = proactivePersona.value ? `?persona=${proactivePersona.value}` : ''
+            const proRes = await api(`/api/proactive/settings${query}`)
+            const proData = await proRes.json()
+            Object.assign(proactive, proData)
+        } catch { }
+    }
+
+    async function saveProactive() {
+        await api('/api/proactive/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...proactive, personaId: proactivePersona.value })
+        })
     }
 
     try {

@@ -122,6 +122,7 @@
                 <SoftButton variant="secondary" block @click="clearMessages">清空对话框（保留记忆）</SoftButton>
                 <SoftButton variant="secondary" block @click="clearMemory">清空记忆</SoftButton>
                 <SoftButton variant="danger" block @click="deletePersona">删除对话</SoftButton>
+                <SoftButton variant="danger" block @click="deleteAi">删除这个AI</SoftButton>
             </div>
         </div>
 
@@ -245,6 +246,21 @@ async function deletePersona() {
     if (!confirm('确定删除这个对话？AI本身不会被删除。')) return
     await api(`/api/messages/${personaId}`, { method: 'DELETE' })
     router.push('/about')
+}
+
+async function deleteAi() {
+    if (!confirm('确定删除这个AI？所有对话和记忆都会被清除，此操作不可恢复。')) return
+    try {
+        // 删除消息
+        await api(`/api/messages/${personaId}`, { method: 'DELETE' })
+        // 删除记忆
+        await api(`/api/memories/${personaId}/clear`, { method: 'DELETE' })
+        // 删除自定义人格
+        await api(`/api/personas/custom/${personaId}`, { method: 'DELETE' })
+        router.push('/')
+    } catch (e) {
+        saveMsg.value = '删除失败'
+    }
 }
 
 onMounted(() => {

@@ -8,7 +8,7 @@ import PersonaDetailView from "../views/PersonaDetailView.vue";
 import WorldBookView from "../views/WorldBookView.vue";
 import CustomizeView from "../views/CustomizeView.vue";
 import ChatListView from "../views/ChatListView.vue";
-
+import LogsView from "../views/LogsView.vue";
 
 //开发用，后续可以删掉
 import PlaygroundView from "../views/PlaygroundView.vue";
@@ -65,6 +65,11 @@ const router = createRouter({
       path: "/chat-list",
       name: "chat-list",
       component: ChatListView,
+    },
+    {
+      path: "/logs",
+      name: "logs",
+      component: LogsView,
     },
   ],
 });

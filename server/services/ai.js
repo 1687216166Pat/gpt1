@@ -99,6 +99,16 @@ async function handleChat(userMessage, ws, personaId) {
     timestamp: nowISO,
   });
 
+  // 同步用户消息到总线
+  const { receiveMessage: busReceive } = require("./bus");
+  await busReceive({
+    platform: "web",
+    sender: "user",
+    role: "user",
+    content: userMessage,
+    conversation_id: pid,
+  });
+
   // 检测行为模式
   detectPatterns(pid, userMessage);
   updateDimensionsFromChat(pid, userMessage);
@@ -290,19 +300,19 @@ async function handleChat(userMessage, ws, personaId) {
     }
   } catch {}
 
-let systemContent = '';
-if (worldBookOverride) systemContent += worldBookOverride + '\n';
-if (worldBookBefore) systemContent += worldBookBefore + '\n';
-systemContent += fullPrompt + '\n';
-if (worldBookAfter) systemContent += worldBookAfter + '\n';
-systemContent += defaultWorldBook + '\n';
-systemContent += timeContext + '\n';
-systemContent += memoryContext + '\n';
-systemContent += relationshipContext + '\n';
-systemContent += phoneContext + '\n';
-if (worldBookBeforeUser) systemContent += worldBookBeforeUser + '\n';
-if (worldBookTail) systemContent += worldBookTail + '\n';
-systemContent += `\n[重要] 严格遵守上述所有规则。`;
+  let systemContent = "";
+  if (worldBookOverride) systemContent += worldBookOverride + "\n";
+  if (worldBookBefore) systemContent += worldBookBefore + "\n";
+  systemContent += fullPrompt + "\n";
+  if (worldBookAfter) systemContent += worldBookAfter + "\n";
+  systemContent += defaultWorldBook + "\n";
+  systemContent += timeContext + "\n";
+  systemContent += memoryContext + "\n";
+  systemContent += relationshipContext + "\n";
+  systemContent += phoneContext + "\n";
+  if (worldBookBeforeUser) systemContent += worldBookBeforeUser + "\n";
+  if (worldBookTail) systemContent += worldBookTail + "\n";
+  systemContent += `\n[重要] 严格遵守上述所有规则。`;
 
   const messages = [
     { role: "system", content: systemContent },
@@ -415,6 +425,15 @@ systemContent += `\n[重要] 严格遵守上述所有规则。`;
     role: "ai",
     content: aiReply,
     timestamp: new Date().toISOString(),
+  });
+
+  // 同步AI回复到消息总线
+  await busReceive({
+    platform: "web",
+    sender: pid,
+    role: "assistant",
+    content: aiReply,
+    conversation_id: pid,
   });
 
   // 触发关系评估

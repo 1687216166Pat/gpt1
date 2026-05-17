@@ -7,7 +7,7 @@
         </div>
 
         <div class="chatlist-content">
-            <GlassCard v-for="persona in personas" :key="persona.id" size="md" class="chat-item"
+            <GlassCard v-for="persona in sortedPersonas" :key="persona.id" size="md" class="chat-item"
                 @click="$router.push(`/chat/${persona.id}`)">
                 <div class="chat-item-row">
                     <div class="chat-avatar">
@@ -15,9 +15,15 @@
                         <span v-else>{{ persona.avatar || '💬' }}</span>
                     </div>
                     <div class="chat-item-info">
-                        <p class="chat-item-name">{{ persona.note || persona.name }}</p>
+                        <p class="chat-item-name">
+                            <span v-if="persona.pinned" class="pin-icon">📌</span>
+                            {{ persona.note || persona.name }}
+                        </p>
                         <p class="chat-item-last">{{ persona.lastMessage || '还没有对话...' }}</p>
                     </div>
+                    <button class="pin-btn" @click.stop="togglePin(persona.id)">
+                        {{ persona.pinned ? '取消' : '置顶' }}
+                    </button>
                 </div>
             </GlassCard>
 
@@ -48,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { api } from '@/utils/api'
 import GlassCard from '@/components/ui/GlassCard.vue'
 import BlurModal from '@/components/ui/BlurModal.vue'
@@ -63,6 +69,23 @@ const newPersona = reactive({
     avatarUrl: '',
     content: ''
 })
+
+const sortedPersonas = computed(() => {
+    return [...personas.value].sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1
+        if (!a.pinned && b.pinned) return 1
+        return 0
+    })
+})
+
+async function togglePin(id) {
+    const persona = personas.value.find(p => p.id === id)
+    if (!persona) return
+    persona.pinned = !persona.pinned
+    // 保存置顶状态
+    const pinned = personas.value.filter(p => p.pinned).map(p => p.id)
+    localStorage.setItem('pinned_personas', JSON.stringify(pinned))
+}
 
 function handleAvatarUpload(event) {
     const file = event.target.files[0]
@@ -98,13 +121,11 @@ async function createPersona() {
     }
 }
 
-
 async function loadPersonas() {
     try {
         const res = await api('/api/prompts/personas')
         const data = await res.json()
 
-        // 获取每个人格的详情和最新消息
         const detailed = await Promise.all(
             data.personas.map(async (p) => {
                 let note = ''
@@ -118,7 +139,7 @@ async function loadPersonas() {
                     note = detail.note || ''
                     avatarUrl = detail.avatarUrl || ''
                     avatar = detail.avatar || avatar
-                } catch { }
+                } catch {}
 
                 try {
                     const msgRes = await api(`/api/messages/${p.id}`)
@@ -129,11 +150,17 @@ async function loadPersonas() {
                         const content = last.content.split('\n')[0]
                         lastMessage = prefix + (content.length > 25 ? content.slice(0, 25) + '...' : content)
                     }
-                } catch { }
+                } catch {}
 
                 return { ...p, note, avatarUrl, avatar, lastMessage }
             })
         )
+
+        // 加载置顶状态（放在 detailed 声明之后）
+        const pinnedList = JSON.parse(localStorage.getItem('pinned_personas') || '[]')
+        detailed.forEach(p => {
+            p.pinned = pinnedList.includes(p.id)
+        })
 
         personas.value = detailed
     } catch (e) {
@@ -271,5 +298,20 @@ onMounted(loadPersonas)
     display: flex;
     gap: 10px;
     margin-top: 16px;
+}
+
+.pin-icon {
+    font-size: 10px;
+    margin-right: 4px;
+}
+
+.pin-btn {
+    background: none;
+    border: none;
+    font-size: 10px;
+    color: var(--color-text-light);
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 4px 8px;
 }
 </style>

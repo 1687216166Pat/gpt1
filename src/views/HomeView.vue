@@ -39,8 +39,9 @@
                                 <AppIcon icon="settings"
                                     gradient="linear-gradient(155deg, rgba(250,248,252,0.95), rgba(240,236,245,0.7))" />
                             </div>
-                            <div class="mini-app placeholder-app">
-                                <div class="app-placeholder"></div>
+                            <div class="mini-app" @click="$router.push('/logs')">
+                                <AppIcon icon="book"
+                                    gradient="linear-gradient(155deg, rgba(248,245,252,0.95), rgba(238,232,245,0.7))" />
                             </div>
                             <div class="mini-app placeholder-app">
                                 <div class="app-placeholder"></div>
@@ -748,6 +749,7 @@ onMounted(() => {
     flex: 1;
     display: flex;
     overflow-x: auto;
+    overflow-y: hidden;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -764,7 +766,8 @@ onMounted(() => {
     scroll-snap-align: start;
     display: flex;
     flex-direction: column;
-    padding: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* 分页指示器 */

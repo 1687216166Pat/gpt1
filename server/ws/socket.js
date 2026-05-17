@@ -1,6 +1,7 @@
 const { WebSocketServer } = require("ws");
 const { handleChat } = require("../services/ai");
 const { pushNotification } = require("../services/push");
+const { bus } = require("../services/bus");
 
 let wss;
 let clients = new Set();
@@ -25,6 +26,18 @@ function initWebSocket(server) {
 
     ws.on("close", () => {
       clients.delete(ws);
+    });
+    // 监听消息总线，转发给所有 WebSocket 客户端
+    bus.on("message", (msg) => {
+      const payload = JSON.stringify({
+        type: "bus_message",
+        message: msg,
+      });
+      clients.forEach((ws) => {
+        if (ws.readyState === 1) {
+          ws.send(payload);
+        }
+      });
     });
   });
 }

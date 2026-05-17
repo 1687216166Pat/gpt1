@@ -185,47 +185,62 @@ async function loadProfile() {
         const res = await api(`/api/memories/${currentPersona.value}`)
         const data = await res.json()
         profile.value = data.profile || ''
-    } catch {}
+    } catch { }
 }
 
 async function loadHeatmap() {
     try {
         const res = await api(`/api/memories/${currentPersona.value}/heatmap`)
         heatmapData.value = await res.json()
-    } catch {}
+    } catch { }
 }
 
 async function loadDateTree() {
     try {
         const res = await api(`/api/memories/${currentPersona.value}/dates`)
         dateTree.value = await res.json()
-    } catch {}
+    } catch { }
 }
 
 async function loadPersonas() {
-    try {
-        const res = await api('/api/prompts/personas')
-        const data = await res.json()
-        personas.value = data.personas.map(p => ({ id: p.id, name: p.name }))
+    const res = await api('/api/prompts/personas')
+    const data = await res.json()
+    personas.value = data.personas
 
-        // 优先用最近聊天的人格
+    for (let i = 0; i < personas.value.length; i++) {
+        try {
+            const detailRes = await api(`/api/persona/${personas.value[i].id}`)
+            const detail = await detailRes.json()
+            personas.value[i].note = detail.note || ''
+        } catch { }
+    }
+
+    // 置顶排序
+    const pinnedList = JSON.parse(localStorage.getItem('pinned_personas') || '[]')
+    personas.value.sort((a, b) => {
+        const aPinned = pinnedList.includes(a.id)
+        const bPinned = pinnedList.includes(b.id)
+        if (aPinned && !bPinned) return -1
+        if (!aPinned && bPinned) return 1
+        return 0
+    })
+
+    // 选择默认显示的人格：置顶 > 最近聊天 > 默认
+    if (pinnedList.length > 0) {
+        currentPersona.value = pinnedList[0]
+    } else {
         try {
             const latestRes = await api('/api/messages/latest-persona')
             const latestData = await latestRes.json()
-            if (latestData.personaId) {
-                currentPersona.value = latestData.personaId
-            } else {
-                currentPersona.value = data.active || personas.value[0].id
-            }
+            currentPersona.value = latestData.personaId || data.active || personas.value[0]?.id || 'xiaorou'
         } catch {
-            currentPersona.value = data.active || personas.value[0].id
+            currentPersona.value = data.active || personas.value[0]?.id || 'xiaorou'
         }
-
-        await loadAll()
-    } catch (e) {
-        console.error('加载失败:', e)
     }
+
+    await loadAll()
 }
+
 
 // ========== 导航 ==========
 function switchPersona(id) {

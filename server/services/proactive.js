@@ -5,135 +5,128 @@ const { getMemoryProfile, getRecentMemories } = require("./memory");
 const { getRelationshipAtmosphere } = require("./relationship");
 const { getActivePersona } = require("./prompt");
 
-async function getProactiveSettings() {
+async function getProactiveSettings(personaId) {
   const db = getDB();
+  const key = personaId
+    ? `proactive_settings_${personaId}`
+    : "proactive_settings";
   const { data } = await db
+    .from("user_profile")
+    .select("value")
+    .eq("key", key)
+    .limit(1);
+  if (data && data.length > 0) return JSON.parse(data[0].value);
+  // 如果没有独立设置，读全局设置
+  const { data: globalData } = await db
     .from("user_profile")
     .select("value")
     .eq("key", "proactive_settings")
     .limit(1);
-  if (data && data.length > 0) return JSON.parse(data[0].value);
+  if (globalData && globalData.length > 0)
+    return JSON.parse(globalData[0].value);
   return {
     enabled: true,
     idleHours: 12,
-    nightReminder: true,
-    memoryReminder: true,
     maxPerDay: 3,
     minInterval: 4,
   };
 }
 
-async function setProactiveSettings(settings) {
+async function setProactiveSettings(personaId, settings) {
   const db = getDB();
+  const key = personaId
+    ? `proactive_settings_${personaId}`
+    : "proactive_settings";
 
-  // 先查是否存在
   const { data: existing } = await db
     .from("user_profile")
     .select("id")
-    .eq("key", "proactive_settings")
+    .eq("key", key)
     .limit(1);
 
   if (existing && existing.length > 0) {
-    // 更新
     await db
       .from("user_profile")
       .update({
         value: JSON.stringify(settings),
         updated_at: new Date().toISOString(),
       })
-      .eq("key", "proactive_settings");
+      .eq("key", key);
   } else {
-    // 插入
     await db
       .from("user_profile")
-      .insert({ key: "proactive_settings", value: JSON.stringify(settings) });
+      .insert({ key, value: JSON.stringify(settings) });
   }
 }
 
 async function checkProactiveMessages() {
-  const settings = await getProactiveSettings();
-  if (!settings.enabled) return;
+  const { getPersonaList } = require("./prompt");
+  const personas = getPersonaList();
 
-  const db = getDB();
-  const now = new Date();
-  const hour = now.getHours();
-  const today = now.toISOString().slice(0, 10);
+  for (const persona of personas) {
+    const settings = await getProactiveSettings(persona.id);
+    if (!settings.enabled) continue;
 
-  // 关系氛围影响主动消息频率
-  const activePersona = getActivePersona();
-  let intervalMultiplier = 1;
-  try {
-    const atmosphere = await getRelationshipAtmosphere(activePersona);
-    if (atmosphere.phase === "close") intervalMultiplier = 0.8;
-    if (atmosphere.phase === "deep") intervalMultiplier = 0.6;
-    if (atmosphere.phase === "bonded") intervalMultiplier = 0.5;
-  } catch {}
+    // 后面的检查逻辑不变，但用 persona.id 替代全局
+    const db = getDB();
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
 
-  // 边界检查
-  const { data: todayLogs } = await db
-    .from("proactive_log")
-    .select("id")
-    .eq("date", today);
+    // 关系氛围影响
+    let intervalMultiplier = 1;
+    try {
+      const { getRelationshipAtmosphere } = require("./relationship");
+      const atmosphere = await getRelationshipAtmosphere(persona.id);
+      if (atmosphere.phase === "close") intervalMultiplier = 0.8;
+      if (atmosphere.phase === "deep") intervalMultiplier = 0.6;
+      if (atmosphere.phase === "bonded") intervalMultiplier = 0.5;
+    } catch {}
 
-  if (todayLogs && todayLogs.length >= settings.maxPerDay) return;
-
-  const { data: lastLog } = await db
-    .from("proactive_log")
-    .select("sent_at")
-    .order("sent_at", { ascending: false })
-    .limit(1);
-
-  if (lastLog && lastLog.length > 0) {
-    const hoursSince = (now - new Date(lastLog[0].sent_at)) / (1000 * 60 * 60);
-    if (hoursSince < settings.minInterval * intervalMultiplier) return;
-  }
-
-  // 获取最后一条用户消息
-  const { data: lastMsg } = await db
-    .from("messages")
-    .select("timestamp")
-    .eq("role", "user")
-    .order("id", { ascending: false })
-    .limit(1);
-
-  const lastTime =
-    lastMsg && lastMsg.length > 0 ? new Date(lastMsg[0].timestamp) : null;
-  const idleHours = lastTime ? (now - lastTime) / (1000 * 60 * 60) : Infinity;
-
-  let message = null;
-
-  if (idleHours >= settings.idleHours) {
-    message = await generateIdleMessage(idleHours);
-  }
-
-  if (!message && settings.memoryReminder && hour >= 8 && hour <= 10) {
-    message = await generateMemoryReminder();
-  }
-
-  if (!message && settings.nightReminder) {
-    message = await generateStatusMessage(hour, db);
-  }
-
-  if (message) {
-    const { data: session } = await db
-      .from("sessions")
+    const { data: todayLogs } = await db
+      .from("proactive_log")
       .select("id")
-      .order("updated_at", { ascending: false })
+      .eq("persona_id", persona.id)
+      .eq("date", today);
+
+    if (todayLogs && todayLogs.length >= settings.maxPerDay) continue;
+
+    const { data: lastLog } = await db
+      .from("proactive_log")
+      .select("sent_at")
+      .eq("persona_id", persona.id)
+      .order("sent_at", { ascending: false })
       .limit(1);
 
-    const sid = session && session.length > 0 ? session[0].id : "default";
+    if (lastLog && lastLog.length > 0) {
+      const hoursSince =
+        (now - new Date(lastLog[0].sent_at)) / (1000 * 60 * 60);
+      if (hoursSince < settings.minInterval * intervalMultiplier) continue;
+    }
 
-    await db.from("messages").insert({
-      session_id: sid,
-      role: "ai",
-      content: message,
-      timestamp: now.toISOString(),
-    });
+    // 获取最后一条用户消息
+    const { data: lastMsg } = await db
+      .from("messages")
+      .select("timestamp")
+      .eq("persona_id", persona.id)
+      .eq("role", "user")
+      .order("id", { ascending: false })
+      .limit(1);
 
-    await db.from("proactive_log").insert({ date: today, message });
+    const lastTime =
+      lastMsg && lastMsg.length > 0 ? new Date(lastMsg[0].timestamp) : null;
+    const idleHours = lastTime ? (now - lastTime) / (1000 * 60 * 60) : Infinity;
 
+    if (idleHours < settings.idleHours) continue;
+
+    // 生成主动消息（简化版）
+    const message = await generateIdleMessage(persona.id, idleHours);
+    if (!message) continue;
+
+    await db
+      .from("proactive_log")
+      .insert({ persona_id: persona.id, date: today, message });
     pushToAll(message);
-    console.log("主动消息已发送:", message);
+    console.log(`[主动消息] ${persona.id}: ${message}`);
   }
 }
 
