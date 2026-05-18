@@ -38,27 +38,21 @@ function connect() {
     console.log("WebSocket 已连接");
   };
 
-  socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data)
 
-    // 最暴力的去重：完全相同的内容 5 秒内只处理一次
-    const contentKey = (data.content || "") + (data.type || "");
-    const now = Date.now();
-    if (contentKey === lastProcessedContent && now - lastProcessedTime < 5000) {
-      return;
+    const contentKey = (data.content || '') + (data.type || '')
+    const now = Date.now()
+    if (contentKey === lastReceivedContent && now - lastReceivedTime < 5000) {
+        return
     }
-    lastProcessedContent = contentKey;
-    lastProcessedTime = now;
+    lastReceivedContent = contentKey
+    lastReceivedTime = now
 
-    messageHandlers.forEach((handler) => handler(data));
+    messageHandlers.forEach((handler) => handler(data))
 
-    if (
-      (data.type === "chat" || data.type === "push") &&
-      document.visibilityState === "hidden"
-    ) {
-      sendSystemNotification(data.content, data.personaName);
-    }
-  };
+    // 不在这里发任何通知，完全交给 Service Worker 的 Push
+}
 
   socket.onclose = () => {
     isConnected.value = false;

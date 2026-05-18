@@ -3,14 +3,25 @@ import { ref } from "vue";
 import { api } from "@/utils/api";
 
 function smartSplit(content) {
-  // 按空行（连续两个换行）分气泡，单个换行视为同一句话
   const bubbles = content
     .split(/\n\s*\n/)
-    .map((b) => b.replace(/\n/g, "").trim())
+    .map((b) => {
+      // 单换行的碎片用逗号连接
+      return b
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .join("，");
+    })
     .filter(Boolean);
   if (bubbles.length > 1) return bubbles;
-  // 如果没有空行，就把所有换行去掉当一个气泡
-  return [content.replace(/\n/g, "").trim()];
+  return [
+    content
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .join("，"),
+  ];
 }
 
 export const useChatStore = defineStore("chat", () => {

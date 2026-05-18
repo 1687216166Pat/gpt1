@@ -358,8 +358,18 @@ async function saveDailyMemory(personaId, content, date) {
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean);
-    const merged = [...new Set([...oldItems, ...newItems])].join("\n");
 
+    // 去重：只添加不存在的新内容
+    const uniqueNew = newItems.filter(
+      (item) =>
+        !oldItems.some(
+          (old) => old === item || old.includes(item) || item.includes(old),
+        ),
+    );
+
+    if (uniqueNew.length === 0) return; // 没有新内容就不更新
+
+    const merged = [...oldItems, ...uniqueNew].join("\n");
     await db
       .from("memories_recent")
       .update({ content: merged })
