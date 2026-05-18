@@ -64,4 +64,8 @@ function pushToAll(message) {
   pushNotification("AI 助手", preview);
 }
 
-module.exports = { initWebSocket, pushToAll, getClients };
+function hasActiveClients() {
+  return [...clients].some((ws) => ws.readyState === 1);
+}
+
+module.exports = { initWebSocket, pushToAll, hasActiveClients };

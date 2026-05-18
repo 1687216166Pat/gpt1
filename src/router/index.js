@@ -10,6 +10,7 @@ import CustomizeView from "../views/CustomizeView.vue";
 import ChatListView from "../views/ChatListView.vue";
 import LogsView from "../views/LogsView.vue";
 import PresenceView from "../views/PresenceView.vue";
+import DiaryView from "../views/DiaryView.vue";
 
 //开发用，后续可以删掉
 import PlaygroundView from "../views/PlaygroundView.vue";
@@ -76,6 +77,11 @@ const router = createRouter({
       path: "/presence",
       name: "presence",
       component: PresenceView,
+    },
+    {
+      path: "/diary",
+      name: "diary",
+      component: DiaryView,
     },
   ],
 });

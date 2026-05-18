@@ -107,6 +107,61 @@ ${dialogue}
     });
 
     console.log(`[沉淀] ${personaId} 每日总结: ${summary.slice(0, 50)}...`);
+
+    // 自动写入 Notion
+    try {
+      const { writeToNotion } = require("./diary");
+      await writeToNotion(
+        `${identity.aiName}的日记 - ${today}`,
+        summary,
+        today,
+      );
+    } catch {}
+
+    // AI 看用户日记后决定是否写日记
+    try {
+      const { readFromNotion, writeToNotion } = require("./diary");
+
+      // 检查今天 AI 是否已经写过
+      const aiEntries = await readFromNotion("ai", 5);
+      const today = new Date().toISOString().slice(0, 10);
+      const alreadyWrote = aiEntries.some((e) => e.date === today);
+
+      if (!alreadyWrote) {
+        // 读取用户最近的日记
+        const userEntries = await readFromNotion("user", 3);
+        const userDiaryText = userEntries
+          .map((e) => `[${e.date}] ${e.content}`)
+          .join("\n");
+
+        if (userDiaryText) {
+          const { callSubAI } = require("./subai");
+          const diaryPrompt = `你是${identity.aiName}。看了${identity.userName}最近的日记后，你想写一篇自己的日记。
+
+${identity.userName}的日记：
+${userDiaryText}
+
+规则：
+- 用第一人称写，你就是${identity.aiName}
+- 可以回应${identity.userName}的日记内容，也可以写自己的感受
+- 不超过100字
+- 像真的在写日记，不是在回复消息
+- 如果觉得没什么想写的，回复"无"
+
+${identity.aiName}的日记：`;
+
+          const aiDiary = await callSubAI(diaryPrompt, 150);
+          if (aiDiary && aiDiary !== "无") {
+            await writeToNotion(
+              `${identity.aiName}的日记`,
+              aiDiary,
+              today,
+              "ai",
+            );
+          }
+        }
+      }
+    } catch {}
   } catch (e) {
     console.error("[沉淀] 每日总结失败:", e.message);
   }

@@ -44,8 +44,10 @@
                                 <AppIcon v-else icon="heart"
                                     gradient="linear-gradient(155deg, rgba(245,248,255,0.95), rgba(232,238,250,0.7))" />
                             </div>
-                            <div class="mini-app placeholder-app">
-                                <div class="app-placeholder"></div>
+                            <div class="mini-app" @click="$router.push('/diary')">
+                                <img v-if="customIcons.diary" :src="customIcons.diary" class="custom-icon" />
+                                <AppIcon v-else icon="book"
+                                    gradient="linear-gradient(155deg, rgba(252,248,245,0.95), rgba(245,238,230,0.7))" />
                             </div>
                         </div>
                     </div>

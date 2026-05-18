@@ -627,24 +627,29 @@ async function handleChat(userMessage, ws, personaId) {
 
   ws.send(payload);
 
-  // 按空行分条推送
-  const pushParts = aiReply
-    .split(/\n\s*\n/)
-    .map((s) => s.replace(/\n/g, "").trim())
-    .filter(Boolean);
-  if (pushParts.length <= 1) {
-    const preview = aiReply.replace(/\n/g, "");
-    pushNotification(
-      pName,
-      preview.length > 60 ? preview.slice(0, 60) + "..." : preview,
-    );
-  } else {
-    pushParts.forEach((part, idx) => {
-      setTimeout(() => {
-        pushNotification(pName, part);
-      }, idx * 800);
-    });
-  }
+  // 推送通知（只在没有活跃连接时）
+  try {
+    const { hasActiveClients } = require("../ws/socket");
+    if (!hasActiveClients()) {
+      const pushParts = aiReply
+        .split(/\n\s*\n/)
+        .map((s) => s.replace(/\n/g, "").trim())
+        .filter(Boolean);
+      if (pushParts.length <= 1) {
+        const preview = aiReply.replace(/\n/g, "");
+        pushNotification(
+          pName,
+          preview.length > 60 ? preview.slice(0, 60) + "..." : preview,
+        );
+      } else {
+        pushParts.forEach((part, idx) => {
+          setTimeout(() => {
+            pushNotification(pName, part);
+          }, idx * 800);
+        });
+      }
+    }
+  } catch {}
 }
 
 module.exports = { handleChat };

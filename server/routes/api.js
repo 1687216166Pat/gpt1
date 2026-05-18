@@ -458,38 +458,32 @@ router.post("/settings/sub-api", async (req, res) => {
 
   // 持久化
   if (key)
-    await db
-      .from("user_profile")
-      .upsert(
-        {
-          key: "sub_api_key",
-          value: key,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "key" },
-      );
+    await db.from("user_profile").upsert(
+      {
+        key: "sub_api_key",
+        value: key,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
   if (baseUrl)
-    await db
-      .from("user_profile")
-      .upsert(
-        {
-          key: "sub_api_base_url",
-          value: baseUrl,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "key" },
-      );
+    await db.from("user_profile").upsert(
+      {
+        key: "sub_api_base_url",
+        value: baseUrl,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
   if (model)
-    await db
-      .from("user_profile")
-      .upsert(
-        {
-          key: "sub_api_model",
-          value: model,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "key" },
-      );
+    await db.from("user_profile").upsert(
+      {
+        key: "sub_api_model",
+        value: model,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
 
   res.json({ success: true });
 });
@@ -1215,6 +1209,43 @@ router.post("/worldbooks/categorize", async (req, res) => {
     await db.from("world_books").update({ category }).eq("id", id);
   }
   res.json({ success: true });
+});
+
+// 写日记到 Notion
+router.post("/diary/write", async (req, res) => {
+  const { writeToNotion } = require("../services/diary");
+  const { title, content, date } = req.body;
+  const result = await writeToNotion(title || "日记", content, date);
+  res.json({ success: !!result });
+});
+
+// 日记相关
+router.post("/diary/write", async (req, res) => {
+  const { writeToNotion } = require("../services/diary");
+  const { title, content, date, type } = req.body;
+  const result = await writeToNotion(
+    title || "日记",
+    content,
+    date,
+    type || "user",
+  );
+  res.json({ success: !!result });
+});
+
+router.get("/diary/:type", async (req, res) => {
+  const { readFromNotion } = require("../services/diary");
+  const entries = await readFromNotion(
+    req.params.type,
+    parseInt(req.query.limit) || 20,
+  );
+  res.json(entries);
+});
+
+router.put("/diary/:pageId", async (req, res) => {
+  const { updateNotionPage } = require("../services/diary");
+  const { content } = req.body;
+  const result = await updateNotionPage(req.params.pageId, content);
+  res.json({ success: !!result });
 });
 
 module.exports = router;
