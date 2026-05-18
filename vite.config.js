@@ -8,7 +8,7 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icon-192.png", "icon-512.png", "icon-180.png"],
+      includeAssets: ["app-icon.png"],
       manifest: {
         name: "Melt",
         short_name: "Melt",
@@ -21,12 +21,12 @@ export default defineConfig({
         scope: "/",
         icons: [
           {
-            src: "/9f8d996ebf059662d3bb7a560cb461c3.png",
+            src: "/app-icon.png",
             sizes: "192x192",
             type: "image/png",
           },
           {
-            src: "/9f8d996ebf059662d3bb7a560cb461c3.png",
+            src: "/app-icon.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any maskable",
