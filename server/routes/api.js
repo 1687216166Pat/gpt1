@@ -51,20 +51,16 @@ router.get("/phone/status", async (req, res) => {
 });
 
 // 聊天记录 - 按人格获取
-router.get("/messages/latest-persona", async (req, res) => {
+router.get("/messages/:personaId/last", async (req, res) => {
   const { getDB } = require("../db/index");
   const db = getDB();
   const { data } = await db
     .from("messages")
-    .select("persona_id")
+    .select("role, content")
+    .eq("persona_id", req.params.personaId)
     .order("id", { ascending: false })
     .limit(1);
-
-  if (data && data.length > 0) {
-    res.json({ personaId: data[0].persona_id });
-  } else {
-    res.json({ personaId: null });
-  }
+  res.json(data && data.length > 0 ? data[0] : null);
 });
 
 router.get("/messages/:personaId", async (req, res) => {

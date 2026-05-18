@@ -123,17 +123,46 @@ async function createPersona() {
 
 async function loadPersonas() {
     try {
-        const res = await api('/api/personas/all')
-        personas.value = await res.json()
+        const res = await api('/api/prompts/personas')
+        const data = await res.json()
 
-        // 置顶排序
+        const detailed = await Promise.all(
+            data.personas.map(async (p) => {
+                let note = '', avatarUrl = '', avatar = p.avatar || '💬', lastMessage = ''
+
+                const [detailRes, msgRes] = await Promise.all([
+                    api(`/api/persona/${p.id}`).catch(() => null),
+                    api(`/api/messages/${p.id}/last`).catch(() => null),
+                ])
+
+                if (detailRes) {
+                    try {
+                        const detail = await detailRes.json()
+                        note = detail.note || ''
+                        avatarUrl = detail.avatarUrl || ''
+                        avatar = detail.avatar || avatar
+                    } catch { }
+                }
+
+                if (msgRes) {
+                    try {
+                        const last = await msgRes.json()
+                        if (last) {
+                            const prefix = last.role === 'ai' ? '' : '我: '
+                            const content = last.content.split('\n')[0]
+                            lastMessage = prefix + (content.length > 25 ? content.slice(0, 25) + '...' : content)
+                        }
+                    } catch { }
+                }
+
+                return { ...p, note, avatarUrl, avatar, lastMessage }
+            })
+        )
+
         const pinnedList = JSON.parse(localStorage.getItem('pinned_personas') || '[]')
-        personas.value.sort((a, b) => {
-            if (pinnedList.includes(a.id) && !pinnedList.includes(b.id)) return -1
-            if (!pinnedList.includes(a.id) && pinnedList.includes(b.id)) return 1
-            return 0
-        })
+        detailed.forEach(p => { p.pinned = pinnedList.includes(p.id) })
 
+        personas.value = detailed
     } catch (e) {
         console.error('加载失败:', e)
     }
