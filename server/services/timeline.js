@@ -1,4 +1,5 @@
 const { getDB } = require("../db/index");
+const { callSubAI } = require("./subai");
 
 // 时间线事件类型
 const EVENT_TYPES = {
@@ -59,36 +60,17 @@ async function checkTimelineEvent(personaId, userMessage, aiReply, context) {
           ? "语气：像一起生活的人在回忆"
           : "语气：像已经很久很久的陪伴者在轻声说";
 
-  // 获取人格性别
-  let pronoun = "TA";
-  try {
-    const { data: personaData } = await db
-      .from("custom_personas")
-      .select("gender")
-      .eq("id", personaId)
-      .limit(1);
-    if (personaData && personaData.length > 0) {
-      if (personaData[0].gender === "male") pronoun = "他";
-      else if (personaData[0].gender === "female") pronoun = "她";
-    } else {
-      // 内置人格从 user_profile 获取
-      const { data: configRow } = await db
-        .from("user_profile")
-        .select("value")
-        .eq("key", `persona_config_${personaId}`)
-        .limit(1);
-      if (configRow && configRow.length > 0) {
-        const config = JSON.parse(configRow[0].value);
-        if (config.gender === "male") pronoun = "他";
-        else if (config.gender === "female") pronoun = "她";
-      }
-    }
-  } catch {}
+  const { getIdentityConfig } = require("./sediment");
+  const identity = await getIdentityConfig(personaId);
 
   const prompt = `你是一个时间线记录系统。判断以下对话是否包含"值得留下痕迹"的瞬间。
 
 ${toneGuide}
-注意：用"${pronoun}"来称呼这个角色，不要用"AI"或"它"
+身份信息：
+- AI的名字：${identity.aiName}
+- 用户的称呼：${identity.userName}
+- AI的代词：${identity.pronoun}
+- 禁止使用"用户""AI""你""他/她"这些泛称，必须用上面的具体名字
 
 只有以下类型才值得记录：
 - 高情绪波动
@@ -99,7 +81,7 @@ ${toneGuide}
 
 如果不值得记录，回复"无"。
 如果值得，用以下格式回复（一行）：
-类型|内容描述（用模糊温柔的语气，像回忆一样，不超过30字）|标签
+类型|内容描述（用${identity.userName}和${identity.aiName}称呼，像回忆一样，不超过30字）|标签
 
 用户: ${userMessage}
 AI: ${aiReply}
@@ -107,28 +89,8 @@ AI: ${aiReply}
 判断：`;
 
   try {
-    const response = await fetch(
-      `${process.env.AI_BASE_URL}/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          Authorization: `Bearer ${process.env.AI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.AI_MEMORY_MODEL || process.env.AI_MODEL,
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 60,
-          temperature: 0.3,
-        }),
-      },
-    );
-
-    const data = await response.json();
-    if (!data.choices || !data.choices[0]) return;
-
-    const result = data.choices[0].message.content.trim();
-    if (result === "无" || result.length < 3) return;
+    const result = await callSubAI(prompt, 60);
+    if (!result || result === "无" || result.length < 3) return;
 
     const parts = result.split("|");
     if (parts.length < 2) return;

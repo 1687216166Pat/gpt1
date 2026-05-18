@@ -144,6 +144,15 @@ onMounted(() => {
         }
     }, 500)
 
+    // 加载自定义 CSS
+    const savedCSS = localStorage.getItem('custom_css')
+    if (savedCSS) {
+        const style = document.createElement('style')
+        style.id = 'custom-user-css'
+        style.textContent = savedCSS
+        document.head.appendChild(style)
+    }
+
 })
 
 onUnmounted(() => {
@@ -304,5 +313,45 @@ onUnmounted(() => {
 .main-enter-enter-from {
     opacity: 0;
     transform: scale(1.02) translateY(-4px);
+}
+
+.scheme-list {
+    margin-bottom: 12px;
+}
+
+.scheme-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    cursor: pointer;
+}
+
+.scheme-item.active {
+    background: rgba(212, 137, 158, 0.06);
+}
+
+.scheme-name {
+    font-size: 13px;
+    color: var(--color-text);
+}
+
+.scheme-delete {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: var(--color-text-light);
+    opacity: 0.4;
+    cursor: pointer;
+}
+
+.section-sub {
+    font-size: 11px;
+    color: var(--color-text-light);
+    opacity: 0.5;
+    margin-bottom: 10px;
+    font-style: italic;
 }
 </style>

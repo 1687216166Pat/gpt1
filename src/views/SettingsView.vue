@@ -38,10 +38,68 @@
                         <SoftButton variant="glass" size="sm" @click="fetchModels">获取模型</SoftButton>
                         <SoftButton variant="glass" size="sm" @click="testApiConnection">测试连接</SoftButton>
                     </div>
+                    <div v-if="modelList.length > 0" class="model-list">
+                        <p class="list-label">可用模型：</p>
+                        <div class="model-scroll">
+                            <div v-for="m in modelList" :key="m" class="model-item" @click="apiConfig.model = m">
+                                {{ m }}
+                            </div>
+                        </div>
+                    </div>
+
                     <p v-if="apiTestResult" class="api-result" :class="apiTestResult.success ? 'success' : 'error'">
                         {{ apiTestResult.message }}
                     </p>
+
                 </GlassCard>
+
+                <!-- 副 API 配置 -->
+                <GlassCard size="md">
+                    <h4 class="block-title">副 API（记忆/时间线/主动消息）</h4>
+
+                    <!-- 已保存的副配置列表 -->
+                    <div v-if="savedSubConfigs.length > 0" class="config-list">
+                        <div v-for="(config, idx) in savedSubConfigs" :key="idx" class="config-item"
+                            :class="{ active: currentSubConfigIdx === idx }">
+                            <div class="config-info" @click="selectSubConfig(idx)">
+                                <p class="config-name">{{ config.name || config.model || '未命名' }}</p>
+                                <p class="config-detail">{{ config.baseUrl?.slice(0, 30) }}</p>
+                            </div>
+                            <button class="config-delete" @click="deleteSubConfig(idx)">×</button>
+                        </div>
+                    </div>
+
+                    <DreamInput label="配置名称" v-model="subApiConfig.name" placeholder="例：副模型" />
+                    <DreamInput label="API Key" type="password" v-model="subApiConfig.key" placeholder="sk-..." />
+                    <DreamInput label="API 地址" v-model="subApiConfig.baseUrl" placeholder="https://api.openai.com/v1" />
+                    <DreamInput label="模型名称" v-model="subApiConfig.model" placeholder="gpt-4o-mini" />
+
+                    <div class="btn-row">
+                        <SoftButton variant="primary" size="sm" @click="saveSubApiConfig">保存并使用</SoftButton>
+                        <SoftButton variant="glass" size="sm" @click="saveAsNewSubConfig">另存为新配置</SoftButton>
+                    </div>
+                    <p class="save-tip" v-if="subApiSaved">已保存 ✓</p>
+
+                    <div class="api-actions">
+                        <SoftButton variant="glass" size="sm" @click="fetchSubModels">获取模型</SoftButton>
+                        <SoftButton variant="glass" size="sm" @click="testSubApiConnection">测试连接</SoftButton>
+                    </div>
+
+                    <div v-if="subModelList.length > 0" class="model-list">
+                        <p class="list-label">可用模型：</p>
+                        <div class="model-scroll">
+                            <div v-for="m in subModelList" :key="m" class="model-item" @click="subApiConfig.model = m">
+                                {{ m }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <p v-if="subApiTestResult" class="api-result"
+                        :class="subApiTestResult.success ? 'success' : 'error'">
+                        {{ subApiTestResult.message }}
+                    </p>
+                </GlassCard>
+
             </div>
 
             <!-- 主动消息设置 -->
@@ -217,6 +275,8 @@ import SoftButton from '@/components/ui/SoftButton.vue'
 import DreamInput from '@/components/ui/DreamInput.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 
+const { registerPushSubscription } = useWebSocket()
+
 const personas = ref([])
 const activePersona = ref('')
 const userPrompt = ref('')
@@ -225,17 +285,24 @@ const saved = ref(false)
 const apiSaved = ref(false)
 const importInput = ref(null)
 const proactivePersona = ref('')
+const webhookUrl = ref(import.meta.env.VITE_API_URL || window.location.origin)
+
+// 主 API
+const apiConfig = reactive({ name: '', key: '', baseUrl: '', model: '' })
 const savedConfigs = ref([])
 const currentConfigIdx = ref(-1)
+const modelList = ref([])
+const apiTestResult = ref(null)
 
-const apiConfig = reactive({
-    name: '',
-    key: '',
-    baseUrl: '',
-    model: ''
-})
+// 副 API
+const subApiConfig = reactive({ name: '', key: '', baseUrl: '', model: '' })
+const subApiSaved = ref(false)
+const savedSubConfigs = ref([])
+const currentSubConfigIdx = ref(-1)
+const subModelList = ref([])
+const subApiTestResult = ref(null)
 
-
+// 主动消息
 const proactive = reactive({
     enabled: true,
     idleHours: 12,
@@ -244,59 +311,40 @@ const proactive = reactive({
     intervalUnit: 'hours',
     enabledPersonas: [],
 })
+const proactiveTestResult = ref(null)
+const pushTestResult = ref(null)
 
+// 输出偏好
 const outputPrefs = reactive({
     actionDesc: false,
     splitSentence: false
 })
 
-const modelList = ref([])
-const apiTestResult = ref(null)
-const proactiveTestResult = ref(null)
-const enabledAiNames = computed(() => {
-    return '全部'
-})
-const webhookUrl = ref(import.meta.env.VITE_API_URL || window.location.origin)
-const { registerPushSubscription } = useWebSocket()
+const enabledAiNames = computed(() => '全部')
 
-
-
+// ========== 初始化 ==========
 onMounted(async () => {
-    // 加载 API 配置（本地存储）
+    // 主 API 配置
     const savedConfig = localStorage.getItem('api_config')
-    if (savedConfig) {
-        Object.assign(apiConfig, JSON.parse(savedConfig))
-    }
-
-    // 加载多配置
+    if (savedConfig) Object.assign(apiConfig, JSON.parse(savedConfig))
     const configs = localStorage.getItem('api_configs')
     if (configs) savedConfigs.value = JSON.parse(configs)
     const activeIdx = localStorage.getItem('active_config_idx')
     if (activeIdx !== null) currentConfigIdx.value = parseInt(activeIdx)
 
-    // 加载输出偏好（本地存储）
+    // 副 API 配置
+    const savedSub = localStorage.getItem('sub_api_config')
+    if (savedSub) Object.assign(subApiConfig, JSON.parse(savedSub))
+    const subConfigs = localStorage.getItem('sub_api_configs')
+    if (subConfigs) savedSubConfigs.value = JSON.parse(subConfigs)
+    const activeSubIdx = localStorage.getItem('active_sub_config_idx')
+    if (activeSubIdx !== null) currentSubConfigIdx.value = parseInt(activeSubIdx)
+
+    // 输出偏好
     const savedPrefs = localStorage.getItem('output_prefs')
-    if (savedPrefs) {
-        Object.assign(outputPrefs, JSON.parse(savedPrefs))
-    }
+    if (savedPrefs) Object.assign(outputPrefs, JSON.parse(savedPrefs))
 
-    async function loadProactiveForPersona() {
-        try {
-            const query = proactivePersona.value ? `?persona=${proactivePersona.value}` : ''
-            const proRes = await api(`/api/proactive/settings${query}`)
-            const proData = await proRes.json()
-            Object.assign(proactive, proData)
-        } catch { }
-    }
-
-    async function saveProactive() {
-        await api('/api/proactive/settings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...proactive, personaId: proactivePersona.value })
-        })
-    }
-
+    // 加载远程数据
     try {
         const pRes = await api('/api/prompts/personas')
         const pData = await pRes.json()
@@ -305,7 +353,6 @@ onMounted(async () => {
 
         const uRes = await api('/api/prompts/user')
         const uData = await uRes.json()
-        // 剥离输出风格部分，只显示用户手写内容
         const content = uData.content || ''
         const styleIndex = content.indexOf('\n\n[输出风格')
         userPrompt.value = styleIndex > -1 ? content.slice(0, styleIndex) : content
@@ -317,45 +364,18 @@ onMounted(async () => {
     } catch (e) {
         console.error('加载设置失败:', e)
     }
-
-    try {
-        const pRes = await api('/api/prompts/personas')
-        const pData = await pRes.json()
-        personas.value = pData.personas
-    } catch { }
-
 })
 
-async function reRegisterPush() {
-    // 先清除后端旧订阅
-    try {
-        await api('/api/push/clear', { method: 'POST' })
-    } catch { }
-    // 重新注册
-    await registerPushSubscription()
-    pushTestResult.value = { success: true, message: '已清除旧订阅并重新注册' }
-}
-
-
+// ========== 主 API ==========
 function selectConfig(idx) {
     currentConfigIdx.value = idx
-    const config = savedConfigs.value[idx]
-    apiConfig.key = config.key || ''
-    apiConfig.baseUrl = config.baseUrl || ''
-    apiConfig.model = config.model || ''
-    apiConfig.name = config.name || ''
+    Object.assign(apiConfig, savedConfigs.value[idx])
     localStorage.setItem('active_config_idx', idx)
-    // 同步到后端
     saveApiConfig()
 }
 
 function saveAsNewConfig() {
-    savedConfigs.value.push({
-        name: apiConfig.name || apiConfig.model || '未命名',
-        key: apiConfig.key,
-        baseUrl: apiConfig.baseUrl,
-        model: apiConfig.model,
-    })
+    savedConfigs.value.push({ ...apiConfig })
     currentConfigIdx.value = savedConfigs.value.length - 1
     localStorage.setItem('api_configs', JSON.stringify(savedConfigs.value))
     localStorage.setItem('active_config_idx', currentConfigIdx.value)
@@ -365,39 +385,23 @@ function saveAsNewConfig() {
 function deleteConfig(idx) {
     savedConfigs.value.splice(idx, 1)
     localStorage.setItem('api_configs', JSON.stringify(savedConfigs.value))
-    if (currentConfigIdx.value >= savedConfigs.value.length) {
-        currentConfigIdx.value = savedConfigs.value.length - 1
-    }
+    if (currentConfigIdx.value >= savedConfigs.value.length) currentConfigIdx.value = savedConfigs.value.length - 1
 }
 
 async function saveApiConfig() {
     localStorage.setItem('api_config', JSON.stringify(apiConfig))
-
-    // 更新当前选中的配置
     if (currentConfigIdx.value >= 0 && savedConfigs.value[currentConfigIdx.value]) {
-        savedConfigs.value[currentConfigIdx.value] = {
-            name: apiConfig.name || apiConfig.model || '未命名',
-            key: apiConfig.key,
-            baseUrl: apiConfig.baseUrl,
-            model: apiConfig.model,
-        }
+        savedConfigs.value[currentConfigIdx.value] = { ...apiConfig }
         localStorage.setItem('api_configs', JSON.stringify(savedConfigs.value))
     }
-
-    // 同步到后端
     await api('/api/settings/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            key: apiConfig.key,
-            baseUrl: apiConfig.baseUrl,
-            model: apiConfig.model
-        })
+        body: JSON.stringify({ key: apiConfig.key, baseUrl: apiConfig.baseUrl, model: apiConfig.model })
     })
     apiSaved.value = true
     setTimeout(() => { apiSaved.value = false }, 2000)
 }
-
 
 async function fetchModels() {
     apiTestResult.value = null
@@ -406,21 +410,14 @@ async function fetchModels() {
         const res = await api('/api/test/models', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                baseUrl: apiConfig.baseUrl || 'https://api.openai.com/v1',
-                key: apiConfig.key
-            })
+            body: JSON.stringify({ baseUrl: apiConfig.baseUrl, key: apiConfig.key })
         })
         const data = await res.json()
-        if (data.error) {
-            apiTestResult.value = { success: false, message: `获取失败: ${data.error}` }
-            return
-        }
         if (data.data && Array.isArray(data.data)) {
             modelList.value = data.data.map(m => m.id).sort()
             apiTestResult.value = { success: true, message: `获取到 ${modelList.value.length} 个模型` }
         } else {
-            apiTestResult.value = { success: false, message: '返回格式异常' }
+            apiTestResult.value = { success: false, message: data.error || '返回格式异常' }
         }
     } catch (e) {
         apiTestResult.value = { success: false, message: `请求失败: ${e.message}` }
@@ -433,16 +430,10 @@ async function testApiConnection() {
         const res = await api('/api/test/connection', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                baseUrl: apiConfig.baseUrl || 'https://api.openai.com/v1',
-                key: apiConfig.key,
-                model: apiConfig.model || 'gpt-4o-mini'
-            })
+            body: JSON.stringify({ baseUrl: apiConfig.baseUrl, key: apiConfig.key, model: apiConfig.model })
         })
         const data = await res.json()
-        if (data.error) {
-            apiTestResult.value = { success: false, message: `失败: ${data.error}` }
-        } else if (data.ok && data.data.choices && data.data.choices[0]) {
+        if (data.ok && data.data?.choices?.[0]) {
             apiTestResult.value = { success: true, message: `连接成功 ✓ 模型: ${apiConfig.model}` }
         } else {
             apiTestResult.value = { success: false, message: `失败: ${data.data?.error?.message || '未知错误'}` }
@@ -452,22 +443,141 @@ async function testApiConnection() {
     }
 }
 
+// ========== 副 API ==========
+function selectSubConfig(idx) {
+    currentSubConfigIdx.value = idx
+    Object.assign(subApiConfig, savedSubConfigs.value[idx])
+    localStorage.setItem('active_sub_config_idx', idx)
+    saveSubApiConfig()
+}
+
+function saveAsNewSubConfig() {
+    savedSubConfigs.value.push({ ...subApiConfig })
+    currentSubConfigIdx.value = savedSubConfigs.value.length - 1
+    localStorage.setItem('sub_api_configs', JSON.stringify(savedSubConfigs.value))
+    localStorage.setItem('active_sub_config_idx', currentSubConfigIdx.value)
+    saveSubApiConfig()
+}
+
+function deleteSubConfig(idx) {
+    savedSubConfigs.value.splice(idx, 1)
+    localStorage.setItem('sub_api_configs', JSON.stringify(savedSubConfigs.value))
+    if (currentSubConfigIdx.value >= savedSubConfigs.value.length) currentSubConfigIdx.value = savedSubConfigs.value.length - 1
+}
+
+async function saveSubApiConfig() {
+    localStorage.setItem('sub_api_config', JSON.stringify(subApiConfig))
+    if (currentSubConfigIdx.value >= 0 && savedSubConfigs.value[currentSubConfigIdx.value]) {
+        savedSubConfigs.value[currentSubConfigIdx.value] = { ...subApiConfig }
+        localStorage.setItem('sub_api_configs', JSON.stringify(savedSubConfigs.value))
+    }
+    await api('/api/settings/sub-api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: subApiConfig.key, baseUrl: subApiConfig.baseUrl, model: subApiConfig.model })
+    })
+    subApiSaved.value = true
+    setTimeout(() => { subApiSaved.value = false }, 2000)
+}
+
+async function fetchSubModels() {
+    subApiTestResult.value = null
+    subModelList.value = []
+    try {
+        const res = await api('/api/test/models', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ baseUrl: subApiConfig.baseUrl, key: subApiConfig.key })
+        })
+        const data = await res.json()
+        if (data.data && Array.isArray(data.data)) {
+            subModelList.value = data.data.map(m => m.id).sort()
+            subApiTestResult.value = { success: true, message: `获取到 ${subModelList.value.length} 个模型` }
+        } else {
+            subApiTestResult.value = { success: false, message: data.error || '返回格式异常' }
+        }
+    } catch (e) {
+        subApiTestResult.value = { success: false, message: `请求失败: ${e.message}` }
+    }
+}
+
+async function testSubApiConnection() {
+    subApiTestResult.value = null
+    try {
+        const res = await api('/api/test/connection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ baseUrl: subApiConfig.baseUrl, key: subApiConfig.key, model: subApiConfig.model })
+        })
+        const data = await res.json()
+        if (data.ok && data.data?.choices?.[0]) {
+            subApiTestResult.value = { success: true, message: `连接成功 ✓ 模型: ${subApiConfig.model}` }
+        } else {
+            subApiTestResult.value = { success: false, message: `失败: ${data.data?.error?.message || '未知错误'}` }
+        }
+    } catch (e) {
+        subApiTestResult.value = { success: false, message: `连接失败: ${e.message}` }
+    }
+}
+
+// ========== 主动消息 ==========
+async function loadProactiveForPersona() {
+    try {
+        const query = proactivePersona.value ? `?persona=${proactivePersona.value}` : ''
+        const proRes = await api(`/api/proactive/settings${query}`)
+        const proData = await proRes.json()
+        Object.assign(proactive, proData)
+    } catch { }
+}
+
+async function saveProactive() {
+    await api('/api/proactive/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...proactive, personaId: proactivePersona.value })
+    })
+}
+
+function toggleProactivePersona(id) {
+    const idx = proactive.enabledPersonas.indexOf(id)
+    if (idx > -1) proactive.enabledPersonas.splice(idx, 1)
+    else proactive.enabledPersonas.push(id)
+    saveProactive()
+}
 
 async function testProactive() {
     proactiveTestResult.value = null
     try {
         const res = await api('/api/proactive/trigger', { method: 'POST' })
         const data = await res.json()
-        if (data.success) {
-            proactiveTestResult.value = { success: true, message: '主动消息触发成功 ✓ 检查聊天页面' }
-        } else {
-            proactiveTestResult.value = { success: false, message: '触发失败' }
-        }
+        proactiveTestResult.value = data.success
+            ? { success: true, message: '主动消息触发成功 ✓' }
+            : { success: false, message: '触发失败' }
     } catch (e) {
         proactiveTestResult.value = { success: false, message: `失败: ${e.message}` }
     }
 }
 
+async function testPush() {
+    pushTestResult.value = null
+    try {
+        const res = await api('/api/push/test', { method: 'POST' })
+        const data = await res.json()
+        pushTestResult.value = data.subscribers > 0
+            ? { success: true, message: `推送已发送给 ${data.subscribers} 个订阅者` }
+            : { success: false, message: '没有订阅者' }
+    } catch (e) {
+        pushTestResult.value = { success: false, message: `失败: ${e.message}` }
+    }
+}
+
+async function reRegisterPush() {
+    try { await api('/api/push/clear', { method: 'POST' }) } catch { }
+    await registerPushSubscription()
+    pushTestResult.value = { success: true, message: '已清除旧订阅并重新注册' }
+}
+
+// ========== 偏好 ==========
 async function saveOutputPrefs() {
     localStorage.setItem('output_prefs', JSON.stringify(outputPrefs))
     const prefText = buildPrefText()
@@ -478,17 +588,16 @@ async function saveOutputPrefs() {
     })
 }
 
-
 function buildPrefText() {
     let text = userPrompt.value || ''
     const lines = []
     if (outputPrefs.actionDesc) {
-        lines.push('- 回复中包含动作描写，用*号包裹，如 *轻轻叹了口气*、*歪头看着你*')
+        lines.push('- 回复中包含动作描写，用*号包裹')
     } else {
-        lines.push('- 禁止使用动作描写，禁止使用*号包裹的任何内容，只用纯对话文字回复')
+        lines.push('- 禁止使用动作描写，禁止使用*号包裹的任何内容')
     }
     if (outputPrefs.splitSentence) {
-        lines.push('- 必须分句输出，每个短句单独一行，用换行分隔，营造停顿感和节奏感。示例：\n嗯...\n今天怎么这么晚才来\n是不是又加班了')
+        lines.push('- 必须分句输出，每个短句单独一行')
     } else {
         lines.push('- 正常连续输出，不需要刻意分行')
     }
@@ -496,12 +605,6 @@ function buildPrefText() {
         text += '\n\n[输出风格 - 必须严格遵守]\n' + lines.join('\n')
     }
     return text
-}
-
-
-async function switchPersona(id) {
-    await api(`/api/prompts/personas/${id}/activate`, { method: 'POST' })
-    activePersona.value = id
 }
 
 async function saveUserPrompt() {
@@ -515,24 +618,41 @@ async function saveUserPrompt() {
     setTimeout(() => { saved.value = false }, 2000)
 }
 
-
-async function saveProactive() {
-    await api('/api/proactive/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(proactive)
-    })
-}
-
+// ========== 导入导出 ==========
 async function exportData() {
     try {
         const res = await api('/api/export')
-        const data = await res.json()
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+        const serverData = await res.json()
+
+        // 加上本地设置
+        const localData = {
+            custom_wallpaper: localStorage.getItem('custom_wallpaper') || '',
+            wallpaper_scope: localStorage.getItem('wallpaper_scope') || 'home',
+            custom_font_url: localStorage.getItem('custom_font_url') || '',
+            custom_font_name: localStorage.getItem('custom_font_name') || '',
+            custom_app_icons: localStorage.getItem('custom_app_icons') || '{}',
+            chat_entry_mode: localStorage.getItem('chat_entry_mode') || 'direct',
+            theme_mode: localStorage.getItem('theme_mode') || 'auto',
+            api_config: localStorage.getItem('api_config') || '{}',
+            api_configs: localStorage.getItem('api_configs') || '[]',
+            sub_api_config: localStorage.getItem('sub_api_config') || '{}',
+            sub_api_configs: localStorage.getItem('sub_api_configs') || '[]',
+            output_prefs: localStorage.getItem('output_prefs') || '{}',
+            word_cards: localStorage.getItem('word_cards') || '[]',
+            together_start_date: localStorage.getItem('together_start_date') || '',
+            home_bubble_left: localStorage.getItem('home_bubble_left') || '',
+            home_bubble_right: localStorage.getItem('home_bubble_right') || '',
+            home_user_avatar: localStorage.getItem('home_user_avatar') || '',
+            pinned_personas: localStorage.getItem('pinned_personas') || '[]',
+        }
+
+        const fullExport = { ...serverData, localSettings: localData }
+
+        const blob = new Blob([JSON.stringify(fullExport, null, 2)], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `ai-phone-backup-${new Date().toISOString().slice(0, 10)}.json`
+        a.download = `melt-backup-${new Date().toISOString().slice(0, 10)}.json`
         a.click()
         URL.revokeObjectURL(url)
     } catch (e) {
@@ -540,50 +660,34 @@ async function exportData() {
     }
 }
 
-function triggerImport() {
-    importInput.value.click()
-}
 
-function toggleProactivePersona(id) {
-    const idx = proactive.enabledPersonas.indexOf(id)
-    if (idx > -1) proactive.enabledPersonas.splice(idx, 1)
-    else proactive.enabledPersonas.push(id)
-    saveProactive()
-}
+function triggerImport() { importInput.value.click() }
 
 async function importData(event) {
     const file = event.target.files[0]
     if (!file) return
-
     try {
         const text = await file.text()
         const data = JSON.parse(text)
+
+        // 恢复本地设置
+        if (data.localSettings) {
+            Object.entries(data.localSettings).forEach(([key, value]) => {
+                if (value) localStorage.setItem(key, value)
+            })
+        }
+
+        // 恢复服务器数据
+        const serverData = { ...data }
+        delete serverData.localSettings
         await api('/api/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body: JSON.stringify(serverData)
         })
-        alert('导入成功')
+        alert('导入成功，刷新页面生效')
     } catch (e) {
-        console.error('导入失败:', e)
         alert('导入失败: ' + e.message)
-    }
-}
-
-const pushTestResult = ref(null)
-
-async function testPush() {
-    pushTestResult.value = null
-    try {
-        const res = await api('/api/push/test', { method: 'POST' })
-        const data = await res.json()
-        if (data.subscribers > 0) {
-            pushTestResult.value = { success: true, message: `推送已发送给 ${data.subscribers} 个订阅者` }
-        } else {
-            pushTestResult.value = { success: false, message: '没有订阅者，请先允许通知权限' }
-        }
-    } catch (e) {
-        pushTestResult.value = { success: false, message: `失败: ${e.message}` }
     }
 }
 
@@ -1041,9 +1145,28 @@ textarea:focus {
     cursor: pointer;
 }
 
+.section>.glass-card+.glass-card {
+    margin-top: 12px;
+}
+
+.action-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+}
+
 .btn-row {
     display: flex;
-    gap: 8px;
-    margin-top: 10px;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.block-title {
+    font-size: 12px;
+    color: var(--color-text-light);
+    margin-bottom: 12px;
+    font-weight: 400;
+    letter-spacing: 0.3px;
 }
 </style>

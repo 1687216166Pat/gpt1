@@ -448,6 +448,52 @@ router.get("/settings/api", async (req, res) => {
   res.json(config);
 });
 
+router.post("/settings/sub-api", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { key, baseUrl, model } = req.body;
+  if (key) process.env.AI_SUB_API_KEY = key;
+  if (baseUrl) process.env.AI_SUB_BASE_URL = baseUrl;
+  if (model) process.env.AI_SUB_MODEL = model;
+
+  // 持久化
+  if (key)
+    await db
+      .from("user_profile")
+      .upsert(
+        {
+          key: "sub_api_key",
+          value: key,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" },
+      );
+  if (baseUrl)
+    await db
+      .from("user_profile")
+      .upsert(
+        {
+          key: "sub_api_base_url",
+          value: baseUrl,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" },
+      );
+  if (model)
+    await db
+      .from("user_profile")
+      .upsert(
+        {
+          key: "sub_api_model",
+          value: model,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" },
+      );
+
+  res.json({ success: true });
+});
+
 // 助手详情
 router.get("/persona/:personaId", async (req, res) => {
   const { getDB } = require("../db/index");
@@ -1149,6 +1195,26 @@ router.get("/sediment/:personaId/insights", async (req, res) => {
     .order("created_at", { ascending: false })
     .limit(10);
   res.json(data || []);
+});
+
+// 切换世界书启用状态
+router.post("/worldbooks/:id/toggle", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { enabled } = req.body;
+  await db.from("world_books").update({ enabled }).eq("id", req.params.id);
+  res.json({ success: true });
+});
+
+// 批量设置分类
+router.post("/worldbooks/categorize", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { bookIds, category } = req.body;
+  for (const id of bookIds) {
+    await db.from("world_books").update({ category }).eq("id", id);
+  }
+  res.json({ success: true });
 });
 
 module.exports = router;

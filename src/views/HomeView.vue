@@ -1,14 +1,10 @@
 <template>
     <div class="home-screen">
-        <!-- 灵动岛 -->
         <div class="dynamic-island"></div>
 
-        <!-- 分页容器 -->
         <div class="pages-container" ref="pagesContainer" @scroll="handlePageScroll" @mousedown="handleMouseDown"
             @mousemove="handleMouseMove" @mouseup="handleMouseUp" @mouseleave="handleMouseUp">
-            <!-- 第一页 -->
             <div class="page">
-                <!-- 字卡组件 -->
                 <div class="folder-note" @click="showCardEditor = true">
                     <div class="folder-back">
                         <p class="note-text">{{ todayCard }}</p>
@@ -19,9 +15,7 @@
                     </div>
                 </div>
 
-                <!-- 主内容区：左右分栏 -->
                 <div class="main-content">
-                    <!-- 左侧：纪念日 + 小app -->
                     <div class="left-column">
                         <GlassCard size="md" class="days-card" @click="showDaysEdit = true">
                             <div class="days-decor">
@@ -41,12 +35,12 @@
                                     gradient="linear-gradient(155deg, rgba(250,248,252,0.95), rgba(240,236,245,0.7))" />
                             </div>
                             <div class="mini-app" @click="$router.push('/logs')">
-                                <img v-if="customIcons.book" :src="customIcons.book" class="custom-icon" />
+                                <img v-if="customIcons.logs" :src="customIcons.logs" class="custom-icon" />
                                 <AppIcon v-else icon="book"
                                     gradient="linear-gradient(155deg, rgba(248,245,252,0.95), rgba(238,232,245,0.7))" />
                             </div>
                             <div class="mini-app" @click="$router.push('/presence')">
-                                <img v-if="customIcons.heart" :src="customIcons.heart" class="custom-icon" />
+                                <img v-if="customIcons.presence" :src="customIcons.presence" class="custom-icon" />
                                 <AppIcon v-else icon="heart"
                                     gradient="linear-gradient(155deg, rgba(245,248,255,0.95), rgba(232,238,250,0.7))" />
                             </div>
@@ -56,11 +50,10 @@
                         </div>
                     </div>
 
-                    <!-- 右侧：App + 气泡 -->
                     <div class="right-column">
                         <div class="mini-app-grid">
                             <div class="mini-app" @click="$router.push('/about')">
-                                <img v-if="customIcons.heart" :src="customIcons.heart" class="custom-icon" />
+                                <img v-if="customIcons.about" :src="customIcons.about" class="custom-icon" />
                                 <AppIcon v-else icon="heart"
                                     gradient="linear-gradient(155deg, rgba(252,244,248,0.95), rgba(245,232,240,0.7))" />
                             </div>
@@ -70,7 +63,7 @@
                                     gradient="linear-gradient(155deg, rgba(246,250,252,0.95), rgba(235,242,248,0.7))" />
                             </div>
                             <div class="mini-app" @click="$router.push('/worldbook')">
-                                <img v-if="customIcons.book" :src="customIcons.book" class="custom-icon" />
+                                <img v-if="customIcons.worldbook" :src="customIcons.worldbook" class="custom-icon" />
                                 <AppIcon v-else icon="book"
                                     gradient="linear-gradient(155deg, rgba(252,250,246,0.95), rgba(245,240,232,0.7))" />
                             </div>
@@ -100,7 +93,6 @@
                 </div>
             </div>
 
-            <!-- 第二页 -->
             <div class="page">
                 <div class="vinyl-player">
                     <div class="vinyl-disc">
@@ -115,13 +107,11 @@
             </div>
         </div>
 
-        <!-- 分页指示器 -->
         <div class="page-dots">
             <span class="dot" :class="{ active: currentPage === 0 }"></span>
             <span class="dot" :class="{ active: currentPage === 1 }"></span>
         </div>
 
-        <!-- 纪念日编辑弹窗 -->
         <BlurModal :visible="showDaysEdit" @close="showDaysEdit = false">
             <h3>设置纪念日</h3>
             <DreamInput label="开始日期" type="date" v-model="startDate" />
@@ -131,7 +121,6 @@
             </div>
         </BlurModal>
 
-        <!-- 字卡编辑弹窗 -->
         <BlurModal :visible="showCardEditor" @close="showCardEditor = false">
             <h3>字卡管理</h3>
             <div class="card-input-row">
@@ -147,7 +136,6 @@
             </div>
         </BlurModal>
 
-        <!-- Dock 栏 -->
         <div class="dock-bar">
             <div class="dock-item" @click="openChat">
                 <div class="dock-icon-wrap">

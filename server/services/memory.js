@@ -1,4 +1,5 @@
 const { getDB } = require("../db/index");
+const { callSubAI } = require("./subai");
 
 // ========== 消息计数器 ==========
 let messageCounters = {};
@@ -105,32 +106,11 @@ ${dialogue.slice(-2000)}
 沉淀：`;
 
   try {
-    const response = await fetch(
-      `${process.env.AI_BASE_URL}/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          Authorization: `Bearer ${process.env.AI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.AI_MEMORY_MODEL || process.env.AI_MODEL,
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 100,
-          temperature: 0.2,
-        }),
-      },
-    );
-
-    const data = await response.json();
-    if (!data.choices || !data.choices[0]) return;
-
-    const result = data.choices[0].message.content.trim();
-    if (result === "无" || result.length < 3) return;
+    const result = await callSubAI(prompt, 100);
+    if (!result || result === "无" || result.length < 3) return;
 
     const today = new Date().toISOString().slice(0, 10);
     await saveDailyMemory(personaId, result, today);
-
     console.log(`[记忆] ${personaId} 短期总结完成: ${result.slice(0, 50)}...`);
     counter.sinceLastSummary = 0;
   } catch (e) {
@@ -317,9 +297,9 @@ async function processMemory(personaId, userMessage, aiReply) {
     return;
   }
 
-  // 即时提取（每3条提取一次轻量记忆）
+  // 即时提取（每15条提取一次轻量记忆）
   const counter = getCounter(personaId);
-  if (counter.total % 3 === 0) {
+  if (counter.total % 15 === 0) {
     await extractQuickMemory(personaId, userMessage, aiReply);
   }
 }
@@ -347,27 +327,7 @@ ${identity.aiName}: ${aiReply}
 留下了：`;
 
   try {
-    const response = await fetch(
-      `${process.env.AI_BASE_URL}/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          Authorization: `Bearer ${process.env.AI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.AI_MEMORY_MODEL || process.env.AI_MODEL,
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 60,
-          temperature: 0,
-        }),
-      },
-    );
-
-    const data = await response.json();
-    if (!data.choices || !data.choices[0]) return;
-
-    const result = data.choices[0].message.content.trim();
+    const result = await callSubAI(prompt, 60);
     if (result === "无" || result.length < 2) return;
 
     await saveDailyMemory(personaId, result, today);

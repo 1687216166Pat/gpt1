@@ -29,6 +29,8 @@ setTimeout(async () => {
   try {
     const { getDB } = require("./db/index");
     const db = getDB();
+
+    // 加载主 API 配置
     const { data } = await db
       .from("user_profile")
       .select("key, value")
@@ -45,6 +47,23 @@ setTimeout(async () => {
         }
       });
       console.log("已从数据库加载 API 配置, 模型:", process.env.AI_MODEL);
+    }
+
+    // 加载副 API 配置
+    const { data: subData } = await db
+      .from("user_profile")
+      .select("key, value")
+      .in("key", ["sub_api_key", "sub_api_base_url", "sub_api_model"]);
+    if (subData) {
+      subData.forEach((row) => {
+        if (row.key === "sub_api_key" && row.value)
+          process.env.AI_SUB_API_KEY = row.value;
+        if (row.key === "sub_api_base_url" && row.value)
+          process.env.AI_SUB_BASE_URL = row.value;
+        if (row.key === "sub_api_model" && row.value)
+          process.env.AI_SUB_MODEL = row.value;
+      });
+      console.log("已从数据库加载副 API 配置, 模型:", process.env.AI_SUB_MODEL);
     }
   } catch (e) {
     console.error("加载 API 配置失败:", e);

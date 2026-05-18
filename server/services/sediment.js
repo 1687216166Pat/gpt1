@@ -1,10 +1,10 @@
 const { getDB } = require("../db/index");
+const { callSubAI } = require("./subai");
 
 // 获取人格的身份配置
 async function getIdentityConfig(personaId) {
   const db = getDB();
 
-  // 先查自定义人格
   const { data: custom } = await db
     .from("custom_personas")
     .select("name, note, gender, call_user")
@@ -12,9 +12,10 @@ async function getIdentityConfig(personaId) {
     .limit(1);
 
   if (custom && custom.length > 0) {
+    const callUser = (custom[0].call_user || "").split(/[,，、/]/)[0].trim();
     return {
       aiName: custom[0].note || custom[0].name || "TA",
-      userName: custom[0].call_user || "用户",
+      userName: callUser || "你",
       pronoun:
         custom[0].gender === "male"
           ? "他"
@@ -24,7 +25,6 @@ async function getIdentityConfig(personaId) {
     };
   }
 
-  // 内置人格
   const { data: config } = await db
     .from("user_profile")
     .select("value")
@@ -33,14 +33,15 @@ async function getIdentityConfig(personaId) {
 
   if (config && config.length > 0) {
     const c = JSON.parse(config[0].value);
+    const callUser = (c.call_user || "").split(/[,，、/]/)[0].trim();
     return {
       aiName: c.note || c.name || "TA",
-      userName: c.call_user || "用户",
+      userName: callUser || "你",
       pronoun: c.gender === "male" ? "他" : c.gender === "female" ? "她" : "TA",
     };
   }
 
-  return { aiName: "TA", userName: "用户", pronoun: "TA" };
+  return { aiName: "TA", userName: "你", pronoun: "TA" };
 }
 
 // 每日会话总结
@@ -96,27 +97,9 @@ ${dialogue}
 今日记录：`;
 
   try {
-    const response = await fetch(
-      `${process.env.AI_BASE_URL}/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          Authorization: `Bearer ${process.env.AI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.AI_MEMORY_MODEL || process.env.AI_MODEL,
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 150,
-          temperature: 0.3,
-        }),
-      },
-    );
+    const summary = await callSubAI(prompt, 150);
+    if (!summary) return;
 
-    const data = await response.json();
-    if (!data.choices || !data.choices[0]) return;
-
-    const summary = data.choices[0].message.content.trim();
     await db.from("session_summaries").insert({
       persona_id: personaId,
       date: today,
@@ -181,27 +164,9 @@ ${summaryText}
 人格观察：`;
 
   try {
-    const response = await fetch(
-      `${process.env.AI_BASE_URL}/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          Authorization: `Bearer ${process.env.AI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: process.env.AI_MEMORY_MODEL || process.env.AI_MODEL,
-          messages: [{ role: "user", content: prompt }],
-          max_tokens: 120,
-          temperature: 0.2,
-        }),
-      },
-    );
+    const insight = await callSubAI(prompt, 120);
+    if (!insight) return;
 
-    const data = await response.json();
-    if (!data.choices || !data.choices[0]) return;
-
-    const insight = data.choices[0].message.content.trim();
     await db.from("persona_insights").insert({
       persona_id: personaId,
       week,

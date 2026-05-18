@@ -40,9 +40,9 @@ export const useChatStore = defineStore("chat", () => {
       data.forEach((m) => {
         if (m.role === "ai") {
           const parts = smartSplit(m.content);
-          parts.forEach((line) => {
+          parts.forEach((line, idx) => {
             processed.push({
-              id: m.id + "_" + Math.random(),
+              id: m.id + "_" + idx,
               role: m.role,
               content: line,
               timestamp: m.timestamp,

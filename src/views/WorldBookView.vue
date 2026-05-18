@@ -9,7 +9,7 @@
             </div>
         </div>
 
-        <!-- 注入位置说明（可收起） -->
+        <!-- 注入位置说明 -->
         <div class="guide-section" v-if="showGuide">
             <GlassCard size="sm" class="guide-card">
                 <p class="guide-title" @click="showGuide = false">注入位置说明 ▾</p>
@@ -26,32 +26,51 @@
             <span>注入位置说明 ▸</span>
         </div>
 
+        <!-- 分类筛选 -->
+        <div v-if="existingCategories.length > 0" class="category-filter">
+            <button class="filter-btn" :class="{ active: filterCategory === '' }"
+                @click="filterCategory = ''">全部</button>
+            <button v-for="cat in existingCategories" :key="cat" class="filter-btn"
+                :class="{ active: filterCategory === cat }" @click="filterCategory = cat">
+                {{ cat }}
+            </button>
+        </div>
+
         <!-- 批量操作栏 -->
         <div v-if="selectMode && selectedBooks.length > 0" class="batch-bar">
             <SoftButton variant="glass" size="sm" @click="selectAll">全选</SoftButton>
             <SoftButton variant="primary" size="sm" @click="showBindModal = true">绑定</SoftButton>
+            <SoftButton variant="glass" size="sm" @click="showCategoryModal = true">分类</SoftButton>
             <span class="batch-count">已选 {{ selectedBooks.length }}</span>
         </div>
 
         <div class="worldbook-list">
-            <GlassCard v-for="book in books" :key="book.id" size="md" class="book-card" @click="selectMode ? toggleSelect(book.id) : editBook(book)">
+            <GlassCard v-for="book in filteredBooks" :key="book.id" size="md" class="book-card"
+                @click="selectMode ? toggleSelect(book.id) : editBook(book)">
                 <div class="book-row">
                     <div v-if="selectMode" class="book-checkbox" :class="{ checked: selectedBooks.includes(book.id) }">
                         <span v-if="selectedBooks.includes(book.id)">✓</span>
                     </div>
+                    <label class="book-toggle" @click.stop>
+                        <input type="checkbox" :checked="book.enabled !== false"
+                            @change="toggleBook(book.id, $event.target.checked)" />
+                        <span class="toggle-dot-sm"></span>
+                    </label>
                     <div class="book-info">
                         <p class="book-title">{{ book.title }}</p>
                         <div class="book-meta">
-                            <GlassTag :variant="positionColor(book.position)" size="sm">{{ positionLabel(book.position) }}</GlassTag>
+                            <GlassTag :variant="positionColor(book.position)" size="sm">{{ positionLabel(book.position)
+                                }}</GlassTag>
                             <GlassTag v-if="book.keyword_enabled" variant="warm" size="sm">关键词</GlassTag>
-                            <GlassTag v-if="book.bind_type === 'global'" variant="soft" size="sm">全局</GlassTag>
+                            <GlassTag v-if="book.category" variant="default" size="sm">{{ book.category }}</GlassTag>
+                            <GlassTag v-if="book.enabled === false" variant="default" size="sm">已关闭</GlassTag>
                         </div>
                     </div>
                     <button class="delete-btn" @click.stop="deleteBook(book.id)">×</button>
                 </div>
             </GlassCard>
 
-            <div v-if="books.length === 0" class="empty-area">
+            <div v-if="filteredBooks.length === 0" class="empty-area">
                 <p class="empty-icon">📖</p>
                 <p class="empty-text">还没有世界书</p>
             </div>
@@ -61,7 +80,6 @@
         <BlurModal :visible="showAdd || !!editingBook" @close="closeModal">
             <h3>{{ editingBook ? '编辑世界书' : '新建世界书' }}</h3>
             <DreamInput label="标题" v-model="bookForm.title" placeholder="世界书名称" />
-
             <div class="form-row">
                 <label class="form-label">注入位置</label>
                 <select v-model="bookForm.position" class="form-select">
@@ -72,7 +90,6 @@
                     <option value="tail">尾部临时层</option>
                 </select>
             </div>
-
             <div class="form-row">
                 <label class="form-label">关键词触发</label>
                 <div class="keyword-row">
@@ -83,15 +100,13 @@
                     <DreamInput v-if="bookForm.keyword_enabled" v-model="bookForm.keywords" placeholder="关键词，用逗号分隔" />
                 </div>
             </div>
-
-            <DreamInput label="内容" type="textarea" v-model="bookForm.content" :rows="8" placeholder="世界观设定、背景信息、规则..." />
-
-            <!-- 导入文件 -->
+            <DreamInput label="内容" type="textarea" v-model="bookForm.content" :rows="8"
+                placeholder="世界观设定、背景信息、规则..." />
             <div class="import-area">
-                <SoftButton variant="ghost" size="sm" @click="$refs.fileInput.click()">从文件导入</SoftButton>
-                <input ref="fileInput" type="file" accept=".txt,.md,.json,.doc,.docx" style="display:none" @change="handleFileImport" />
+                <SoftButton variant="ghost" size="sm" @click="fileInput?.click()">从文件导入</SoftButton>
+                <input ref="fileInput" type="file" accept=".txt,.md,.json,.doc,.docx" style="display:none"
+                    @change="handleFileImport" />
             </div>
-
             <div class="modal-actions">
                 <SoftButton variant="secondary" @click="closeModal">取消</SoftButton>
                 <SoftButton variant="primary" @click="saveBook">保存</SoftButton>
@@ -122,11 +137,27 @@
                 <SoftButton variant="primary" @click="applyBind">确认绑定</SoftButton>
             </div>
         </BlurModal>
+
+        <!-- 分类弹窗 -->
+        <BlurModal :visible="showCategoryModal" @close="showCategoryModal = false">
+            <h3>设置分类</h3>
+            <DreamInput v-model="newCategory" placeholder="输入分类名称" />
+            <div v-if="existingCategories.length > 0" class="category-list">
+                <p class="list-label">已有分类：</p>
+                <div v-for="cat in existingCategories" :key="cat" class="category-item" @click="newCategory = cat">
+                    {{ cat }}
+                </div>
+            </div>
+            <div class="modal-actions">
+                <SoftButton variant="secondary" @click="showCategoryModal = false">取消</SoftButton>
+                <SoftButton variant="primary" @click="applyCategory">确认</SoftButton>
+            </div>
+        </BlurModal>
     </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { api } from '@/utils/api'
 import GlassCard from '@/components/ui/GlassCard.vue'
 import GlassTag from '@/components/ui/GlassTag.vue'
@@ -145,6 +176,46 @@ const showBindModal = ref(false)
 const bindType = ref('global')
 const bindPersonas = ref([])
 const fileInput = ref(null)
+const showCategoryModal = ref(false)
+const newCategory = ref('')
+const filterCategory = ref('')
+
+const existingCategories = computed(() => {
+    const cats = new Set(books.value.map(b => b.category).filter(Boolean))
+    return [...cats]
+})
+
+const filteredBooks = computed(() => {
+    if (!filterCategory.value) return books.value
+    return books.value.filter(b => b.category === filterCategory.value)
+})
+
+async function toggleBook(id, enabled) {
+    await api(`/api/worldbooks/${id}/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled })
+    })
+    const book = books.value.find(b => b.id === id)
+    if (book) book.enabled = enabled
+}
+
+async function applyCategory() {
+    if (!newCategory.value.trim()) return
+    await api('/api/worldbooks/categorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            bookIds: selectedBooks.value,
+            category: newCategory.value.trim()
+        })
+    })
+    showCategoryModal.value = false
+    newCategory.value = ''
+    selectMode.value = false
+    selectedBooks.value = []
+    await loadBooks()
+}
 
 const bookForm = reactive({
     title: '',
@@ -168,7 +239,7 @@ async function loadBooks() {
     try {
         const res = await api('/api/worldbooks')
         books.value = await res.json()
-    } catch {}
+    } catch { }
 }
 
 async function loadPersonas() {
@@ -176,7 +247,7 @@ async function loadPersonas() {
         const res = await api('/api/prompts/personas')
         const data = await res.json()
         personas.value = data.personas
-    } catch {}
+    } catch { }
 }
 
 function editBook(book) {
@@ -271,7 +342,7 @@ async function handleFileImport(event) {
         const text = await file.text()
         if (!bookForm.title) bookForm.title = file.name.replace(/\.[^.]+$/, '')
         bookForm.content = text
-    } catch {}
+    } catch { }
 }
 
 onMounted(() => {
@@ -500,7 +571,10 @@ onMounted(() => {
 
 .toggle-dot {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: var(--color-bg-secondary);
     border-radius: 20px;
     cursor: pointer;
@@ -510,18 +584,20 @@ onMounted(() => {
 .toggle-dot:before {
     content: "";
     position: absolute;
-    height: 14px; width: 14px;
-    left: 3px; bottom: 3px;
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
     background: white;
     border-radius: 50%;
     transition: 0.3s;
 }
 
-.toggle-mini input:checked + .toggle-dot {
+.toggle-mini input:checked+.toggle-dot {
     background: var(--color-primary);
 }
 
-.toggle-mini input:checked + .toggle-dot:before {
+.toggle-mini input:checked+.toggle-dot:before {
     transform: translateX(16px);
 }
 
@@ -610,5 +686,92 @@ onMounted(() => {
     font-size: 13px;
     color: var(--color-text-light);
     opacity: 0.5;
+}
+
+.book-toggle {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.book-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-dot-sm {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-bg-secondary);
+    border-radius: 18px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.toggle-dot-sm:before {
+    content: "";
+    position: absolute;
+    height: 14px;
+    width: 14px;
+    left: 2px;
+    bottom: 2px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+.book-toggle input:checked+.toggle-dot-sm {
+    background: var(--color-primary);
+}
+
+.book-toggle input:checked+.toggle-dot-sm:before {
+    transform: translateX(14px);
+}
+
+.category-filter {
+    display: flex;
+    gap: 6px;
+    padding: 8px 0;
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.filter-btn {
+    padding: 5px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--color-border);
+    background: none;
+    font-size: 11px;
+    color: var(--color-text-light);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.filter-btn.active {
+    background: var(--color-card);
+    color: var(--color-text);
+    border-color: var(--color-primary);
+}
+
+.category-list {
+    margin-top: 10px;
+}
+
+.category-item {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--color-text);
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+
+.category-item:active {
+    background: rgba(212, 137, 158, 0.06);
 }
 </style>

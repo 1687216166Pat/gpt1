@@ -1,4 +1,5 @@
 const { getDB } = require("../db/index");
+const { callSubAI } = require("./subai");
 const { pushNotification } = require("./push");
 const { getActivePersona } = require("./prompt");
 const {
@@ -175,7 +176,21 @@ async function handleChat(userMessage, ws, personaId) {
     ? `\n[用户偏好]\n${userPromptContent}`
     : "";
 
-  const fullPrompt = corePrompt + personaContent + userPromptStr;
+  // 判断是否需要发完整人设
+  const msgCount = history.length;
+  const needFullPersona = msgCount === 0 || msgCount % 20 === 0;
+
+  let personaToUse = "";
+  if (needFullPersona) {
+    personaToUse = personaContent;
+  } else {
+    personaToUse = personaContent.slice(0, 800);
+    if (personaContent.length > 800) {
+      personaToUse += "\n[注：完整人设已在之前加载，请保持角色一致性]";
+    }
+  }
+
+  const fullPrompt = corePrompt + personaToUse + userPromptStr;
 
   // 获取分句设置
   let minMsg = 1,
@@ -257,7 +272,10 @@ async function handleChat(userMessage, ws, personaId) {
   let worldBookOverride = "";
 
   try {
-    const { data: books } = await db.from("world_books").select("*");
+    const { data: books } = await db
+      .from("world_books")
+      .select("*")
+      .eq("enabled", true);
     if (books) {
       books.forEach((book) => {
         // 检查绑定
@@ -294,20 +312,21 @@ async function handleChat(userMessage, ws, personaId) {
     }
   } catch {}
 
+  const needWorldBook = msgCount === 0 || msgCount % 10 === 0;
+
   let systemContent = "";
   if (worldBookOverride) systemContent += worldBookOverride + "\n";
   if (worldBookBefore) systemContent += worldBookBefore + "\n";
   systemContent += fullPrompt + "\n";
   if (worldBookAfter) systemContent += worldBookAfter + "\n";
-  systemContent += defaultWorldBook + "\n";
+  if (needWorldBook) systemContent += defaultWorldBook + "\n";
   systemContent += timeContext + "\n";
-  systemContent += memoryContext + "\n";
-  systemContent += relationshipContext + "\n";
-  systemContent += phoneContext + "\n";
+  if (memoryContext) systemContent += memoryContext + "\n";
+  if (relationshipContext) systemContent += relationshipContext + "\n";
+  if (phoneContext) systemContent += phoneContext + "\n";
   if (worldBookBeforeUser) systemContent += worldBookBeforeUser + "\n";
   if (worldBookTail) systemContent += worldBookTail + "\n";
-  systemContent += timeSinceLastMsg ? `\n${timeSinceLastMsg}` : "";
-  if (timeSinceLastMsg) systemContent += "\n" + timeSinceLastMsg;
+  if (timeSinceLastMsg) systemContent += timeSinceLastMsg + "\n";
   systemContent += `\n[重要] 严格遵守上述所有规则。`;
 
   const messages = [
@@ -511,39 +530,37 @@ async function handleChat(userMessage, ws, personaId) {
 或
 30|刚才说的那个事，想到一个办法`;
 
-        const decideRes = await fetch(
-          `${process.env.AI_BASE_URL}/chat/completions`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json; charset=utf-8",
-              Authorization: `Bearer ${process.env.AI_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: process.env.AI_MEMORY_MODEL || process.env.AI_MODEL,
-              messages: [{ role: "user", content: decidePrompt }],
-              max_tokens: 50,
-              temperature: 0.5,
-            }),
-          },
-        );
+        const result = await callSubAI(decidePrompt, 50);
+        if (result && result !== "无" && result.includes("|")) {
+          const [mins, content] = result.split("|");
+          const minutes = parseInt(mins);
+          if (minutes > 0 && content) {
+            // 替换旧的日常类主动消息
+            const { data: oldScheduled } = await db
+              .from("scheduled_messages")
+              .select("id, content")
+              .eq("persona_id", pid)
+              .eq("triggered", false);
 
-        const decideData = await decideRes.json();
-        if (decideData.choices && decideData.choices[0]) {
-          const result = decideData.choices[0].message.content.trim();
-          if (result !== "无" && result.includes("|")) {
-            const [mins, content] = result.split("|");
-            const minutes = parseInt(mins);
-            if (minutes > 0 && content) {
-              const triggerAt = new Date(
-                Date.now() + minutes * 60 * 1000,
-              ).toISOString();
-              const { createScheduledMessage } = require("./scheduler");
-              await createScheduledMessage(pid, content.trim(), triggerAt);
-              console.log(
-                `[主动] ${pid} 将在 ${minutes} 分钟后发: ${content.trim()}`,
-              );
+            if (oldScheduled && oldScheduled.length > 0) {
+              for (const old of oldScheduled) {
+                const isSchedule = /点|号|明天|后天|周|月|闹钟|提醒|会议/.test(
+                  old.content,
+                );
+                if (!isSchedule) {
+                  await db.from("scheduled_messages").delete().eq("id", old.id);
+                }
+              }
             }
+
+            const triggerAt = new Date(
+              Date.now() + minutes * 60 * 1000,
+            ).toISOString();
+            const { createScheduledMessage } = require("./scheduler");
+            await createScheduledMessage(pid, content.trim(), triggerAt);
+            console.log(
+              `[主动] ${pid} 将在 ${minutes} 分钟后发: ${content.trim()}`,
+            );
           }
         }
       }

@@ -125,6 +125,41 @@
                 </GlassCard>
             </div>
 
+            <!-- 美化方案 -->
+            <div class="section-block">
+                <h3 class="section-label">◐ 美化方案</h3>
+                <GlassCard size="md">
+                    <div v-if="schemes.length > 0" class="scheme-list">
+                        <div v-for="(scheme, idx) in schemes" :key="idx" class="scheme-item"
+                            :class="{ active: currentScheme === idx }">
+                            <span class="scheme-name" @click="applyScheme(idx)">{{ scheme.name }}</span>
+                            <button class="scheme-delete" @click="deleteScheme(idx)">×</button>
+                        </div>
+                    </div>
+                    <div class="btn-row">
+                        <DreamInput v-model="newSchemeName" placeholder="方案名称" />
+                        <SoftButton variant="primary" size="sm" @click="saveCurrentAsScheme">保存当前</SoftButton>
+                    </div>
+                </GlassCard>
+            </div>
+
+            <!-- 自定义代码 -->
+            <div class="section-block">
+                <h3 class="section-label">✧ 自定义样式</h3>
+                <p class="section-sub">直接写 CSS 代码，可美化气泡、全局样式等</p>
+                <GlassCard size="md">
+                    <DreamInput type="textarea" v-model="customCSS" :rows="8" placeholder="/* 例如 */
+.bubble-wrapper.ai .bubble {
+    background: rgba(255,200,200,0.2);
+    border-radius: 20px;
+}" />
+                    <div class="btn-row">
+                        <SoftButton variant="primary" size="sm" @click="applyCustomCSS">应用</SoftButton>
+                        <SoftButton variant="ghost" size="sm" @click="clearCustomCSS">清除</SoftButton>
+                    </div>
+                </GlassCard>
+            </div>
+
         </div>
     </div>
 </template>
@@ -143,6 +178,10 @@ const chatEntryMode = ref('direct')
 const themeMode = ref('auto')
 const wallpaperScope = ref('home')
 const fileInputs = ref({})
+const schemes = ref([])
+const currentScheme = ref(-1)
+const newSchemeName = ref('')
+const customCSS = ref('')
 
 const appIcons = ref([
     { id: 'heart', name: '关于他', emoji: '💕', customIcon: '' },
@@ -174,14 +213,124 @@ onMounted(() => {
             if (icons[app.id]) app.customIcon = icons[app.id]
         })
     }
+
+    // 加载美化方案
+    const savedSchemes = localStorage.getItem('beauty_schemes')
+    if (savedSchemes) schemes.value = JSON.parse(savedSchemes)
+
+    // 加载自定义 CSS
+    customCSS.value = localStorage.getItem('custom_css') || ''
+    if (customCSS.value) applyCustomCSS()
+
 })
+
+function saveCurrentAsScheme() {
+    if (!newSchemeName.value.trim()) return
+    const scheme = {
+        name: newSchemeName.value.trim(),
+        wallpaper: wallpaper.value,
+        wallpaperScope: wallpaperScope.value,
+        fontUrl: fontUrl.value,
+        fontName: fontName.value,
+        themeMode: themeMode.value,
+        customCSS: customCSS.value,
+        icons: JSON.parse(localStorage.getItem('custom_app_icons') || '{}'),
+    }
+    schemes.value.push(scheme)
+    currentScheme.value = schemes.value.length - 1
+    localStorage.setItem('beauty_schemes', JSON.stringify(schemes.value))
+    newSchemeName.value = ''
+}
+
+function applyScheme(idx) {
+    const scheme = schemes.value[idx]
+    currentScheme.value = idx
+
+    // 应用壁纸
+    if (scheme.wallpaper) {
+        wallpaper.value = scheme.wallpaper
+        wallpaperUrl.value = scheme.wallpaper
+        localStorage.setItem('custom_wallpaper', scheme.wallpaper)
+        localStorage.setItem('wallpaper_scope', scheme.wallpaperScope || 'home')
+        applyWallpaper()
+    } else {
+        clearWallpaper()
+    }
+
+    // 应用字体
+    if (scheme.fontUrl && scheme.fontName) {
+        fontUrl.value = scheme.fontUrl
+        fontName.value = scheme.fontName
+        applyFont()
+    } else {
+        clearFont()
+    }
+
+    // 应用主题
+    if (scheme.themeMode) {
+        themeMode.value = scheme.themeMode
+        setTheme(scheme.themeMode)
+    }
+
+    // 应用图标
+    if (scheme.icons) {
+        localStorage.setItem('custom_app_icons', JSON.stringify(scheme.icons))
+    }
+
+    // 应用自定义 CSS
+    if (scheme.customCSS) {
+        customCSS.value = scheme.customCSS
+        applyCustomCSS()
+    } else {
+        clearCustomCSS()
+    }
+}
+
+function deleteScheme(idx) {
+    schemes.value.splice(idx, 1)
+    localStorage.setItem('beauty_schemes', JSON.stringify(schemes.value))
+    if (currentScheme.value >= schemes.value.length) currentScheme.value = -1
+}
+
+function applyCustomCSS() {
+    localStorage.setItem('custom_css', customCSS.value)
+    const old = document.getElementById('custom-user-css')
+    if (old) old.remove()
+    if (customCSS.value.trim()) {
+        const style = document.createElement('style')
+        style.id = 'custom-user-css'
+        style.textContent = customCSS.value
+        document.head.appendChild(style)
+    }
+}
+
+function clearCustomCSS() {
+    customCSS.value = ''
+    localStorage.removeItem('custom_css')
+    const old = document.getElementById('custom-user-css')
+    if (old) old.remove()
+}
 
 function handleWallpaperUpload(event) {
     const file = event.target.files[0]
     if (!file) return
+    const img = new Image()
     const reader = new FileReader()
     reader.onload = (e) => {
-        wallpaperUrl.value = e.target.result
+        img.onload = () => {
+            const canvas = document.createElement('canvas')
+            const maxSize = 800
+            let w = img.width, h = img.height
+            if (w > maxSize || h > maxSize) {
+                if (w > h) { h = h * maxSize / w; w = maxSize }
+                else { w = w * maxSize / h; h = maxSize }
+            }
+            canvas.width = w
+            canvas.height = h
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+            wallpaperUrl.value = canvas.toDataURL('image/jpeg', 0.7)
+        }
+        img.src = e.target.result
     }
     reader.readAsDataURL(file)
 }
@@ -220,6 +369,10 @@ function setTheme(mode) {
 function handleFontUpload(event) {
     const file = event.target.files[0]
     if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+        alert('字体文件过大（超过2MB），请使用URL方式加载')
+        return
+    }
     const reader = new FileReader()
     reader.onload = (e) => {
         fontUrl.value = e.target.result
@@ -510,5 +663,29 @@ function clearAllIcons() {
     font-size: 10px;
     color: var(--color-primary);
     cursor: pointer;
+}
+
+.scheme-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    background: var(--color-card);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border);
+    transition: all 0.3s var(--ease-soft);
+}
+
+.scheme-item.active {
+    border-color: var(--color-primary);
+    background: rgba(212, 137, 158, 0.04);
+}
+
+.scheme-item:active {
+    transform: scale(0.98);
 }
 </style>
