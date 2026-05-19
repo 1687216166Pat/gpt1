@@ -137,7 +137,6 @@ router.get("/prompts/personas", async (req, res) => {
 
   let allPersonas = getPersonaList();
 
-  // 过滤掉隐藏的内置人格
   try {
     const { data: hiddenRows } = await db
       .from("user_profile")
