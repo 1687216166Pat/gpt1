@@ -154,40 +154,39 @@ function handleSend(text) {
 }
 
 function handleIncoming(data) {
-    if (data.type === 'bus_message') {
-        if (data.message.conversation_id === personaId.value && personaId.value === 'wechat_sync') {
-            chatStore.addMessage({
-                role: data.message.role === 'assistant' ? 'ai' : 'user',
-                content: data.message.content,
-                timestamp: new Date(data.message.timestamp).toISOString(),
-            })
-            scrollToBottom()
-        }
-        return
-    }
-
     if (data.type === 'chat' || data.type === 'push') {
         isTyping.value = false
-        const parts = smartSplit(data.content)
 
-        let final = parts
-        if (parts.length > maxBubbles.value) {
+        // 1. 基础过滤
+        let cleanContent = data.content
+            .replace(/\[思考\][\s\S]*?\[思考\]/g, "")
+            .replace(/[\s\S]*?<\/think>/g, "")
+            .trim()
+
+        // 2. 只按 ||| 拆分，且强行把所有换行 \n 抹平为空格
+        const bubbles = cleanContent.split('|||').map(s => s.replace(/\n/g, ' ').trim()).filter(Boolean)
+
+        // 3. 气泡数量限制
+        let final = bubbles
+        const limit = maxBubbles.value || 3;
+        if (bubbles.length > limit) {
             final = []
-            const chunkSize = Math.ceil(parts.length / maxBubbles.value)
-            for (let i = 0; i < parts.length; i += chunkSize) {
-                final.push(parts.slice(i, i + chunkSize).join(''))
+            const chunkSize = Math.ceil(bubbles.length / limit)
+            for (let i = 0; i < bubbles.length; i += chunkSize) {
+                final.push(bubbles.slice(i, i + chunkSize).join(' '))
             }
         }
 
+        // 4. 发送给前端 store 展示
         final.forEach((line, idx) => {
             setTimeout(() => {
                 chatStore.addMessage({ role: 'ai', content: line, timestamp: data.timestamp })
                 scrollToBottom()
-                // 最后一条消息添加完后更新缓存
+                // 存入本地缓存
                 if (idx === final.length - 1) {
                     setCache(`messages_${personaId.value}`, chatStore.allMessages.value)
                 }
-            }, idx * 500)
+            }, idx * 600)
         })
 
         if (data.debug) {

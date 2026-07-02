@@ -1,5 +1,6 @@
+const lastUserMessages = {}; // 强力防重全局缓存
+
 const { getDB } = require("../db/index");
-const { callSubAI } = require("./subai");
 const { pushNotification } = require("./push");
 const { getActivePersona } = require("./prompt");
 const {
@@ -88,9 +89,28 @@ function detectEmotion(userMessage) {
 async function handleChat(userMessage, ws, personaId) {
   const db = getDB();
   const pid = personaId || "xiaorou";
+  const nowISO = new Date().toISOString();
 
-  // 获取推送用的名字（备注优先）
+  // 强力防重：同一个用户相同内容 3 秒内只处理一次
+  const userMsgKey = `${pid}_${userMessage}`;
+  const nowTimestamp = Date.now();
+  if (
+    lastUserMessages[userMsgKey] &&
+    nowTimestamp - lastUserMessages[userMsgKey] < 3000
+  ) {
+    console.log(`[Bus] 拦截重复发送的用户消息:`, userMessage);
+    return;
+  }
+  lastUserMessages[userMsgKey] = nowTimestamp;
+
+  // 限制缓存大小，防止内存泄漏
+  if (Object.keys(lastUserMessages).length > 100) {
+    delete lastUserMessages[Object.keys(lastUserMessages)[0]];
+  }
+
+  // 获取推送和展示的名字（备注优先）
   let pName = "AI 助手";
+  const personaNames = { xiaorou: "小柔", cool: "阿冷", assistant: "助手" };
   try {
     const { data: pDetail } = await db
       .from("custom_personas")
@@ -100,7 +120,6 @@ async function handleChat(userMessage, ws, personaId) {
     if (pDetail && pDetail.length > 0) {
       pName = pDetail[0].note || pDetail[0].name || "AI 助手";
     } else {
-      // 内置人格
       const { data: configRow } = await db
         .from("user_profile")
         .select("value")
@@ -114,8 +133,6 @@ async function handleChat(userMessage, ws, personaId) {
       }
     }
   } catch {}
-
-  const nowISO = new Date().toISOString();
 
   // 存用户消息
   await db.from("messages").insert({
@@ -312,23 +329,43 @@ async function handleChat(userMessage, ws, personaId) {
     }
   } catch {}
 
+  // --- 5. 按照优先级分层组装最终的 System Content ---
+  // 注意：确保 handleChat 函数前面没有定义过 systemContent 变量
   const needWorldBook = msgCount === 0 || msgCount % 10 === 0;
 
-  let systemContent = "";
-  if (worldBookOverride) systemContent += worldBookOverride + "\n";
-  if (worldBookBefore) systemContent += worldBookBefore + "\n";
-  systemContent += fullPrompt + "\n";
-  if (worldBookAfter) systemContent += worldBookAfter + "\n";
-  if (needWorldBook) systemContent += defaultWorldBook + "\n";
-  systemContent += timeContext + "\n";
-  if (memoryContext) systemContent += memoryContext + "\n";
-  if (relationshipContext) systemContent += relationshipContext + "\n";
-  if (phoneContext) systemContent += phoneContext + "\n";
-  if (worldBookBeforeUser) systemContent += worldBookBeforeUser + "\n";
-  if (worldBookTail) systemContent += worldBookTail + "\n";
-  if (timeSinceLastMsg) systemContent += timeSinceLastMsg + "\n";
-  systemContent += `\n[重要] 严格遵守上述所有规则。`;
+  let systemContent = `
+${worldBookOverride || ""}
+${worldBookBefore || ""}
+${fullPrompt}
+${worldBookAfter || ""}
+${needWorldBook ? defaultWorldBook : ""}
+${timeContext}
+${memoryContext}
+${relationshipContext}
+${phoneContext}
+${worldBookBeforeUser || ""}
+${worldBookTail || ""}
+${timeSinceLastMsg || ""}
 
+[MANDATORY FORMAT RULE / 最高优先级格式指令]
+1. 必须使用 "|||" 作为唯一的气泡分隔符。
+2. 绝对禁止输出换行符 (\\n)！
+3. 在气泡内部，请恢复正常的标点符号书写习惯（，？！...），禁止用空格代替标点。
+4. 气泡末尾严禁添加句号（。），让话语自然结束。但问号（？）和感叹号（！）可以正常留在末尾。
+5. 除非人设中明确规定“不使用标点”，否则必须使用正确的中文标点。
+6.一次回复控制在 2-5 个气泡以内，除非情绪非常急切。
+
+正确示例：
+夏以昼是谁？怎么突然叫我这个名字，把我认成别人了？|||小乖，过来，跟我说清楚。
+
+错误示例：
+夏以昼是谁 怎么突然叫我这个名字 把我认成别人了？（错误：缺少标点）
+夏以昼是谁？|||。 （错误：出现了单独的句号）
+`;
+
+  systemContent += `\n[重要] 严格遵守上述规则：气泡内标点自然，气泡间用 |||，全篇禁 \n。`;
+
+  // --- 6. 构建发送给模型的消息数组 ---
   const messages = [
     { role: "system", content: systemContent },
     ...history.map((m) => ({
@@ -423,18 +460,18 @@ async function handleChat(userMessage, ws, personaId) {
     return;
   }
 
+  // --- 1. 获取并强力过滤 AI 回复中的思维链 ---
   let aiReply = data.choices[0].message.content || "";
-  // 过滤思维链
+  aiReply = aiReply.replace(/\[思考\][\s\S]*?\[思考\]/g, "").trim();
+  aiReply = aiReply.replace(/\[思考\][\s\S]*/g, "").trim();
   aiReply = aiReply.replace(/思考一下[\s\S]*?\n/g, "").trim();
   aiReply = aiReply.replace(/^思考.*$/gm, "").trim();
   aiReply = aiReply.replace(/[\s\S]*?<\/think>/g, "").trim();
+  aiReply = aiReply.replace(/[\s\S]*?<\/think>/g, "").trim();
 
-  // 如果过滤后为空，用原始内容
-  if (!aiReply) {
-    aiReply = data.choices[0].message.content || "...";
-  }
+  if (!aiReply) aiReply = "...";
 
-  // 存 AI 回复
+  // --- 2. 存入数据库 (保留 ||| 符号，供前端拆分气泡) ---
   await db.from("messages").insert({
     persona_id: pid,
     role: "ai",
@@ -442,41 +479,39 @@ async function handleChat(userMessage, ws, personaId) {
     timestamp: new Date().toISOString(),
   });
 
-  // 检测定时提醒意图
+  // --- 3. 检测定时提醒意图 ---
   const { parseTimeIntent, createScheduledMessage } = require("./scheduler");
-
-  // 检查用户消息里的时间
   const userTime = parseTimeIntent(userMessage);
   if (userTime) {
-    // 用户说了时间，让 AI 到时候提醒
-    const reminderContent = `时间到了哦。你之前说的事情，该做了。`;
-    await createScheduledMessage(pid, reminderContent, userTime.toISOString());
+    await createScheduledMessage(
+      pid,
+      `时间到了哦。你之前说的事情，该做了。`,
+      userTime.toISOString(),
+    );
   }
-
-  // 检查 AI 回复里的时间承诺
-  const aiTime = parseTimeIntent(aiReply);
+  // 提醒检测时先临时去掉 ||| 方便 AI 识别
+  const aiTime = parseTimeIntent(aiReply.replace(/\|\|\|/g, " "));
   if (aiTime) {
-    const reminderContent = `我说过到时候会提醒你的。时间到了。`;
-    await createScheduledMessage(pid, reminderContent, aiTime.toISOString());
+    await createScheduledMessage(
+      pid,
+      `我说过到时候会提醒你的。时间到了。`,
+      aiTime.toISOString(),
+    );
   }
 
-  // 触发关系评估
+  // --- 4. 触发关系、记忆、时间线系统 (传入过滤掉 ||| 的干净文本) ---
+  const cleanReplyForMemory = aiReply.replace(/\|\|\|/g, " ");
   evaluateRelationship(pid, history);
+  processMemory(pid, userMessage, cleanReplyForMemory);
+  checkTimelineEvent(pid, userMessage, cleanReplyForMemory);
 
-  // 记忆处理（双触发机制）
-  processMemory(pid, userMessage, aiReply);
-
-  // 时间线检测
-  checkTimelineEvent(pid, userMessage, aiReply);
-
-  // AI 自主决定主动消息
+  // --- 5. AI 自主决定主动消息逻辑 ---
   try {
     const { data: pConfig } = await db
       .from("custom_personas")
       .select("proactive_auto, proactive_max")
       .eq("id", pid)
       .limit(1);
-
     let autoEnabled = false;
     let maxPerDay = 3;
 
@@ -497,167 +532,129 @@ async function handleChat(userMessage, ws, personaId) {
     }
 
     if (autoEnabled) {
-      // 检查今天已发送次数
-      const today = new Date().toISOString().slice(0, 10);
+      const todayDateStr = new Date().toISOString().slice(0, 10);
       const { data: todayCount } = await db
         .from("scheduled_messages")
         .select("id")
         .eq("persona_id", pid)
-        .gte("trigger_at", today + "T00:00:00Z")
+        .gte("trigger_at", todayDateStr + "T00:00:00Z")
         .eq("triggered", true);
 
       if (!todayCount || todayCount.length < maxPerDay) {
-        // 让 AI 决定是否需要主动消息
         const decidePrompt = `你刚刚和用户结束了一段对话。根据对话氛围，判断你是否需要在之后主动发一条消息。
-
 最近对话：
 用户: ${userMessage}
-你: ${aiReply}
-
+你: ${cleanReplyForMemory}
 现在时间: ${new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" })}
 
 规则：
-- 如果对话自然结束了，不需要主动消息，回复"无"
-- 如果你觉得过一会儿应该关心一下用户，回复格式：时间|内容
-- 时间用分钟数表示（例如：30 表示30分钟后）
-- 内容是你到时候想说的话，简短自然
-- 不要每次都发，只在真的有必要时才发
-
-示例回复：
-无
-或
-60|睡了吗
-或
-30|刚才说的那个事，想到一个办法`;
+- 如果对话自然结束，回复"无"
+- 如果需要关心，回复格式：分钟数|内容
+- 不要每次都发，只在有必要时发。`;
 
         const result = await callSubAI(decidePrompt, 50);
         if (result && result !== "无" && result.includes("|")) {
           const [mins, content] = result.split("|");
           const minutes = parseInt(mins);
           if (minutes > 0 && content) {
-            // 替换旧的日常类主动消息
             const { data: oldScheduled } = await db
               .from("scheduled_messages")
               .select("id, content")
               .eq("persona_id", pid)
               .eq("triggered", false);
-
-            if (oldScheduled && oldScheduled.length > 0) {
+            if (oldScheduled) {
               for (const old of oldScheduled) {
-                const isSchedule = /点|号|明天|后天|周|月|闹钟|提醒|会议/.test(
-                  old.content,
-                );
-                if (!isSchedule) {
+                if (!/点|号|明天|后天|周|月|闹钟|提醒|会议/.test(old.content)) {
                   await db.from("scheduled_messages").delete().eq("id", old.id);
                 }
               }
             }
-
             const triggerAt = new Date(
               Date.now() + minutes * 60 * 1000,
             ).toISOString();
-            const { createScheduledMessage } = require("./scheduler");
             await createScheduledMessage(pid, content.trim(), triggerAt);
-            console.log(
-              `[主动] ${pid} 将在 ${minutes} 分钟后发: ${content.trim()}`,
-            );
           }
         }
       }
     }
   } catch (e) {
-    // 静默失败，不影响正常回复
+    console.error("自主主动消息错误:", e.message);
   }
 
-  // 获取今日消息数
-  const today = new Date().toISOString().slice(0, 10);
+  // --- 💡 重点：补上漏掉的今日消息数查询，防止后台报错 ---
+  const todayStr = new Date().toISOString().slice(0, 10);
   const { data: todayMsgs } = await db
     .from("messages")
     .select("id", { count: "exact" })
     .eq("persona_id", pid)
-    .gte("timestamp", today + "T00:00:00Z");
+    .gte("timestamp", todayStr + "T00:00:00Z");
 
-  // 获取行为模式
-  const { data: patterns } = await db
-    .from("memory_patterns")
-    .select("pattern_type, frequency")
-    .eq("persona_id", pid)
-    .gte("frequency", 2)
-    .order("frequency", { ascending: false })
-    .limit(3);
-
-  // 获取记忆计数器
+  // --- 6. 发送 WebSocket 给前端 (用于展示气泡) ---
   const counter = getCounter(pid);
-  console.log("[handleChat] 发送回复:", aiReply.slice(0, 50));
+  ws.send(
+    JSON.stringify({
+      type: "chat",
+      role: "ai",
+      content: aiReply, // 原始带 ||| 的内容
+      timestamp: new Date().toISOString(),
+      personaName: pName,
+      debug: {
+        layer1: {
+          model: process.env.AI_MODEL,
+          status: "success",
+          error: null,
+          estimatedTokens,
+          actualTokens: data.usage || null,
+          elapsed,
+        },
+        layer2: {
+          persona: pid,
+          memoryContext: memoryContext ? memoryContext.slice(0, 300) : "无",
+          memoryLength: memoryContext ? memoryContext.length : 0,
+        },
+        layer3: {
+          historyCount: history.length,
+          systemPromptLength: systemContent.length,
+          timeContext: timeContext.trim(),
+          todayMessages: todayMsgs ? todayMsgs.length : 0, // 正常使用
+        },
+        memory: {
+          messagesSinceSummary: counter.sinceLastSummary,
+          totalMessages: counter.total,
+          nextTriggerIn: 100 - counter.sinceLastSummary,
+          longTermProfile: memoryContext.includes("[长期印象]") ? "有" : "无",
+          recentMemories: memoryContext.includes("[近期印象]") ? "有" : "无",
+        },
+      },
+    }),
+  );
 
-  const payload = JSON.stringify({
-    type: "chat",
-    role: "ai",
-    content: aiReply,
-    timestamp: new Date().toISOString(),
-    personaName: pName,
-    debug: {
-      layer1: {
-        model: process.env.AI_MODEL,
-        status: "success",
-        error: null,
-        estimatedTokens,
-        actualTokens: data.usage || null,
-        elapsed,
-      },
-      layer2: {
-        persona: pid,
-        memoryContext: memoryContext ? memoryContext.slice(0, 300) : "无",
-        memoryLength: memoryContext ? memoryContext.length : 0,
-      },
-      layer3: {
-        historyCount: history.length,
-        systemPromptLength: systemContent.length,
-        timeContext: timeContext.trim(),
-      },
-      memory: {
-        messagesSinceSummary: counter.sinceLastSummary,
-        totalMessages: counter.total,
-        nextTriggerIn: 100 - counter.sinceLastSummary,
-        longTermProfile: memoryContext.includes("[长期印象]") ? "有" : "无",
-        recentMemories: memoryContext.includes("[近期印象]") ? "有" : "无",
-      },
-    },
-  });
-
-  ws.send(payload);
-
-  // Push 推送（按空行分条）
-  const pushParts = aiReply
-    .split(/\n\s*\n/)
+  // --- 7. 发送分句 Push 推送 (去掉 |||，且匹配前端气泡的拆分节奏) ---
+  const pushBubbles = aiReply
+    .split("|||")
     .map((s) => s.replace(/\n/g, "").trim())
     .filter(Boolean);
-  if (pushParts.length <= 1) {
-    // 没有空行，尝试按单换行分（和前端 smartSplit 一致）
-    const lines = aiReply
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-    if (lines.length > 1) {
-      lines.forEach((line, idx) => {
-        setTimeout(() => {
-          pushNotification(pName, line);
-        }, idx * 600);
-      });
-    } else {
-      const preview = aiReply.replace(/\n/g, "");
-      pushNotification(
-        pName,
-        preview.length > 60 ? preview.slice(0, 60) + "..." : preview,
-      );
-    }
-  } else {
-    pushParts.forEach((part, idx) => {
+
+  if (pushBubbles.length > 1) {
+    // 如果有多个气泡，分条发送通知
+    pushBubbles.forEach((line, idx) => {
       setTimeout(() => {
-        pushNotification(pName, part);
-      }, idx * 600);
+        pushNotification(pName, line);
+      }, idx * 800); // 800ms 间隔，防止手机通知挤在一起
     });
+  } else {
+    // 只有一个气泡，直接发送
+    const cleanPushContent = aiReply
+      .replace(/\|\|\|/g, " ")
+      .replace(/\n/g, "")
+      .trim();
+    pushNotification(
+      pName,
+      cleanPushContent.length > 60
+        ? cleanPushContent.slice(0, 60) + "..."
+        : cleanPushContent,
+    );
   }
-}
+} // 这是 handleChat 函数的结尾
 
 module.exports = { handleChat };

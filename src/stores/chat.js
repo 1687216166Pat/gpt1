@@ -69,25 +69,48 @@ export const useChatStore = defineStore("chat", () => {
 
   async function loadPersonaMessages(personaId) {
     if (!personaId) return;
-
-    // 先从缓存加载（立刻显示）
-    const cached = getCache(`messages_${personaId}`);
-    if (cached) {
-      const processed = processMessages(cached.data);
-      allMessages.value = processed;
-      messages.value =
-        processed.length > pageSize ? processed.slice(-pageSize) : processed;
-      hasMore.value = processed.length > pageSize;
-    }
-
-    // 后台从服务器更新
     try {
       const res = await api(`/api/messages/${personaId}`);
       const data = await res.json();
-      setCache(`messages_${personaId}`, data);
 
-      const processed = processMessages(data);
+      const processed = [];
+      data.forEach((m) => {
+        if (m.role === "ai") {
+          // 💡 仅使用 ||| 拆分，且把消息里的所有 \n 换成空格
+          const bubbles = m.content
+            .split("|||")
+            .map((s) => s.replace(/\n/g, " ").trim())
+            .filter(Boolean);
+          if (bubbles.length > 0) {
+            bubbles.forEach((line, partIdx) => {
+              processed.push({
+                id: `${m.id}_${partIdx}`,
+                role: m.role,
+                content: line,
+                timestamp: m.timestamp,
+              });
+            });
+          } else {
+            processed.push({
+              id: m.id,
+              role: m.role,
+              content: m.content.replace(/\|\|\|/g, "").replace(/\n/g, " "),
+              timestamp: m.timestamp,
+            });
+          }
+        } else {
+          // 用户消息直接存入
+          processed.push({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp,
+          });
+        }
+      });
+
       allMessages.value = processed;
+      // 分页显示最新消息
       if (processed.length > pageSize) {
         messages.value = processed.slice(-pageSize);
         hasMore.value = true;
@@ -96,7 +119,7 @@ export const useChatStore = defineStore("chat", () => {
         hasMore.value = false;
       }
     } catch (e) {
-      if (!cached) console.error("加载消息失败:", e);
+      console.error("加载消息失败:", e);
     }
   }
 

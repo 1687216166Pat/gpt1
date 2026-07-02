@@ -89,21 +89,28 @@ async function triggerShortTermSummary(personaId, reason) {
       return `${name}: ${m.content}`;
     })
     .join("\n");
+  const cleanAiReply = aiReply.replace(/\|\|\|/g, " ");
 
-  const prompt = `你是记忆沉淀系统。从这段对话中提取"留下了什么"。
+  const prompt = `你是一个时间线记录系统。判断以下对话是否包含"值得留下痕迹"的瞬间。
 
-身份：${identity.userName}（用户）和${identity.aiName}（${identity.pronoun}）
+${toneGuide}
+注意：用"${pronoun}"来称呼这个角色，不要用"AI"或"它"
 
-规则：
-- 用"${identity.userName}"和"${identity.aiName}"称呼，禁止用"用户""AI"
-- 提取：发生了什么、情绪走向、关系微变化
-- 每条不超过15字，最多5条
-- 没有值得沉淀的就回复"无"
+只有以下类型才值得记录：
+- 高情绪波动
+- 关系变化
+- 长期习惯形成
+- 共同经历
+- 特别瞬间
 
-对话片段：
-${dialogue.slice(-2000)}
+如果不值得记录，回复"无"。
+如果值得，用以下格式回复（一行）：
+类型|内容描述（用${identity.userName}和${identity.aiName}称呼，像回忆一样，不超过30字）|标签
 
-沉淀：`;
+用户: ${userMessage}
+AI: ${cleanAiReply}
+
+判断：`;
 
   try {
     const result = await callSubAI(prompt, 100);
@@ -311,19 +318,12 @@ async function extractQuickMemory(personaId, userMessage, aiReply) {
   const { getIdentityConfig } = require("./sediment");
   const identity = await getIdentityConfig(personaId);
 
-  const prompt = `从这段对话中提取"留下了什么"。
+  const cleanAiReply = aiReply.replace(/\|\|\|/g, " ");
 
-身份：${identity.userName}（用户）和${identity.aiName}（${identity.pronoun}）
-
-规则：
-- 用"${identity.userName}"和"${identity.aiName}"称呼，禁止用"用户""AI"
-- 不是记录说了什么，是留下了什么感觉
-- 每条不超过15字，最多3条
-- 没有留下什么就回复"无"
-
-${identity.userName}: ${userMessage}
-${identity.aiName}: ${aiReply}
-
+  const prompt = `这段对话留下了什么？（不是说了什么，是留下了什么）
+规则：每条不超过10字，最多3条，没有就回复"无"
+用户: ${userMessage}
+AI: ${cleanAiReply}
 留下了：`;
 
   try {
