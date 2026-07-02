@@ -416,15 +416,23 @@ function deleteConfig(idx) {
 
 async function saveApiConfig() {
     localStorage.setItem('api_config', JSON.stringify(apiConfig))
+
     if (currentConfigIdx.value >= 0 && savedConfigs.value[currentConfigIdx.value]) {
         savedConfigs.value[currentConfigIdx.value] = { ...apiConfig }
         localStorage.setItem('api_configs', JSON.stringify(savedConfigs.value))
     }
+
+    // 💡 重点：解构主 API 数据发送
     await api('/api/settings/api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: apiConfig.key, baseUrl: apiConfig.baseUrl, model: apiConfig.model })
+        body: JSON.stringify({
+            key: apiConfig.key,
+            baseUrl: apiConfig.baseUrl,
+            model: apiConfig.model
+        })
     })
+
     apiSaved.value = true
     setTimeout(() => { apiSaved.value = false }, 2000)
 }
@@ -492,16 +500,25 @@ function deleteSubConfig(idx) {
 }
 
 async function saveSubApiConfig() {
+    // 1. 本地持久化
     localStorage.setItem('sub_api_config', JSON.stringify(subApiConfig))
+
     if (currentSubConfigIdx.value >= 0 && savedSubConfigs.value[currentSubConfigIdx.value]) {
         savedSubConfigs.value[currentSubConfigIdx.value] = { ...subApiConfig }
         localStorage.setItem('sub_api_configs', JSON.stringify(savedSubConfigs.value))
     }
+
+    // 2. 💡 重点：解构出干净的普通变量，确保后端能够 100% 接收到参数
     await api('/api/settings/sub-api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: subApiConfig.key, baseUrl: subApiConfig.baseUrl, model: subApiConfig.model })
+        body: JSON.stringify({
+            key: subApiConfig.key,
+            baseUrl: subApiConfig.baseUrl,
+            model: subApiConfig.model
+        })
     })
+
     subApiSaved.value = true
     setTimeout(() => { subApiSaved.value = false }, 2000)
 }

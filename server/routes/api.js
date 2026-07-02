@@ -402,24 +402,51 @@ router.get("/memories/:personaId/dates", async (req, res) => {
   res.json(result);
 });
 
-// 获取模型列表
+// server/routes/api.js
+
+// 获取模型列表 (增强防崩版)
 router.post("/test/models", async (req, res) => {
   const { baseUrl, key } = req.body;
+  if (!baseUrl || !baseUrl.startsWith("http")) {
+    return res.json({ error: "API 地址不合法，必须以 http 或 https 开头" });
+  }
   try {
+    console.log(`[测试] 正在从 ${baseUrl}/models 获取模型列表...`);
     const response = await fetch(`${baseUrl}/models`, {
       headers: { Authorization: `Bearer ${key}` },
     });
-    const data = await response.json();
+
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      console.error("[测试] 接口返回的不是 JSON 格式:", text.slice(0, 200));
+      return res.json({
+        error: `中转站未返回 JSON，可能地址填错了。原始返回: ${text.slice(0, 50)}`,
+      });
+    }
+
+    if (!response.ok) {
+      return res.json({
+        error: data.error?.message || `获取失败: HTTP ${response.status}`,
+      });
+    }
     res.json(data);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error("[测试] 获取模型异常:", e.message);
+    res.json({ error: e.message });
   }
 });
 
-// 测试 API 连接
+// 测试 API 连接 (增强防崩版)
 router.post("/test/connection", async (req, res) => {
   const { baseUrl, key, model } = req.body;
+  if (!baseUrl || !baseUrl.startsWith("http")) {
+    return res.json({ error: "API 地址不合法" });
+  }
   try {
+    console.log(`[测试] 正在测试连接: ${baseUrl}, 模型: ${model}`);
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -432,10 +459,19 @@ router.post("/test/connection", async (req, res) => {
         max_tokens: 5,
       }),
     });
-    const data = await response.json();
+
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      return res.json({ error: "接口未返回 JSON 格式数据" });
+    }
+
     res.json({ ok: response.ok, data });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error("[测试] 测试连接异常:", e.message);
+    res.json({ error: e.message });
   }
 });
 
@@ -1344,29 +1380,74 @@ router.post("/personas/builtin/:id/restore", async (req, res) => {
 });
 
 router.post("/sediment/:personaId/generate", async (req, res) => {
+  const personaId = req.params.personaId;
+  const isBeta = req.headers["x-beta-mode"] === "true";
+
+  const taskResults = { summary: "success", sampler: "success" };
+
+  console.log(
+    `[手动触发] 正在强制更新 ${personaId} (${isBeta ? "Beta" : "正式"}) 的所有数据...`,
+  );
+
+  // 1. 尝试生成每日总结
   try {
     const { generateDailySummary } = require("../services/sediment");
+    await generateDailySummary(personaId, isBeta);
+  } catch (err) {
+    taskResults.summary = err.message || "总结失败";
+  }
+
+  // 2. 尝试提取语料采样
+  try {
     const { autoExtractSamples } = require("../services/sampler");
     const { getSessionMemory } = require("../services/memory");
-    const personaId = req.params.personaId;
-    const isBeta = req.headers["x-beta-mode"] === "true"; // 💡 识别时空
-
-    console.log(
-      `[手动触发] 正在强制更新 ${personaId} (${isBeta ? "Beta" : "正式"}) 的所有数据...`,
-    );
-
-    // 1. 生成每日总结 (传入 isBeta)
-    await generateDailySummary(personaId, isBeta);
-
-    // 2. 提取语料采样 (传入 isBeta)
     const history = await getSessionMemory(personaId, 20, isBeta);
     await autoExtractSamples(personaId, history, isBeta);
-
-    res.json({ success: true });
-  } catch (e) {
-    console.error("手动沉淀失败:", e.message);
-    res.status(500).json({ error: e.message });
+  } catch (err) {
+    // 💡 宽容处理：如果由于对话中缺乏特色导致采样为空，不报 500，而是记录状态
+    taskResults.sampler = err.message || "没有提炼出新样本";
   }
+
+  const allSuccess =
+    taskResults.summary === "success" && taskResults.sampler === "success";
+  const partialSuccess =
+    taskResults.summary === "success" || taskResults.sampler === "success";
+
+  res.json({
+    success: allSuccess,
+    partialSuccess: partialSuccess,
+    results: taskResults,
+  });
+});
+
+// 💡 现实同步桥：核心入口
+router.post("/bridge/wechat", async (req, res) => {
+  const { content, senderId, platform = "wechat" } = req.body;
+  const { handleChat } = require("../services/ai");
+  const { getActivePersona } = require("../services/prompt");
+
+  const personaId = getActivePersona(); // 获取你当前正在使用的 AI 人格
+
+  console.log(`[同步桥] 收到来自 ${platform} 的消息:`, content);
+
+  // 模拟一个 WebSocket 对象，因为 handleChat 需要发送回复
+  const virtualWS = {
+    readyState: 1,
+    send: (data) => {
+      const msg = JSON.parse(data);
+      if (msg.type === "chat") {
+        // 💡 这里的 msg.content 就是 AI 生成的最终回复
+        // 后续我们将通过微信 Bot 接口把它发回你的微信大号
+        console.log(`[同步桥] AI 生成回复并同步回 ${platform}:`, msg.content);
+        // 这里对接你的微信小号发送逻辑
+      }
+    },
+  };
+
+  // 💡 调用网页主脑的处理逻辑（自带记忆、关系、语料、分句）
+  await handleChat(content, virtualWS, personaId, false);
+
+  res.json({ success: true, status: "processing" });
 });
 
 module.exports = router;

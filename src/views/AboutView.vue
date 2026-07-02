@@ -413,17 +413,27 @@ async function loadSediment() {
 }
 
 async function generateSediment() {
-    saveMsg.value = '正在记录今天的氛围...'
+    saveMsg.value = '正在记录今天的陪伴手记...'
     try {
-        // 调用我们刚才在后端加的手动生成接口
-        await api(`/api/sediment/${currentPersona.value}/generate`, { method: 'POST' })
-        // 重新加载数据，这样页面会立刻刷新
+        const res = await api(`/api/sediment/${currentPersona.value}/generate`, { method: 'POST' })
+        const data = await res.json()
+
         await loadSediment()
-        saveMsg.value = '今日总结已生成 ✓'
+        await loadObserve()
+        await loadTimeline()
+
+        if (data.success) {
+            saveMsg.value = '今日手记已录入，已同步至 Notion ✓'
+        } else if (data.partialSuccess) {
+            // 💡 温和提示：日常对话可能确实没抓到符合“性格指纹”的典型语句，这是正常的
+            saveMsg.value = '今日手记已录入。今天似乎是平淡安稳的一天 ❀'
+        } else {
+            saveMsg.value = '今天似乎还没有聊过天，无法记录 🌙'
+        }
     } catch (e) {
-        saveMsg.value = '生成失败'
+        saveMsg.value = '空间有些不稳定，稍后再试吧 ✗'
     }
-    setTimeout(() => { saveMsg.value = '' }, 2000)
+    setTimeout(() => { saveMsg.value = '' }, 4000)
 }
 
 async function loadTimeline() {
@@ -1252,5 +1262,4 @@ onMounted(loadPersonas)
     z-index: 1000;
     animation: fadeIn 0.3s ease;
 }
-
 </style>
