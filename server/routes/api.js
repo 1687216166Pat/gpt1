@@ -1450,4 +1450,39 @@ router.post("/bridge/wechat", async (req, res) => {
   res.json({ success: true, status: "processing" });
 });
 
+// 收藏
+router.get("/bookmarks/:personaId", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { data } = await db
+    .from("bookmarks")
+    .select("*")
+    .eq("persona_id", req.params.personaId)
+    .order("created_at", { ascending: false });
+  res.json(data || []);
+});
+
+router.post("/bookmarks/:personaId", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { type, content, source_id, note } = req.body;
+  const id = "bm_" + Date.now().toString(36);
+  await db.from("bookmarks").insert({
+    id,
+    persona_id: req.params.personaId,
+    type: type || "message",
+    content,
+    source_id: source_id || "",
+    note: note || "",
+  });
+  res.json({ success: true, id });
+});
+
+router.delete("/bookmarks/:id", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  await db.from("bookmarks").delete().eq("id", req.params.id);
+  res.json({ success: true });
+});
+
 module.exports = router;

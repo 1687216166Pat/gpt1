@@ -11,7 +11,7 @@
                 <p v-if="showWhisper && envWhisper" class="env-whisper">{{ envWhisper }}</p>
             </transition>
             <NotificationBanner />
-            <main class="screen-content">
+            <main class="screen-content" :class="{ 'no-padding': isHomePage }">
                 <RouterView />
             </main>
         </div>
@@ -21,12 +21,16 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import NotificationBanner from '@/components/NotificationBanner.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { useTime } from '@/composables/useTime'
 import { useDeviceStatus } from '@/composables/useDeviceStatus'
 import { api } from '@/utils/api'
 import SplashScreen from '@/components/SplashScreen.vue'
+
+const route = useRoute()
+const isHomePage = computed(() => route.name === 'home')
 
 const showSplash = ref(true)
 const { connect, requestNotificationPermission, registerPushSubscription } = useWebSocket()
@@ -38,12 +42,10 @@ function onSplashDone() {
     showSplash.value = false
 }
 
-// 监听主题切换
 window.addEventListener('theme-change', (e) => {
     themeOverride.value = e.detail
 })
 
-// 环境状态
 const envData = ref({
     warmth: 0.3,
     floatSpeed: 1,
@@ -53,9 +55,7 @@ const envData = ref({
 const envWhisper = ref('')
 const showWhisper = ref(false)
 
-const envClass = computed(() => {
-    return `env-${envData.value.presence}`
-})
+const envClass = computed(() => `env-${envData.value.presence}`)
 
 const envStyle = computed(() => {
     const d = envData.value
@@ -79,7 +79,6 @@ async function loadEnvironment() {
         const pRes = await api('/api/prompts/personas')
         const pData = await pRes.json()
         const activeId = pData.active || 'xiaorou'
-
         const res = await api(`/api/environment/${activeId}`)
         const data = await res.json()
         envData.value = {
@@ -89,8 +88,6 @@ async function loadEnvironment() {
             presence: data.presence || 'normal',
         }
         envWhisper.value = data.whisper || ''
-
-        // 显示低语（延迟出现，缓慢消失）
         if (envWhisper.value) {
             setTimeout(() => { showWhisper.value = true }, 2000)
             setTimeout(() => { showWhisper.value = false }, 8000)
@@ -109,7 +106,6 @@ onMounted(() => {
     loadEnvironment()
     envInterval = setInterval(loadEnvironment, 10 * 60 * 1000)
 
-    // 加载自定义壁纸
     const savedWallpaper = localStorage.getItem('custom_wallpaper')
     const wallpaperScope = localStorage.getItem('wallpaper_scope') || 'home'
     if (savedWallpaper && wallpaperScope === 'global') {
@@ -123,7 +119,6 @@ onMounted(() => {
         }, 500)
     }
 
-    // 加载自定义字体
     setTimeout(() => {
         const savedFontUrl = localStorage.getItem('custom_font_url')
         const savedFontName = localStorage.getItem('custom_font_name')
@@ -131,20 +126,19 @@ onMounted(() => {
             const style = document.createElement('style')
             style.id = 'custom-font-style'
             style.textContent = `
-            @font-face {
-                font-family: '${savedFontName}';
-                src: url('${savedFontUrl}') format('woff2'), url('${savedFontUrl}');
-                font-display: swap;
-            }
-            html, body, #app, * {
-                font-family: '${savedFontName}', -apple-system, BlinkMacSystemFont, sans-serif !important;
-            }
-        `
+                @font-face {
+                    font-family: '${savedFontName}';
+                    src: url('${savedFontUrl}') format('woff2'), url('${savedFontUrl}');
+                    font-display: swap;
+                }
+                html, body, #app, * {
+                    font-family: '${savedFontName}', -apple-system, BlinkMacSystemFont, sans-serif !important;
+                }
+            `
             document.head.appendChild(style)
         }
     }, 500)
 
-    // 加载自定义 CSS
     const savedCSS = localStorage.getItem('custom_css')
     if (savedCSS) {
         const style = document.createElement('style')
@@ -152,7 +146,6 @@ onMounted(() => {
         style.textContent = savedCSS
         document.head.appendChild(style)
     }
-
 })
 
 onUnmounted(() => {
@@ -160,8 +153,8 @@ onUnmounted(() => {
     stopReporting()
     if (envInterval) clearInterval(envInterval)
 })
-
 </script>
+
 
 <style scoped>
 .phone-screen {
@@ -206,10 +199,14 @@ onUnmounted(() => {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 0 22px;
+    padding: 0 16px;
     -webkit-overflow-scrolling: touch;
     position: relative;
     z-index: 1;
+}
+
+.screen-content.no-padding {
+    padding: 0;
 }
 
 /* 背景装饰 */
