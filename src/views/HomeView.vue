@@ -1203,6 +1203,7 @@ const newEventText = ref('')
 const calViewMode = ref('user')
 const calendarData = ref(JSON.parse(localStorage.getItem('calendar_data') || '{}'))
 const periodData = ref(JSON.parse(localStorage.getItem('period_data') || '[]'))
+
 function getScheduleData(days, role) {
     const result = []
     const today = new Date()
@@ -1424,7 +1425,6 @@ async function loadHomeData() {
 const calMonthStats = computed(() => {
     const counts = {}
     statusOptions.forEach(s => { counts[s.key] = 0 })
-
     const daysInMonth = new Date(calYear.value, calMonth.value + 1, 0).getDate()
     for (let d = 1; d <= daysInMonth; d++) {
         const key = `${calYear.value}-${String(calMonth.value + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -1433,10 +1433,7 @@ const calMonthStats = computed(() => {
         if (userStatus && counts[userStatus] !== undefined) counts[userStatus]++
         if (charStatus && charStatus !== userStatus && counts[charStatus] !== undefined) counts[charStatus]++
     }
-
-    return statusOptions
-        .filter(s => counts[s.key] > 0)
-        .map(s => ({ ...s, count: counts[s.key] }))
+    return statusOptions.filter(s => counts[s.key] > 0).map(s => ({ ...s, count: counts[s.key] }))
 })
 
 const calPeriodCount = computed(() => {
@@ -1451,9 +1448,7 @@ const calEventCount = computed(() => {
     const daysInMonth = new Date(calYear.value, calMonth.value + 1, 0).getDate()
     for (let d = 1; d <= daysInMonth; d++) {
         const key = `${calYear.value}-${String(calMonth.value + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-        const userEvents = calendarData.value[key]?.user?.events?.length || 0
-        const charEvents = calendarData.value[key]?.char?.events?.length || 0
-        count += userEvents + charEvents
+        count += (calendarData.value[key]?.user?.events?.length || 0) + (calendarData.value[key]?.char?.events?.length || 0)
     }
     return count
 })

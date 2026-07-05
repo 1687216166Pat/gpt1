@@ -1485,4 +1485,14 @@ router.delete("/bookmarks/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+router.get("/contact-groups", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { data } = await db
+    .from("contact_groups")
+    .select("*")
+    .order("created_at", { ascending: true });
+  res.json(data || []);
+});
+
 module.exports = router;

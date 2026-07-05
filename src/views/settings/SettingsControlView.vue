@@ -1,0 +1,577 @@
+<template>
+    <div class="sub-page">
+        <div class="settings-blob sb-tl"></div>
+        <div class="settings-blob sb-br"></div>
+
+        <div class="settings-nav">
+            <button class="settings-back" @click="$router.push('/settings')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <span class="settings-title">控制中心</span>
+            <button class="settings-save-btn" @click="save">保存</button>
+        </div>
+
+        <div class="sub-content">
+
+            <!-- AI 输出习惯 -->
+            <div class="section-label-sm">AI 输出习惯</div>
+            <div class="settings-group">
+                <div class="settings-group-item">
+                    <div class="sgi-label-wrap">
+                        <div class="sgi-label">包含动作描写</div>
+                        <div class="sgi-desc">回复中加入 *动作描写*</div>
+                    </div>
+                    <label class="toggle-sm">
+                        <input type="checkbox" v-model="outputPrefs.actionDesc" />
+                        <span class="slider-sm"></span>
+                    </label>
+                </div>
+                <div class="settings-group-item">
+                    <div class="sgi-label-wrap">
+                        <div class="sgi-label">分句输出</div>
+                        <div class="sgi-desc">每个短句单独一条气泡</div>
+                    </div>
+                    <label class="toggle-sm">
+                        <input type="checkbox" v-model="outputPrefs.splitSentence" />
+                        <span class="slider-sm"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 用户偏好 -->
+            <div class="section-label-sm">用户偏好</div>
+            <div class="settings-group">
+                <div class="settings-group-item col-item">
+                    <div class="sgi-label">偏好描述</div>
+                    <textarea class="sgi-textarea" v-model="userPrompt" :placeholder="templateText" rows="8"></textarea>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button class="action-btn primary" @click="save">保存偏好</button>
+            </div>
+
+            <Transition name="toast-fade">
+                <div v-if="showSaved" class="save-toast">已保存 ✓</div>
+            </Transition>
+
+            <!-- 主题模式 -->
+            <div class="section-label-sm">显示</div>
+            <div class="settings-group">
+                <div class="settings-group-item">
+                    <div class="sgi-label">主题模式</div>
+                    <div class="sgi-right">
+                        <span class="sgi-value">{{ themeLabels[themeMode] }}</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                    <select class="sgi-select-hidden" v-model="themeMode" @change="saveTheme">
+                        <option value="auto">自动</option>
+                        <option value="light">亮色</option>
+                        <option value="dark">暗色</option>
+                    </select>
+                </div>
+                <div class="settings-group-item">
+                    <div class="sgi-label-wrap">
+                        <div class="sgi-label">聊天入口方式</div>
+                        <div class="sgi-desc">点击信息条时的跳转方式</div>
+                    </div>
+                    <div class="sgi-right">
+                        <span class="sgi-value">{{ chatEntryMode === 'list' ? '列表' : '直接进入' }}</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                    <select class="sgi-select-hidden" v-model="chatEntryMode" @change="saveChatEntry">
+                        <option value="direct">直接进入</option>
+                        <option value="list">列表</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 自定义字体 -->
+            <div class="section-label-sm">字体</div>
+            <div class="settings-group">
+                <div class="settings-group-item">
+                    <div class="sgi-label">字体名称</div>
+                    <input class="sgi-input" v-model="customFontName" placeholder="字体名称" />
+                </div>
+                <div class="settings-group-item">
+                    <div class="sgi-label">字体 URL</div>
+                    <input class="sgi-input" v-model="customFontUrl" placeholder="https://..." />
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="action-btn ghost" @click="applyFont">应用字体</button>
+                <button class="action-btn ghost" @click="clearFont">恢复默认</button>
+            </div>
+
+            <!-- 自定义 CSS -->
+            <div class="section-label-sm">自定义 CSS</div>
+            <div class="settings-group">
+                <div class="settings-group-item col-item">
+                    <div class="sgi-label">注入 CSS</div>
+                    <textarea class="sgi-textarea" v-model="customCSS" placeholder="/* 在这里输入自定义 CSS */"
+                        rows="6"></textarea>
+                </div>
+            </div>
+            <div class="btn-row">
+                <button class="action-btn primary" @click="applyCSS">应用</button>
+                <button class="action-btn ghost" @click="clearCSS">清除</button>
+            </div>
+
+        </div>
+    </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { api } from '@/utils/api'
+
+const outputPrefs = reactive({ actionDesc: false, splitSentence: false })
+const userPrompt = ref('')
+const templateText = ref('描述你希望 AI 以什么方式陪伴你...')
+const showSaved = ref(false)
+const themeMode = ref(localStorage.getItem('theme_mode') || 'auto')
+const chatEntryMode = ref(localStorage.getItem('chat_entry_mode') || 'direct')
+const customFontName = ref(localStorage.getItem('custom_font_name') || '')
+const customFontUrl = ref(localStorage.getItem('custom_font_url') || '')
+const customCSS = ref(localStorage.getItem('custom_css') || '')
+
+const themeLabels = { auto: '自动', light: '亮色', dark: '暗色' }
+
+function buildPrefText() {
+    let text = userPrompt.value || ''
+    const lines = []
+    if (outputPrefs.actionDesc) lines.push('- 回复中包含动作描写，用*号包裹')
+    else lines.push('- 禁止使用动作描写，禁止使用*号包裹的任何内容')
+    if (outputPrefs.splitSentence) lines.push('- 必须分句输出，每个短句单独一行')
+    else lines.push('- 正常连续输出，不需要刻意分行')
+    return text + '\n\n[输出风格 - 必须严格遵守]\n' + lines.join('\n')
+}
+
+async function save() {
+    localStorage.setItem('output_prefs', JSON.stringify(outputPrefs))
+    const prefText = buildPrefText()
+    await api('/api/prompts/user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: prefText })
+    })
+    showSaved.value = true
+    setTimeout(() => { showSaved.value = false }, 1500)
+}
+
+function saveTheme() {
+    localStorage.setItem('theme_mode', themeMode.value)
+    window.dispatchEvent(new CustomEvent('theme-change', { detail: themeMode.value }))
+}
+
+function saveChatEntry() {
+    localStorage.setItem('chat_entry_mode', chatEntryMode.value)
+}
+
+function applyFont() {
+    if (!customFontName.value || !customFontUrl.value) return
+    localStorage.setItem('custom_font_name', customFontName.value)
+    localStorage.setItem('custom_font_url', customFontUrl.value)
+    const existing = document.getElementById('custom-font-style')
+    if (existing) existing.remove()
+    const style = document.createElement('style')
+    style.id = 'custom-font-style'
+    style.textContent = `
+        @font-face {
+            font-family: '${customFontName.value}';
+            src: url('${customFontUrl.value}') format('woff2'), url('${customFontUrl.value}');
+            font-display: swap;
+        }
+        html, body, #app, * {
+            font-family: '${customFontName.value}', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        }
+    `
+    document.head.appendChild(style)
+    showSaved.value = true
+    setTimeout(() => { showSaved.value = false }, 1500)
+}
+
+function clearFont() {
+    localStorage.removeItem('custom_font_name')
+    localStorage.removeItem('custom_font_url')
+    customFontName.value = ''
+    customFontUrl.value = ''
+    const existing = document.getElementById('custom-font-style')
+    if (existing) existing.remove()
+}
+
+function applyCSS() {
+    localStorage.setItem('custom_css', customCSS.value)
+    const existing = document.getElementById('custom-user-css')
+    if (existing) existing.remove()
+    if (customCSS.value.trim()) {
+        const style = document.createElement('style')
+        style.id = 'custom-user-css'
+        style.textContent = customCSS.value
+        document.head.appendChild(style)
+    }
+    showSaved.value = true
+    setTimeout(() => { showSaved.value = false }, 1500)
+}
+
+function clearCSS() {
+    customCSS.value = ''
+    localStorage.removeItem('custom_css')
+    const existing = document.getElementById('custom-user-css')
+    if (existing) existing.remove()
+}
+
+onMounted(async () => {
+    const savedPrefs = localStorage.getItem('output_prefs')
+    if (savedPrefs) Object.assign(outputPrefs, JSON.parse(savedPrefs))
+    try {
+        const res = await api('/api/prompts/user')
+        const data = await res.json()
+        const content = data.content || ''
+        const idx = content.indexOf('\n\n[输出风格')
+        userPrompt.value = idx > -1 ? content.slice(0, idx) : content
+        templateText.value = data.template || templateText.value
+    } catch { }
+})
+</script>
+
+<style scoped>
+.sub-page {
+    width: 100%;
+    height: 100%;
+    padding-top: env(safe-area-inset-top, 44px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(180deg, #FFFBFA 0%, #FFF0F2 60%, #FFE9ED 100%);
+    box-sizing: border-box;
+}
+
+.settings-blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(60px);
+}
+
+.sb-tl {
+    top: -40px;
+    left: -50px;
+    width: 220px;
+    height: 220px;
+    background: #F1DADD;
+    opacity: 0.45;
+}
+
+.sb-br {
+    bottom: 40px;
+    right: -60px;
+    width: 200px;
+    height: 200px;
+    background: #98CBEA;
+    opacity: 0.2;
+}
+
+.settings-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px 4px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.settings-back {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border: 1px solid rgba(255, 240, 242, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(217, 163, 175, 0.08);
+}
+
+.settings-back svg {
+    width: 16px;
+    height: 16px;
+    stroke: #D9A3AF;
+}
+
+.settings-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #4A3F41;
+}
+
+.settings-save-btn {
+    background: none;
+    border: none;
+    font-size: 15px;
+    color: #D9A3AF;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 4px 0;
+}
+
+.sub-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 32px);
+    position: relative;
+    z-index: 1;
+}
+
+.sub-content::-webkit-scrollbar {
+    display: none;
+}
+
+.section-label-sm {
+    font-size: 11px;
+    font-weight: 700;
+    color: #B8A9AC;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 0 4px 8px;
+    margin-top: 20px;
+    display: block;
+}
+
+.settings-group {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-radius: 22px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    box-shadow: 0 8px 24px rgba(217, 163, 175, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    border: 1px solid rgba(255, 240, 242, 0.4);
+}
+
+.settings-group-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(217, 163, 175, 0.08);
+    position: relative;
+}
+
+.settings-group-item:last-child {
+    border-bottom: none;
+}
+
+.col-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.sgi-label {
+    font-size: 14px;
+    color: #4A3F41;
+    flex-shrink: 0;
+}
+
+.sgi-label-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sgi-desc {
+    font-size: 11px;
+    color: #B8A9AC;
+}
+
+.sgi-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sgi-value {
+    font-size: 13px;
+    color: #B8A9AC;
+}
+
+.sgi-arrow {
+    width: 14px;
+    height: 14px;
+    stroke: #D4C8CA;
+}
+
+.sgi-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 14px;
+    color: #4A3F41;
+    text-align: right;
+    font-family: inherit;
+}
+
+.sgi-input::placeholder {
+    color: #D4C8CA;
+}
+
+.sgi-select-hidden {
+    position: absolute;
+    opacity: 0;
+    right: 16px;
+    width: 80px;
+    height: 44px;
+    cursor: pointer;
+}
+
+.sgi-textarea {
+    width: 100%;
+    border: 1px solid rgba(255, 240, 242, 0.5);
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #4A3F41;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    box-shadow: 0 4px 12px rgba(217, 163, 175, 0.06);
+}
+
+.sgi-textarea::placeholder {
+    color: #D4C8CA;
+}
+
+.toggle-sm {
+    position: relative;
+    width: 44px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.toggle-sm input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider-sm {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(217, 163, 175, 0.2);
+    border-radius: 13px;
+    transition: 0.28s ease;
+}
+
+.slider-sm:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 2px;
+    bottom: 2px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.28s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.toggle-sm input:checked+.slider-sm {
+    background: linear-gradient(135deg, #E8C0C9, #D9A3AF);
+}
+
+.toggle-sm input:checked+.slider-sm:before {
+    transform: translateX(18px);
+}
+
+.btn-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.action-btn {
+    flex: 1;
+    height: 44px;
+    border-radius: 16px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, #E8C0C9, #D9A3AF);
+    color: white;
+    box-shadow: 0 6px 16px rgba(217, 163, 175, 0.3);
+}
+
+.action-btn.primary:active {
+    transform: scale(0.97);
+}
+
+.action-btn.ghost {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    color: #6B5B5E;
+    border: 1px solid rgba(255, 240, 242, 0.5);
+    box-shadow: 0 4px 12px rgba(217, 163, 175, 0.08);
+}
+
+.action-btn.ghost:active {
+    transform: scale(0.97);
+}
+
+.save-toast {
+    text-align: center;
+    color: #D9A3AF;
+    font-size: 12px;
+    padding: 8px 0;
+}
+
+.toast-fade-enter-active {
+    transition: opacity 0.3s;
+}
+
+.toast-fade-leave-active {
+    transition: opacity 0.5s;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+    opacity: 0;
+}
+</style>

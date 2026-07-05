@@ -11,6 +11,15 @@ import ChatListView from "../views/ChatListView.vue";
 import LogsView from "../views/LogsView.vue";
 import PresenceView from "../views/PresenceView.vue";
 import DiaryView from "../views/DiaryView.vue";
+import SettingsProfileView from "../views/settings/SettingsProfileView.vue";
+import SettingsApiView from "../views/settings/SettingsApiView.vue";
+import SettingsControlView from "../views/settings/SettingsControlView.vue";
+import SettingsGeneralView from "../views/settings/SettingsGeneralView.vue";
+import SettingsNotifView from "../views/settings/SettingsNotifView.vue";
+import SettingsStorageView from "../views/settings/SettingsStorageView.vue";
+import SettingsLockView from "../views/settings/SettingsLockView.vue";
+import SettingsLifestyleView from "../views/settings/SettingsLifestyleView.vue";
+import SettingsLifeAwareView from "../views/settings/SettingsLifeAwareView.vue";
 
 //开发用，后续可以删掉
 import PlaygroundView from "../views/PlaygroundView.vue";
@@ -82,6 +91,47 @@ const router = createRouter({
       path: "/diary",
       name: "diary",
       component: DiaryView,
+    },
+    {
+      path: "/settings/profile",
+      name: "settings-profile",
+      component: SettingsProfileView,
+    },
+    { path: "/settings/api", name: "settings-api", component: SettingsApiView },
+    {
+      path: "/settings/control",
+      name: "settings-control",
+      component: SettingsControlView,
+    },
+    {
+      path: "/settings/general",
+      name: "settings-general",
+      component: SettingsGeneralView,
+    },
+    {
+      path: "/settings/notifications",
+      name: "settings-notifications",
+      component: SettingsNotifView,
+    },
+    {
+      path: "/settings/storage",
+      name: "settings-storage",
+      component: SettingsStorageView,
+    },
+    {
+      path: "/settings/lock",
+      name: "settings-lock",
+      component: SettingsLockView,
+    },
+    {
+      path: "/settings/lifestyle",
+      name: "settings-lifestyle",
+      component: SettingsLifestyleView,
+    },
+    {
+      path: "/settings/life-aware",
+      name: "settings-life-aware",
+      component: SettingsLifeAwareView,
     },
   ],
 });

@@ -30,7 +30,15 @@ import { api } from '@/utils/api'
 import SplashScreen from '@/components/SplashScreen.vue'
 
 const route = useRoute()
-const isHomePage = computed(() => route.name === 'home')
+const isHomePage = computed(() => {
+    const noPaddingRoutes = [
+        'home', 'settings', 'chat-list',
+        'settings-api', 'settings-control', 'settings-profile',
+        'settings-general', 'settings-notifications', 'settings-storage',
+        'settings-lock', 'settings-lifestyle', 'settings-life-aware'
+    ]
+    return noPaddingRoutes.includes(route.name) || route.path === '/'
+})
 
 const showSplash = ref(true)
 const { connect, requestNotificationPermission, registerPushSubscription } = useWebSocket()

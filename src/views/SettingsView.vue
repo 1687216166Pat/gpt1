@@ -1,326 +1,323 @@
 <template>
     <div class="settings-page">
-        <div class="settings-header">
-            <button class="back-btn" @click="$router.push('/')">‹</button>
-            <h2>设置</h2>
+        <div class="settings-blob sb-tl"></div>
+        <div class="settings-blob sb-br"></div>
+
+        <div class="settings-nav">
+            <button class="settings-back" @click="$router.push('/')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <span class="settings-title">设置</span>
+            <div style="width:36px;"></div>
+        </div>
+
+        <div class="settings-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="11" cy="11" r="6" />
+                <path d="M20 20l-3-3" />
+            </svg>
+            <input v-model="searchQuery" type="text" placeholder="搜索" />
         </div>
 
         <div class="settings-content">
-            <!-- API 配置 -->
-            <div class="section">
-                <h3>✦ 连接方式</h3>
-                <p class="section-sub">这里决定你们如何继续交流</p>
-                <GlassCard size="md">
-                    <!-- 已保存的配置列表 -->
-                    <div v-if="savedConfigs.length > 0" class="config-list">
-                        <div v-for="(config, idx) in savedConfigs" :key="idx" class="config-item"
-                            :class="{ active: currentConfigIdx === idx }">
-                            <div class="config-info" @click="selectConfig(idx)">
-                                <p class="config-name">{{ config.name || config.model || '未命名' }}</p>
-                                <p class="config-detail">{{ config.baseUrl?.slice(0, 30) }}</p>
-                            </div>
-                            <button class="config-delete" @click="deleteConfig(idx)">×</button>
-                        </div>
+
+            <!-- 个人信息卡 → 子页面 -->
+            <div class="settings-profile-card" @click="$router.push('/settings/profile')">
+                <div class="profile-avatar-wrap">
+                    <div class="profile-avatar">
+                        <img v-if="profileAvatar && (profileAvatar.startsWith('http') || profileAvatar.startsWith('data'))"
+                            :src="profileAvatar" />
+                        <span v-else>{{ profileAvatar || '🌙' }}</span>
                     </div>
-
-                    <DreamInput label="配置名称" v-model="apiConfig.name" placeholder="例：主力模型" />
-                    <DreamInput label="API Key" type="password" v-model="apiConfig.key" placeholder="sk-..." />
-                    <DreamInput label="API 地址" v-model="apiConfig.baseUrl" placeholder="https://api.openai.com/v1" />
-                    <DreamInput label="模型名称" v-model="apiConfig.model" placeholder="gpt-4o-mini" />
-
-                    <div class="btn-row">
-                        <SoftButton variant="primary" size="sm" @click="saveApiConfig">保存并使用</SoftButton>
-                        <SoftButton variant="glass" size="sm" @click="saveAsNewConfig">另存为新配置</SoftButton>
-                    </div>
-                    <p class="save-tip" v-if="apiSaved">已保存 ✓</p>
-
-                    <div class="api-actions">
-                        <SoftButton variant="glass" size="sm" @click="fetchModels">获取模型</SoftButton>
-                        <SoftButton variant="glass" size="sm" @click="testApiConnection">测试连接</SoftButton>
-                    </div>
-                    <div v-if="modelList.length > 0" class="model-list">
-                        <p class="list-label">可用模型：</p>
-                        <div class="model-scroll">
-                            <div v-for="m in modelList" :key="m" class="model-item" @click="apiConfig.model = m">
-                                {{ m }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <p v-if="apiTestResult" class="api-result" :class="apiTestResult.success ? 'success' : 'error'">
-                        {{ apiTestResult.message }}
-                    </p>
-
-                </GlassCard>
-
-                <!-- 副 API 配置 -->
-                <GlassCard size="md">
-                    <h4 class="block-title">副 API（记忆/时间线/主动消息）</h4>
-
-                    <!-- 已保存的副配置列表 -->
-                    <div v-if="savedSubConfigs.length > 0" class="config-list">
-                        <div v-for="(config, idx) in savedSubConfigs" :key="idx" class="config-item"
-                            :class="{ active: currentSubConfigIdx === idx }">
-                            <div class="config-info" @click="selectSubConfig(idx)">
-                                <p class="config-name">{{ config.name || config.model || '未命名' }}</p>
-                                <p class="config-detail">{{ config.baseUrl?.slice(0, 30) }}</p>
-                            </div>
-                            <button class="config-delete" @click="deleteSubConfig(idx)">×</button>
-                        </div>
-                    </div>
-
-                    <DreamInput label="配置名称" v-model="subApiConfig.name" placeholder="例：副模型" />
-                    <DreamInput label="API Key" type="password" v-model="subApiConfig.key" placeholder="sk-..." />
-                    <DreamInput label="API 地址" v-model="subApiConfig.baseUrl" placeholder="https://api.openai.com/v1" />
-                    <DreamInput label="模型名称" v-model="subApiConfig.model" placeholder="gpt-4o-mini" />
-
-                    <div class="btn-row">
-                        <SoftButton variant="primary" size="sm" @click="saveSubApiConfig">保存并使用</SoftButton>
-                        <SoftButton variant="glass" size="sm" @click="saveAsNewSubConfig">另存为新配置</SoftButton>
-                    </div>
-                    <p class="save-tip" v-if="subApiSaved">已保存 ✓</p>
-
-                    <div class="api-actions">
-                        <SoftButton variant="glass" size="sm" @click="fetchSubModels">获取模型</SoftButton>
-                        <SoftButton variant="glass" size="sm" @click="testSubApiConnection">测试连接</SoftButton>
-                    </div>
-
-                    <div v-if="subModelList.length > 0" class="model-list">
-                        <p class="list-label">可用模型：</p>
-                        <div class="model-scroll">
-                            <div v-for="m in subModelList" :key="m" class="model-item" @click="subApiConfig.model = m">
-                                {{ m }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <p v-if="subApiTestResult" class="api-result"
-                        :class="subApiTestResult.success ? 'success' : 'error'">
-                        {{ subApiTestResult.message }}
-                    </p>
-                </GlassCard>
-
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name">{{ profileName || '未设置名称' }}</div>
+                    <div class="profile-phone">{{ profilePhone || '✧ 未设置' }}</div>
+                </div>
+                <svg class="profile-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round">
+                    <path d="M9 18l6-6-6-6" />
+                </svg>
             </div>
 
-            <!-- 主动消息设置 -->
-            <div class="section">
-                <h3>◐ 陪伴频率</h3>
-                <p class="section-sub">决定谁会在什么时候更自然地出现</p>
-                <GlassCard size="md">
-                    <div class="setting-row">
-                        <span>启用主动消息</span>
-                        <label class="toggle">
-                            <input type="checkbox" v-model="proactive.enabled" @change="saveProactive" />
-                            <span class="slider"></span>
-                        </label>
+            <!-- 第一组：连接与网络 -->
+            <div class="settings-group">
+                <div class="settings-group-item" @click="betaToggle">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #98CBEA, #7ab8e0);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                        </svg>
                     </div>
-
-                    <div v-if="proactive.enabled">
-                        <!-- 选择角色 -->
-                        <div class="setting-row column">
-                            <span>启用的角色</span>
-                            <div class="persona-checks">
-                                <div v-for="p in personas" :key="p.id" class="persona-check-item"
-                                    @click="toggleProactivePersona(p.id)">
-                                    <div class="check-box"
-                                        :class="{ checked: proactive.enabledPersonas.includes(p.id) }">
-                                        <span v-if="proactive.enabledPersonas.includes(p.id)">✓</span>
-                                    </div>
-                                    <span>{{ p.name }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 间隔设置 -->
-                        <div class="setting-row">
-                            <span>发送间隔</span>
-                            <div class="interval-input">
-                                <input type="number" v-model.number="proactive.intervalValue" min="1" max="99"
-                                    class="interval-number" @change="saveProactive" />
-                                <select v-model="proactive.intervalUnit" @change="saveProactive">
-                                    <option value="minutes">分钟</option>
-                                    <option value="hours">小时</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- 每日最多 -->
-                        <div class="setting-row">
-                            <span>每日最多</span>
-                            <div class="interval-input">
-                                <input type="number" v-model.number="proactive.maxPerDay" min="1" max="50"
-                                    class="interval-number" @change="saveProactive" />
-                                <span class="unit-text">次</span>
-                            </div>
-                        </div>
-
-                        <!-- 未互动提醒 -->
-                        <div class="setting-row">
-                            <span>未互动提醒</span>
-                            <select v-model="proactive.idleHours" @change="saveProactive">
-                                <option :value="1">1 小时</option>
-                                <option :value="3">3 小时</option>
-                                <option :value="6">6 小时</option>
-                                <option :value="12">12 小时</option>
-                                <option :value="24">24 小时</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="action-group">
-                        <SoftButton variant="glass" block @click="testProactive">测试主动消息</SoftButton>
-                        <SoftButton variant="glass" block @click="testPush">测试推送通知</SoftButton>
-                        <SoftButton variant="glass" block @click="reRegisterPush">重新注册推送</SoftButton>
-                    </div>
-
-                    <p v-if="proactiveTestResult" class="api-result"
-                        :class="proactiveTestResult.success ? 'success' : 'error'">
-                        {{ proactiveTestResult.message }}
-                    </p>
-                    <p v-if="pushTestResult" class="api-result" :class="pushTestResult.success ? 'success' : 'error'">
-                        {{ pushTestResult.message }}
-                    </p>
-                </GlassCard>
-            </div>
-
-            <!-- 用户偏好 -->
-            <div class="section">
-                <h3>❋ 陪伴方式</h3>
-                <p class="section-sub">调整你们之间的交流风格</p>
-                <GlassCard size="md">
-                    <div class="setting-row">
-                        <span>AI 输出包含动作描写</span>
-                        <label class="toggle">
-                            <input type="checkbox" v-model="outputPrefs.actionDesc" @change="saveOutputPrefs" />
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                    <div class="setting-row">
-                        <span>AI 分句输出</span>
-                        <label class="toggle">
-                            <input type="checkbox" v-model="outputPrefs.splitSentence" @change="saveOutputPrefs" />
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-
-                    <DreamInput type="textarea" v-model="userPrompt" :placeholder="template" :rows="8" />
-                    <SoftButton variant="primary" block @click="saveUserPrompt">保存偏好</SoftButton>
-                    <p class="save-tip" v-if="saved">已保存 ✓</p>
-                </GlassCard>
-            </div>
-
-            <!-- 导入导出 -->
-            <div class="section">
-                <h3>◌ 时间整理</h3>
-                <p class="section-sub">整理那些被留下来的痕迹</p>
-                <GlassCard size="md">
-                    <SoftButton variant="secondary" block @click="exportData">导出数据 (JSON)</SoftButton>
-                    <SoftButton variant="secondary" block @click="triggerImport">导入数据 (JSON)</SoftButton>
-                    <input type="file" ref="importInput" accept=".json" style="display:none" @change="importData" />
-                    <SoftButton variant="primary" block @click="syncToCloud">上传至云端</SoftButton>
-                    <SoftButton variant="glass" block @click="forceSync">强制同步云端数据</SoftButton>
-                    <SoftButton variant="secondary" block @click="restoreBuiltinPersonas">恢复内置人格</SoftButton>
-                </GlassCard>
-            </div>
-
-            <!-- 手机状态感知 -->
-            <div class="section">
-                <h3>◑ 生活感知</h3>
-                <p class="section-sub">让他更自然地感受到你的生活节奏</p>
-                <GlassCard size="md">
-                    <p class="guide-text">通过 iOS 快捷指令自动上报手机状态，让 AI 感知你的生活节奏。</p>
-                    <p class="guide-step">1. 打开「快捷指令」App</p>
-                    <p class="guide-step">2. 创建自动化 → 选择触发条件</p>
-                    <p class="guide-step">3. 添加「获取 URL 内容」操作</p>
-                    <p class="guide-step">4. 设置以下 Webhook：</p>
-                    <div class="webhook-box">
-                        <p class="webhook-url">POST {{ webhookUrl }}/api/phone/status</p>
-                        <p class="webhook-body">Body: {"type":"sleep","data":"入睡"}</p>
-                    </div>
-                    <p class="guide-text">推荐自动化触发条件：</p>
-                    <div class="trigger-list">
-                        <GlassTag variant="pink" size="sm">睡觉时</GlassTag>
-                        <GlassTag variant="pink" size="sm">起床时</GlassTag>
-                        <GlassTag variant="warm" size="sm">电量低于20%</GlassTag>
-                        <GlassTag variant="purple" size="sm">打开某个App</GlassTag>
-                        <GlassTag variant="soft" size="sm">连接WiFi</GlassTag>
-                    </div>
-                </GlassCard>
-            </div>
-
-            <div class="section">
-                <h3>◑ 微信同步</h3>
-                <p class="section-sub">将微信对话实时同步到这里</p>
-                <GlassCard size="md">
-                    <p class="guide-text">微信机器人 Webhook 地址：</p>
-                    <div class="webhook-box">
-                        <p class="webhook-url">用户消息：POST {{ webhookUrl }}/api/sync/wechat/user</p>
-                        <p class="webhook-body">Body: {"content":"消息内容"}</p>
-                    </div>
-                    <div class="webhook-box">
-                        <p class="webhook-url">AI回复：POST {{ webhookUrl }}/api/sync/wechat/ai</p>
-                        <p class="webhook-body">Body: {"content":"AI回复内容"}</p>
-                    </div>
-                    <p class="guide-text" style="margin-top:10px">在会话列表中选择"微信同步"即可查看同步的对话。</p>
-                </GlassCard>
-            </div>
-
-            <div class="section">
-                <h3>🛠️ 开发者 Beta 模式</h3>
-                <p class="section-sub">开启后使用独立数据库，不污染原有角色记忆</p>
-                <GlassCard size="md">
-                    <div class="setting-row">
-                        <span>启用 Beta 环境</span>
-                        <label class="toggle">
+                    <div class="sgi-label">飞行模式</div>
+                    <div class="sgi-right">
+                        <label class="toggle-sm" @click.stop>
                             <input type="checkbox" v-model="isBetaMode" @change="toggleBetaMode" />
-                            <span class="slider"></span>
+                            <span class="slider-sm"></span>
                         </label>
                     </div>
-                    <p class="setting-hint" v-if="isBetaMode">当前处于 Beta 沙盒，数据独立存储</p>
-                </GlassCard>
+                </div>
+
+                <div class="settings-group-item" @click="openWifiEdit">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #98CBEA, #6ba8d4);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                            <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                            <circle cx="12" cy="20" r="1" fill="white" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">无线局域网</div>
+                    <div class="sgi-right">
+                        <span class="sgi-value">{{ wifiName }}</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="settings-group-item" @click="$router.push('/settings/api')">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #D8CDEA, #b8a8d8);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">蓝牙</div>
+                    <div class="sgi-right">
+                        <span class="sgi-value">{{ apiConfig.model || '未配置' }}</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="settings-group-item">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #7ed6a0, #5bc280);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <rect x="1" y="6" width="22" height="12" rx="2" />
+                            <path d="M23 13v-2a4 4 0 0 0 0-8V3" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">蜂窝网络</div>
+                    <div class="sgi-right">
+                        <span class="sgi-value sgi-value-green">打开</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="settings-group-item">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #F5EAD0, #e8d5a8);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <rect x="2" y="7" width="20" height="14" rx="2" />
+                            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">个人热点</div>
+                    <div class="sgi-right">
+                        <span class="sgi-value">关闭</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="settings-group-item">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #7ed6a0, #4db870);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <rect x="2" y="7" width="20" height="11" rx="2" />
+                            <path d="M22 11V9a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2" />
+                            <line x1="7" y1="12" x2="7" y2="15" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">电池</div>
+                    <div class="sgi-right">
+                        <span class="sgi-value">100%</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第二组：个性化 -->
+            <div class="settings-group">
+                <div class="settings-group-item" @click="$router.push('/settings/general')">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #B8B8C8, #9090a8);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v4l3 3" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">通用</div>
+                    <div class="sgi-right">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="settings-group-item" @click="$router.push('/settings/control')">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #F1DADD, #e8b8c0);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">控制中心</div>
+                    <div class="sgi-right">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 生活方式：独立一组 -->
+            <div class="settings-group">
+                <div class="settings-group-item" @click="$router.push('/settings/lifestyle')">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #98CBEA, #70b0d8);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">生活方式</div>
+                    <div class="sgi-right">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第三组：通知与安全 -->
+            <div class="settings-group">
+                <div class="settings-group-item" @click="$router.push('/settings/notifications')">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #E8C0C9, #d4899e);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                            <circle cx="12" cy="3" r="1" fill="white" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">通知</div>
+                    <div class="sgi-right">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="settings-group-item" @click="$router.push('/settings/lock')">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #D8CDEA, #b8a8d8);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">锁屏密码</div>
+                    <div class="sgi-right">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第四组：钱包与存储 -->
+            <div class="settings-group">
+                <div class="settings-group-item" @click="$router.push('/wallet')">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #F5EAD0, #e8c870);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <rect x="2" y="5" width="20" height="14" rx="2" />
+                            <path d="M2 10h20" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">钱包</div>
+                    <div class="sgi-right">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="settings-group-item" @click="$router.push('/settings/storage')">
+                    <div class="sgi-icon-wrap" style="background: linear-gradient(135deg, #D8CDEA, #a898c8);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <ellipse cx="12" cy="5" rx="9" ry="3" />
+                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                        </svg>
+                    </div>
+                    <div class="sgi-label">存储空间</div>
+                    <div class="sgi-right">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" class="sgi-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+                </div>
             </div>
 
         </div>
+
+        <!-- 只保留 WiFi 弹窗 -->
+        <BlurModal :visible="showWifiEdit" @close="showWifiEdit = false">
+            <h3>无线局域网名称</h3>
+            <DreamInput label="自定义名称" v-model="editWifiName" placeholder="✧*｡٩(ˊᗜˋ*)و✧*｡" />
+            <div class="modal-actions">
+                <SoftButton variant="secondary" @click="showWifiEdit = false">取消</SoftButton>
+                <SoftButton variant="primary" @click="saveWifiName">保存</SoftButton>
+            </div>
+        </BlurModal>
+
     </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { api } from '@/utils/api'
-import GlassCard from '@/components/ui/GlassCard.vue'
 import SoftButton from '@/components/ui/SoftButton.vue'
 import DreamInput from '@/components/ui/DreamInput.vue'
-import GlassTag from '@/components/ui/GlassTag.vue' // 💡 补上这个导入！
+import GlassTag from '@/components/ui/GlassTag.vue'
+import BlurModal from '@/components/ui/BlurModal.vue'
 import { useWebSocket } from '@/composables/useWebSocket'
 
 const { registerPushSubscription } = useWebSocket()
 
-const personas = ref([])
-const activePersona = ref('')
-const userPrompt = ref('')
-const template = ref('')
-const saved = ref(false)
-const apiSaved = ref(false)
-const importInput = ref(null)
-const proactivePersona = ref('')
-const webhookUrl = ref(import.meta.env.VITE_API_URL || window.location.origin)
+// 个人信息（从 localStorage 读取，子页面写入）
+const profileName = ref(localStorage.getItem('user_name') || '')
+const profileAvatar = ref(localStorage.getItem('home_user_avatar') || '')
+const profilePhone = ref(localStorage.getItem('user_phone') || '✧ 1314-5201314')
 
-// 主 API
+// WiFi
+const wifiName = ref(localStorage.getItem('custom_wifi_name') || '✧*｡٩(ˊᗜˋ*)و✧*｡')
+const showWifiEdit = ref(false)
+const editWifiName = ref('')
+const searchQuery = ref('')
+
+// API 配置（只读显示用）
 const apiConfig = reactive({ name: '', key: '', baseUrl: '', model: '' })
-const savedConfigs = ref([])
-const currentConfigIdx = ref(-1)
-const modelList = ref([])
-const apiTestResult = ref(null)
 
-// 副 API
-const subApiConfig = reactive({ name: '', key: '', baseUrl: '', model: '' })
-const subApiSaved = ref(false)
-const savedSubConfigs = ref([])
-const currentSubConfigIdx = ref(-1)
-const subModelList = ref([])
-const subApiTestResult = ref(null)
+// Beta
+const isBetaMode = ref(localStorage.getItem('is_beta_mode') === 'true')
 
-// 主动消息
+// 主动消息（通知子页面需要）
 const proactive = reactive({
     enabled: true,
     idleHours: 12,
@@ -329,906 +326,411 @@ const proactive = reactive({
     intervalUnit: 'hours',
     enabledPersonas: [],
 })
+
+// 输出偏好
+const outputPrefs = reactive({ actionDesc: false, splitSentence: false })
+
+// 用于控制中心子页面的数据
+const userPrompt = ref('')
+const template = ref('')
+const saved = ref(false)
+
+// 推送测试结果
 const proactiveTestResult = ref(null)
 const pushTestResult = ref(null)
 
-// 输出偏好
-const outputPrefs = reactive({
-    actionDesc: false,
-    splitSentence: false
-})
-
-const enabledAiNames = computed(() => '全部')
-
-const isBetaMode = ref(localStorage.getItem('is_beta_mode') === 'true')
+const webhookUrl = ref(import.meta.env.VITE_API_URL || window.location.origin)
 
 function toggleBetaMode() {
     localStorage.setItem('is_beta_mode', isBetaMode.value)
-    // 通知后端或强制刷新
     window.location.reload()
 }
 
-// ========== 初始化 ==========
+function betaToggle() {
+    isBetaMode.value = !isBetaMode.value
+    toggleBetaMode()
+}
+
+function openWifiEdit() {
+    editWifiName.value = wifiName.value
+    showWifiEdit.value = true
+}
+
+function saveWifiName() {
+    wifiName.value = editWifiName.value || '✧*｡٩(ˊᗜˋ*)و✧*｡'
+    localStorage.setItem('custom_wifi_name', wifiName.value)
+    showWifiEdit.value = false
+}
+
+// 监听子页面保存后的 localStorage 变化，刷新个人信息显示
+function refreshProfileFromStorage() {
+    profileName.value = localStorage.getItem('user_name') || ''
+    profileAvatar.value = localStorage.getItem('home_user_avatar') || ''
+    profilePhone.value = localStorage.getItem('user_phone') || '✧ 1314-5201314'
+}
+
 onMounted(async () => {
-    // 主 API 配置
+    // 读取 API 配置用于显示
     const savedConfig = localStorage.getItem('api_config')
     if (savedConfig) Object.assign(apiConfig, JSON.parse(savedConfig))
-    const configs = localStorage.getItem('api_configs')
-    if (configs) savedConfigs.value = JSON.parse(configs)
-    const activeIdx = localStorage.getItem('active_config_idx')
-    if (activeIdx !== null) currentConfigIdx.value = parseInt(activeIdx)
 
-    // 副 API 配置
-    const savedSub = localStorage.getItem('sub_api_config')
-    if (savedSub) Object.assign(subApiConfig, JSON.parse(savedSub))
-    const subConfigs = localStorage.getItem('sub_api_configs')
-    if (subConfigs) savedSubConfigs.value = JSON.parse(subConfigs)
-    const activeSubIdx = localStorage.getItem('active_sub_config_idx')
-    if (activeSubIdx !== null) currentSubConfigIdx.value = parseInt(activeSubIdx)
-
-    // 输出偏好
+    // 读取输出偏好
     const savedPrefs = localStorage.getItem('output_prefs')
     if (savedPrefs) Object.assign(outputPrefs, JSON.parse(savedPrefs))
 
-    // 加载远程数据
+    // 加载主动消息设置
     try {
-        const pRes = await api('/api/prompts/personas')
-        const pData = await pRes.json()
-        personas.value = pData.personas
-        activePersona.value = pData.active
+        const proRes = await api('/api/proactive/settings')
+        const proData = await proRes.json()
+        Object.assign(proactive, proData)
+    } catch { }
 
+    // 加载用户偏好文案
+    try {
         const uRes = await api('/api/prompts/user')
         const uData = await uRes.json()
         const content = uData.content || ''
         const styleIndex = content.indexOf('\n\n[输出风格')
         userPrompt.value = styleIndex > -1 ? content.slice(0, styleIndex) : content
         template.value = uData.template
-
-        const proRes = await api('/api/proactive/settings')
-        const proData = await proRes.json()
-        Object.assign(proactive, proData)
-    } catch (e) {
-        console.error('加载设置失败:', e)
-    }
-})
-
-// ========== 主 API ==========
-function selectConfig(idx) {
-    currentConfigIdx.value = idx
-    Object.assign(apiConfig, savedConfigs.value[idx])
-    localStorage.setItem('active_config_idx', idx)
-    saveApiConfig()
-}
-
-function saveAsNewConfig() {
-    savedConfigs.value.push({ ...apiConfig })
-    currentConfigIdx.value = savedConfigs.value.length - 1
-    localStorage.setItem('api_configs', JSON.stringify(savedConfigs.value))
-    localStorage.setItem('active_config_idx', currentConfigIdx.value)
-    saveApiConfig()
-}
-
-function deleteConfig(idx) {
-    savedConfigs.value.splice(idx, 1)
-    localStorage.setItem('api_configs', JSON.stringify(savedConfigs.value))
-    if (currentConfigIdx.value >= savedConfigs.value.length) currentConfigIdx.value = savedConfigs.value.length - 1
-}
-
-async function saveApiConfig() {
-    localStorage.setItem('api_config', JSON.stringify(apiConfig))
-
-    if (currentConfigIdx.value >= 0 && savedConfigs.value[currentConfigIdx.value]) {
-        savedConfigs.value[currentConfigIdx.value] = { ...apiConfig }
-        localStorage.setItem('api_configs', JSON.stringify(savedConfigs.value))
-    }
-
-    // 💡 重点：解构主 API 数据发送
-    await api('/api/settings/api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            key: apiConfig.key,
-            baseUrl: apiConfig.baseUrl,
-            model: apiConfig.model
-        })
-    })
-
-    apiSaved.value = true
-    setTimeout(() => { apiSaved.value = false }, 2000)
-}
-
-async function fetchModels() {
-    apiTestResult.value = null
-    modelList.value = []
-    try {
-        const res = await api('/api/test/models', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ baseUrl: apiConfig.baseUrl, key: apiConfig.key })
-        })
-        const data = await res.json()
-        if (data.data && Array.isArray(data.data)) {
-            modelList.value = data.data.map(m => m.id).sort()
-            apiTestResult.value = { success: true, message: `获取到 ${modelList.value.length} 个模型` }
-        } else {
-            apiTestResult.value = { success: false, message: data.error || '返回格式异常' }
-        }
-    } catch (e) {
-        apiTestResult.value = { success: false, message: `请求失败: ${e.message}` }
-    }
-}
-
-async function testApiConnection() {
-    apiTestResult.value = null
-    try {
-        const res = await api('/api/test/connection', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ baseUrl: apiConfig.baseUrl, key: apiConfig.key, model: apiConfig.model })
-        })
-        const data = await res.json()
-        if (data.ok && data.data?.choices?.[0]) {
-            apiTestResult.value = { success: true, message: `连接成功 ✓ 模型: ${apiConfig.model}` }
-        } else {
-            apiTestResult.value = { success: false, message: `失败: ${data.data?.error?.message || '未知错误'}` }
-        }
-    } catch (e) {
-        apiTestResult.value = { success: false, message: `连接失败: ${e.message}` }
-    }
-}
-
-// ========== 副 API ==========
-function selectSubConfig(idx) {
-    currentSubConfigIdx.value = idx
-    Object.assign(subApiConfig, savedSubConfigs.value[idx])
-    localStorage.setItem('active_sub_config_idx', idx)
-    saveSubApiConfig()
-}
-
-function saveAsNewSubConfig() {
-    savedSubConfigs.value.push({ ...subApiConfig })
-    currentSubConfigIdx.value = savedSubConfigs.value.length - 1
-    localStorage.setItem('sub_api_configs', JSON.stringify(savedSubConfigs.value))
-    localStorage.setItem('active_sub_config_idx', currentSubConfigIdx.value)
-    saveSubApiConfig()
-}
-
-function deleteSubConfig(idx) {
-    savedSubConfigs.value.splice(idx, 1)
-    localStorage.setItem('sub_api_configs', JSON.stringify(savedSubConfigs.value))
-    if (currentSubConfigIdx.value >= savedSubConfigs.value.length) currentSubConfigIdx.value = savedSubConfigs.value.length - 1
-}
-
-async function saveSubApiConfig() {
-    // 1. 本地持久化
-    localStorage.setItem('sub_api_config', JSON.stringify(subApiConfig))
-
-    if (currentSubConfigIdx.value >= 0 && savedSubConfigs.value[currentSubConfigIdx.value]) {
-        savedSubConfigs.value[currentSubConfigIdx.value] = { ...subApiConfig }
-        localStorage.setItem('sub_api_configs', JSON.stringify(savedSubConfigs.value))
-    }
-
-    // 2. 💡 重点：解构出干净的普通变量，确保后端能够 100% 接收到参数
-    await api('/api/settings/sub-api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            key: subApiConfig.key,
-            baseUrl: subApiConfig.baseUrl,
-            model: subApiConfig.model
-        })
-    })
-
-    subApiSaved.value = true
-    setTimeout(() => { subApiSaved.value = false }, 2000)
-}
-
-async function fetchSubModels() {
-    subApiTestResult.value = null
-    subModelList.value = []
-    try {
-        const res = await api('/api/test/models', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ baseUrl: subApiConfig.baseUrl, key: subApiConfig.key })
-        })
-        const data = await res.json()
-        if (data.data && Array.isArray(data.data)) {
-            subModelList.value = data.data.map(m => m.id).sort()
-            subApiTestResult.value = { success: true, message: `获取到 ${subModelList.value.length} 个模型` }
-        } else {
-            subApiTestResult.value = { success: false, message: data.error || '返回格式异常' }
-        }
-    } catch (e) {
-        subApiTestResult.value = { success: false, message: `请求失败: ${e.message}` }
-    }
-}
-
-async function testSubApiConnection() {
-    subApiTestResult.value = null
-    try {
-        const res = await api('/api/test/connection', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ baseUrl: subApiConfig.baseUrl, key: subApiConfig.key, model: subApiConfig.model })
-        })
-        const data = await res.json()
-        if (data.ok && data.data?.choices?.[0]) {
-            subApiTestResult.value = { success: true, message: `连接成功 ✓ 模型: ${subApiConfig.model}` }
-        } else {
-            subApiTestResult.value = { success: false, message: `失败: ${data.data?.error?.message || '未知错误'}` }
-        }
-    } catch (e) {
-        subApiTestResult.value = { success: false, message: `连接失败: ${e.message}` }
-    }
-}
-
-// ========== 主动消息 ==========
-async function loadProactiveForPersona() {
-    try {
-        const query = proactivePersona.value ? `?persona=${proactivePersona.value}` : ''
-        const proRes = await api(`/api/proactive/settings${query}`)
-        const proData = await proRes.json()
-        Object.assign(proactive, proData)
     } catch { }
-}
 
-async function saveProactive() {
-    await api('/api/proactive/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...proactive, personaId: proactivePersona.value })
-    })
-}
-
-function toggleProactivePersona(id) {
-    const idx = proactive.enabledPersonas.indexOf(id)
-    if (idx > -1) proactive.enabledPersonas.splice(idx, 1)
-    else proactive.enabledPersonas.push(id)
-    saveProactive()
-}
-
-async function testProactive() {
-    proactiveTestResult.value = null
-    try {
-        const res = await api('/api/proactive/trigger', { method: 'POST' })
-        const data = await res.json()
-        proactiveTestResult.value = data.success
-            ? { success: true, message: '主动消息触发成功 ✓' }
-            : { success: false, message: '触发失败' }
-    } catch (e) {
-        proactiveTestResult.value = { success: false, message: `失败: ${e.message}` }
-    }
-}
-
-async function testPush() {
-    pushTestResult.value = null
-    try {
-        const res = await api('/api/push/test', { method: 'POST' })
-        const data = await res.json()
-        pushTestResult.value = data.subscribers > 0
-            ? { success: true, message: `推送已发送给 ${data.subscribers} 个订阅者` }
-            : { success: false, message: '没有订阅者' }
-    } catch (e) {
-        pushTestResult.value = { success: false, message: `失败: ${e.message}` }
-    }
-}
-
-async function reRegisterPush() {
-    try { await api('/api/push/clear', { method: 'POST' }) } catch { }
-    await registerPushSubscription()
-    pushTestResult.value = { success: true, message: '已清除旧订阅并重新注册' }
-}
-
-// ========== 偏好 ==========
-async function saveOutputPrefs() {
-    localStorage.setItem('output_prefs', JSON.stringify(outputPrefs))
-    const prefText = buildPrefText()
-    await api('/api/prompts/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: prefText })
-    })
-}
-
-function buildPrefText() {
-    let text = userPrompt.value || ''
-    const lines = []
-    if (outputPrefs.actionDesc) {
-        lines.push('- 回复中包含动作描写，用*号包裹')
-    } else {
-        lines.push('- 禁止使用动作描写，禁止使用*号包裹的任何内容')
-    }
-    if (outputPrefs.splitSentence) {
-        lines.push('- 必须分句输出，每个短句单独一行')
-    } else {
-        lines.push('- 正常连续输出，不需要刻意分行')
-    }
-    if (lines.length > 0) {
-        text += '\n\n[输出风格 - 必须严格遵守]\n' + lines.join('\n')
-    }
-    return text
-}
-
-async function saveUserPrompt() {
-    const prefText = buildPrefText()
-    await api('/api/prompts/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: prefText })
-    })
-    saved.value = true
-    setTimeout(() => { saved.value = false }, 2000)
-}
-
-// ========== 导入导出 ==========
-async function exportData() {
-    try {
-        const res = await api('/api/export')
-        const serverData = await res.json()
-
-        // 加上本地设置
-        const localData = {
-            custom_wallpaper: localStorage.getItem('custom_wallpaper') || '',
-            wallpaper_scope: localStorage.getItem('wallpaper_scope') || 'home',
-            custom_font_url: localStorage.getItem('custom_font_url') || '',
-            custom_font_name: localStorage.getItem('custom_font_name') || '',
-            custom_app_icons: localStorage.getItem('custom_app_icons') || '{}',
-            chat_entry_mode: localStorage.getItem('chat_entry_mode') || 'direct',
-            theme_mode: localStorage.getItem('theme_mode') || 'auto',
-            api_config: localStorage.getItem('api_config') || '{}',
-            api_configs: localStorage.getItem('api_configs') || '[]',
-            sub_api_config: localStorage.getItem('sub_api_config') || '{}',
-            sub_api_configs: localStorage.getItem('sub_api_configs') || '[]',
-            output_prefs: localStorage.getItem('output_prefs') || '{}',
-            word_cards: localStorage.getItem('word_cards') || '[]',
-            together_start_date: localStorage.getItem('together_start_date') || '',
-            home_bubble_left: localStorage.getItem('home_bubble_left') || '',
-            home_bubble_right: localStorage.getItem('home_bubble_right') || '',
-            home_user_avatar: localStorage.getItem('home_user_avatar') || '',
-            pinned_personas: localStorage.getItem('pinned_personas') || '[]',
-        }
-
-        const fullExport = { ...serverData, localSettings: localData }
-
-        const blob = new Blob([JSON.stringify(fullExport, null, 2)], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `melt-backup-${new Date().toISOString().slice(0, 10)}.json`
-        a.click()
-        URL.revokeObjectURL(url)
-    } catch (e) {
-        console.error('导出失败:', e)
-    }
-}
-
-
-function triggerImport() { importInput.value.click() }
-
-async function importData(event) {
-    const file = event.target.files[0]
-    if (!file) return
-    try {
-        const text = await file.text()
-        const data = JSON.parse(text)
-
-        // 恢复本地设置
-        if (data.localSettings) {
-            Object.entries(data.localSettings).forEach(([key, value]) => {
-                if (value) localStorage.setItem(key, value)
-            })
-        }
-
-        // 恢复服务器数据
-        const serverData = { ...data }
-        delete serverData.localSettings
-        await api('/api/import', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(serverData)
-        })
-        alert('导入成功，刷新页面生效')
-    } catch (e) {
-        alert('导入失败: ' + e.message)
-    }
-}
-
-async function restoreBuiltinPersonas() {
-    const builtinIds = ['xiaorou', 'cool', 'assistant']
-    for (const id of builtinIds) {
-        try {
-            await api(`/api/personas/builtin/${id}/restore`, { method: 'POST' })
-        } catch { }
-    }
-    localStorage.removeItem('hidden_personas')
-    alert('已恢复所有内置人格')
-}
-
-async function forceSync() {
-    Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('melt_cache_')) localStorage.removeItem(key)
-    })
-    alert('缓存已清除，刷新页面重新加载')
-    location.reload()
-}
-
-async function syncToCloud() {
-    alert('数据已在云端（Supabase），无需额外同步')
-}
+    // 从子页面返回时刷新个人信息
+    window.addEventListener('focus', refreshProfileFromStorage)
+})
 </script>
 
 <style scoped>
 .settings-page {
-    display: flex;
-    flex-direction: column;
+    width: 100%;
     height: 100%;
     padding-top: env(safe-area-inset-top, 44px);
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(180deg, #FFFBFA 0%, #FFF0F2 60%, #FFE9ED 100%);
+    box-sizing: border-box;
 }
 
-.settings-header {
+.settings-blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(60px);
+}
+
+.sb-tl {
+    top: -40px;
+    left: -50px;
+    width: 220px;
+    height: 220px;
+    background: #F1DADD;
+    opacity: 0.45;
+}
+
+.sb-br {
+    bottom: 40px;
+    right: -60px;
+    width: 200px;
+    height: 200px;
+    background: #98CBEA;
+    opacity: 0.2;
+}
+
+.settings-nav {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--color-border);
+    justify-content: space-between;
+    padding: 8px 16px 4px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
 }
 
-.back-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: var(--color-primary);
+.settings-back {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border: 1px solid rgba(255, 240, 242, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    opacity: 0.75;
+    box-shadow: 0 2px 8px rgba(217, 163, 175, 0.1);
 }
 
-.settings-header h2 {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--color-text);
+.settings-back svg {
+    width: 16px;
+    height: 16px;
+    stroke: #D9A3AF;
+}
+
+.settings-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #4A3F41;
+}
+
+.settings-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 16px 12px;
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border-radius: 16px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 14px rgba(217, 163, 175, 0.08);
+    border: 1px solid rgba(255, 240, 242, 0.45);
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
+}
+
+.settings-search svg {
+    width: 15px;
+    height: 15px;
+    stroke: #B8A9AC;
+    flex-shrink: 0;
+}
+
+.settings-search input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 14px;
+    color: #4A3F41;
+    font-family: inherit;
+}
+
+.settings-search input::placeholder {
+    color: #D4C8CA;
 }
 
 .settings-content {
     flex: 1;
     overflow-y: auto;
-    padding: 20px 0;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+    padding: 0 16px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 32px);
+    position: relative;
+    z-index: 1;
 }
 
-.section {
-    margin-bottom: 32px;
-    animation: fadeIn 0.4s var(--ease-soft) backwards;
+.settings-content::-webkit-scrollbar {
+    display: none;
 }
 
-.section:nth-child(2) {
-    animation-delay: 0.05s;
-}
-
-.section:nth-child(3) {
-    animation-delay: 0.1s;
-}
-
-.section:nth-child(4) {
-    animation-delay: 0.15s;
-}
-
-.section:nth-child(5) {
-    animation-delay: 0.2s;
-}
-
-.section h3 {
-    font-size: 12px;
-    color: var(--color-text-light);
-    margin-bottom: 12px;
-    font-weight: 400;
-    letter-spacing: 0.5px;
-}
-
-.input-group {
-    margin-bottom: 12px;
-}
-
-.input-group label {
-    display: block;
-    font-size: 11px;
-    color: var(--color-text-light);
-    margin-bottom: 5px;
-    letter-spacing: 0.3px;
-}
-
-.input-group input {
-    width: 100%;
-    height: 40px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    padding: 0 14px;
-    font-size: 14px;
-    background: var(--color-card);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    outline: none;
-    color: var(--color-text);
-    transition: border-color var(--duration-normal) var(--ease-soft);
-}
-
-.input-group input:focus {
-    border-color: rgba(212, 137, 158, 0.3);
-}
-
-.setting-row {
+/* 个人信息卡 */
+.settings-profile-card {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-radius: 24px;
+    padding: 16px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 14px 16px;
-    background: var(--color-card);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: var(--radius-sm);
-    margin-bottom: 8px;
+    gap: 14px;
+    margin-bottom: 24px;
+    cursor: pointer;
+    box-shadow:
+        0 10px 28px rgba(217, 163, 175, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    border: 1px solid rgba(255, 240, 242, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.settings-profile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(217, 163, 175, 0.16), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+.settings-profile-card:active {
+    transform: scale(0.98);
+}
+
+.profile-avatar-wrap {
+    flex-shrink: 0;
+}
+
+.profile-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #FDE4E8, #F8D0D6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(217, 163, 175, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #4A3F41;
+    margin-bottom: 3px;
+}
+
+.profile-phone {
+    font-size: 12px;
+    color: #B8A9AC;
+}
+
+.profile-arrow {
+    width: 16px;
+    height: 16px;
+    stroke: #D4C8CA;
+    flex-shrink: 0;
+}
+
+/* 分组列表 */
+.settings-group {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-radius: 22px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow:
+        0 8px 24px rgba(217, 163, 175, 0.1),
+        0 2px 6px rgba(217, 163, 175, 0.06),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+    border: 1px solid rgba(255, 240, 242, 0.4);
+}
+
+.settings-group-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid rgba(217, 163, 175, 0.08);
+    background: transparent;
+}
+
+.settings-group-item:last-child {
+    border-bottom: none;
+}
+
+.settings-group-item:active {
+    background: rgba(217, 163, 175, 0.06);
+}
+
+.sgi-icon-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.sgi-icon-wrap svg {
+    width: 16px;
+    height: 16px;
+}
+
+.sgi-label {
+    flex: 1;
     font-size: 14px;
-    color: var(--color-text);
-    border: 1px solid var(--color-border);
+    color: #4A3F41;
+    font-weight: 400;
 }
 
-.setting-row select {
-    padding: 5px 10px;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+.sgi-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sgi-value {
     font-size: 13px;
-    background: var(--color-bg);
-    outline: none;
-    color: var(--color-text);
+    color: #B8A9AC;
 }
 
-.toggle {
+.sgi-value-green {
+    color: #6BAF7A;
+}
+
+.sgi-arrow {
+    width: 14px;
+    height: 14px;
+    stroke: #D4C8CA;
+}
+
+/* 开关 */
+.toggle-sm {
     position: relative;
     width: 44px;
-    height: 24px;
+    height: 26px;
+    flex-shrink: 0;
 }
 
-.toggle input {
+.toggle-sm input {
     opacity: 0;
     width: 0;
     height: 0;
 }
 
-.slider {
+.slider-sm {
     position: absolute;
     cursor: pointer;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--color-bg-secondary);
-    border-radius: 24px;
-    transition: var(--duration-normal) var(--ease-soft);
+    background: rgba(217, 163, 175, 0.2);
+    border-radius: 13px;
+    transition: 0.28s ease;
 }
 
-.slider:before {
+.slider-sm:before {
     position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
+    height: 22px;
+    width: 22px;
+    left: 2px;
+    bottom: 2px;
     background: white;
     border-radius: 50%;
-    transition: var(--duration-normal) var(--ease-soft);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: 0.28s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
-.toggle input:checked+.slider {
-    background: linear-gradient(135deg, #e8a8be, #d4899e);
+.toggle-sm input:checked+.slider-sm {
+    background: linear-gradient(135deg, #E8C0C9, #D9A3AF);
 }
 
-.toggle input:checked+.slider:before {
-    transform: translateX(20px);
+.toggle-sm input:checked+.slider-sm:before {
+    transform: translateX(18px);
 }
 
-textarea {
-    width: 100%;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: 12px 14px;
-    font-size: 14px;
-    font-family: inherit;
-    background: var(--color-card);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    outline: none;
-    resize: none;
-    line-height: 1.5;
-    color: var(--color-text);
-}
-
-textarea:focus {
-    border-color: rgba(212, 137, 158, 0.3);
-}
-
-.save-btn {
-    margin-top: 12px;
-    padding: 13px;
-    border-radius: var(--radius-sm);
-    border: none;
-    background: linear-gradient(135deg, #e8a8be, #d4899e);
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
-    width: 100%;
-    box-shadow: 0 3px 12px rgba(212, 137, 158, 0.2);
-}
-
-.save-tip {
-    text-align: center;
-    color: var(--color-primary);
-    font-size: 12px;
-    margin-top: 8px;
-    opacity: 0.8;
-}
-
-.action-btn {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 8px;
-    border: 1px solid var(--color-border);
-    background: var(--color-card);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    color: var(--color-text);
-    cursor: pointer;
-}
-
-.action-btn:active {
-    background: rgba(212, 137, 158, 0.06);
-}
-
-.api-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.api-actions .action-btn {
-    flex: 1;
-    margin-bottom: 0;
-}
-
-.model-list {
-    margin-top: 12px;
-    background: var(--color-card);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    border: 1px solid var(--color-border);
-}
-
-.list-label {
-    font-size: 11px;
-    color: var(--color-text-light);
-    margin-bottom: 6px;
-}
-
-.model-scroll {
-    max-height: 150px;
-    overflow-y: auto;
-}
-
-.model-item {
-    padding: 7px 10px;
-    font-size: 12px;
-    color: var(--color-text);
-    border-radius: 8px;
-    cursor: pointer;
-    word-break: break-all;
-}
-
-.model-item:active {
-    background: linear-gradient(135deg, #e8a8be, #d4899e);
-    color: white;
-}
-
-.api-result {
-    font-size: 12px;
-    margin-top: 8px;
-    padding: 10px 14px;
-    border-radius: var(--radius-sm);
-}
-
-.api-result.success {
-    color: #7aab7a;
-    background: rgba(122, 171, 122, 0.08);
-}
-
-.api-result.error {
-    color: #c07070;
-    background: rgba(192, 112, 112, 0.08);
-}
-
-.guide-text {
-    font-size: 13px;
-    color: var(--color-text);
-    line-height: 1.6;
-    margin-bottom: 12px;
-}
-
-.guide-step {
-    font-size: 12px;
-    color: var(--color-text-light);
-    padding: 4px 0;
-    padding-left: 8px;
-}
-
-.webhook-box {
-    background: var(--color-bg);
-    border-radius: 8px;
-    padding: 10px 12px;
-    margin: 10px 0;
-    font-family: monospace;
-    font-size: 11px;
-    color: var(--color-text);
-    word-break: break-all;
-}
-
-.webhook-url {
-    margin-bottom: 4px;
-    color: var(--color-primary);
-}
-
-.webhook-body {
-    color: var(--color-text-light);
-}
-
-.trigger-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 10px;
-}
-
-.section-sub {
-    font-size: 11px;
-    color: var(--color-text-light);
-    opacity: 0.5;
-    margin-bottom: 14px;
-    font-style: italic;
-    letter-spacing: 0.03em;
-}
-
-.setting-row.column {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-.persona-checks {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    width: 100%;
-}
-
-.persona-check-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 8px;
-    background: var(--color-bg);
-    cursor: pointer;
-    font-size: 12px;
-    color: var(--color-text);
-}
-
-.check-box {
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
-    border: 1.5px solid var(--color-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    color: white;
-}
-
-.check-box.checked {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
-}
-
-.interval-input {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.interval-number {
-    width: 50px;
-    height: 32px;
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    padding: 0 8px;
-    font-size: 13px;
-    background: var(--color-bg);
-    color: var(--color-text);
-    outline: none;
-    text-align: center;
-}
-
-.unit-text {
-    font-size: 12px;
-    color: var(--color-text-light);
-}
-
-.config-list {
-    margin-bottom: 14px;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 12px;
-}
-
-.config-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 10px;
-    border-radius: 8px;
-    margin-bottom: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.config-item.active {
-    background: rgba(212, 137, 158, 0.06);
-}
-
-.config-info {
-    flex: 1;
-}
-
-.config-name {
-    font-size: 13px;
-    color: var(--color-text);
-}
-
-.config-detail {
-    font-size: 10px;
-    color: var(--color-text-light);
-    opacity: 0.5;
-}
-
-.config-delete {
-    background: none;
-    border: none;
-    font-size: 16px;
-    color: var(--color-text-light);
-    opacity: 0.4;
-    cursor: pointer;
-}
-
-.section>.glass-card+.glass-card {
-    margin-top: 12px;
-}
-
-.action-group {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 14px;
-}
-
-.btn-row {
+.modal-actions {
     display: flex;
     gap: 10px;
-    margin-top: 12px;
-}
-
-.block-title {
-    font-size: 12px;
-    color: var(--color-text-light);
-    margin-bottom: 12px;
-    font-weight: 400;
-    letter-spacing: 0.3px;
+    margin-top: 16px;
 }
 </style>
