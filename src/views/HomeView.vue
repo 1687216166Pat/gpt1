@@ -28,14 +28,14 @@
                             <span class="together-title">共栖</span>
                             <span class="together-subtitle">Habitat</span>
                         </div>
-                        <div class="together-days-badge" @click="showDaysEdit = true">
-                            {{ togetherDays }} 天
+                        <!-- 共栖独立天数，点击弹窗设置 -->
+                        <div class="together-days-badge" @click="showHabitatDaysEdit = true">
+                            {{ habitatDays }} 天
                         </div>
                     </div>
 
                     <!-- 情侣卡片 -->
                     <div class="couple-card" @click="openCoupleEdit">
-                        <!-- 底层背景 -->
                         <div class="couple-bg">
                             <img v-if="coupleBgImage" :src="coupleBgImage" class="couple-bg-img" />
                             <div v-else class="couple-bg-default">
@@ -44,10 +44,7 @@
                                 <div class="couple-bg-grid"></div>
                             </div>
                         </div>
-
-                        <!-- 前卡磨砂夹层 -->
                         <div class="couple-front">
-                            <!-- 头像区 -->
                             <div class="couple-avatars">
                                 <div class="couple-avatar-wrap" @click.stop="openUserEdit">
                                     <div class="couple-avatar ca-user">
@@ -57,8 +54,7 @@
                                     </div>
                                 </div>
                                 <div class="couple-heart-mid">
-                                    <svg viewBox="0 0 24 24" fill="#E8C0C9"
-                                        filter="drop-shadow(0 2px 6px rgba(232,192,201,0.5))">
+                                    <svg viewBox="0 0 24 24" fill="#E8C0C9">
                                         <path
                                             d="M12 21.593c-5.63-5.539-11-10.297-11-14.402C1 3.335 4.08 1 7.5 1c1.8 0 3.5.754 4.5 2 1-1.246 2.7-2 4.5-2C19.92 1 23 3.335 23 7.191c0 4.105-5.37 8.863-11 14.402z" />
                                     </svg>
@@ -70,8 +66,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- 文案区 -->
                             <div class="couple-texts">
                                 <div class="couple-text-main" @click.stop="startEditText('main')"
                                     v-if="!editingTextField || editingTextField !== 'main'">
@@ -80,15 +74,13 @@
                                 <input v-else class="couple-text-input couple-text-input-main"
                                     v-model="editingTextValue" @blur="saveTextEdit('main')"
                                     @keyup.enter="saveTextEdit('main')" autofocus />
-
                                 <div class="couple-text-days" @click.stop="startEditText('days')"
                                     v-if="!editingTextField || editingTextField !== 'days'">
-                                    {{ coupleTextDays || `相遇以来的第 ${togetherDays} 天` }}
+                                    {{ coupleTextDays || `相遇以来的第 ${habitatDays} 天` }}
                                 </div>
                                 <input v-else class="couple-text-input couple-text-input-days"
                                     v-model="editingTextValue" @blur="saveTextEdit('days')"
                                     @keyup.enter="saveTextEdit('days')" autofocus />
-
                                 <div class="couple-text-tagline" @click.stop="startEditText('tagline')"
                                     v-if="!editingTextField || editingTextField !== 'tagline'">
                                     {{ coupleTagline }}
@@ -100,50 +92,21 @@
                         </div>
                     </div>
 
-                    <!-- 情侣卡片编辑弹窗 -->
-                    <BlurModal :visible="showCoupleEdit" @close="showCoupleEdit = false">
-                        <h3>编辑情侣卡片</h3>
-                        <div class="couple-bg-upload">
-                            <div class="couple-bg-preview">
-                                <img v-if="coupleBgImage" :src="coupleBgImage" />
-                                <span v-else>背景图片</span>
-                            </div>
-                            <div class="couple-upload-opts">
-                                <DreamInput label="背景图 URL" v-model="editCoupleBg" placeholder="https://..." />
-                                <div class="file-row">
-                                    <span class="file-label">或上传图片</span>
-                                    <label class="avatar-upload-btn">
-                                        选择文件
-                                        <input type="file" accept="image/*" style="display:none"
-                                            @change="handleCoupleBgUpload" />
-                                    </label>
-                                </div>
-                                <button v-if="coupleBgImage" class="couple-clear-btn"
-                                    @click="clearCoupleBg">清除背景</button>
-                            </div>
-                        </div>
-                        <DreamInput label="自定义短句" v-model="editTagline" placeholder="你走的每一步，我都在" />
-                        <div class="modal-actions">
-                            <SoftButton variant="secondary" @click="showCoupleEdit = false">取消</SoftButton>
-                            <SoftButton variant="primary" @click="saveCoupleEdit">保存</SoftButton>
-                        </div>
-                    </BlurModal>
-
-                    <!-- 关系数据横滑 -->
+                    <!-- 关系数据横滑：使用共栖独立数据 -->
                     <div class="relation-slider">
                         <div class="relation-card rc-days">
                             <span class="rc-label">在一起</span>
-                            <div class="rc-value">{{ togetherDays }}</div>
+                            <div class="rc-value">{{ habitatDays }}</div>
                             <span class="rc-unit">天</span>
                         </div>
                         <div class="relation-card rc-msg">
                             <span class="rc-label">消息总数</span>
-                            <div class="rc-value">{{ totalMessages !== null ? totalMessages : '—' }}</div>
+                            <div class="rc-value">{{ habitatTotalMessages !== null ? habitatTotalMessages : '—' }}</div>
                             <span class="rc-unit">条对话</span>
                         </div>
                         <div class="relation-card rc-streak">
                             <span class="rc-label">连续聊天</span>
-                            <div class="rc-value">{{ streak !== null ? streak : '—' }}</div>
+                            <div class="rc-value">{{ habitatStreak !== null ? habitatStreak : '—' }}</div>
                             <span class="rc-unit">天</span>
                         </div>
                         <div class="relation-card rc-mood">
@@ -186,7 +149,6 @@
 
                     <!-- 日历区域 -->
                     <div class="calendar-section">
-                        <!-- 右上角切换按钮 -->
                         <div class="section-label-row">
                             <span class="section-label" style="margin:0;">✦ 日历</span>
                             <button class="schedule-view-btn" @click="showScheduleView = true">
@@ -194,13 +156,10 @@
                                     stroke-linecap="round">
                                     <rect x="3" y="4" width="18" height="18" rx="2" />
                                     <path d="M16 2v4M8 2v4M3 10h18" />
-                                    <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01" />
                                 </svg>
                                 日程
                             </button>
                         </div>
-
-                        <!-- 日历卡片 -->
                         <div class="calendar-card">
                             <div class="cal-header">
                                 <button class="cal-nav" @click="prevMonth">
@@ -232,7 +191,6 @@
                                         :style="{ background: getDayStatusForGrid(day).color }"></div>
                                 </div>
                             </div>
-                            <!-- 状态图例 + 统计 -->
                             <div class="cal-legend">
                                 <div v-for="s in calMonthStats" :key="s.key" class="cal-legend-item">
                                     <div class="cal-legend-dot" :style="{ background: s.color }"></div>
@@ -253,10 +211,227 @@
                         </div>
                     </div>
 
+                    <!-- 他了解你的：文件夹样式 -->
+                    <div class="section-label" style="margin-top:16px;">
+                        ✦ 他了解你的
+                        <button class="section-add-btn" @click="showAddInsight = true">+ 添加</button>
+                    </div>
+                    <div class="insights-folders">
+                        <div v-if="personaInsights.length === 0" class="insights-empty">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#D4C8CA" stroke-width="1.2"
+                                stroke-linecap="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 8v4l3 3" />
+                            </svg>
+                            <p>还没有记录</p>
+                            <p>聊得越多，他越了解你</p>
+                        </div>
+                        <div v-else class="folder-scroll-row">
+                            <div v-for="(group, gkey) in groupedInsights" :key="gkey" class="folder-item"
+                                @click="openInsightFolder(gkey)">
+                                <div class="folder-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                        stroke-linecap="round">
+                                        <path
+                                            d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                                    </svg>
+                                </div>
+                                <div class="folder-label">{{ gkey }}</div>
+                                <div class="folder-count">{{ group.length }} 条</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 心愿单 -->
+                    <div class="section-label-row" style="margin-top:16px;">
+                        <span class="section-label" style="margin:0;">✦ 心愿单</span>
+                        <button class="section-add-btn" @click="showAddWish = true">+ 添加</button>
+                    </div>
+                    <div class="wish-list">
+                        <div v-if="wishes.length === 0" class="wish-empty">
+                            还没有心愿，添加一个吧 ✿
+                        </div>
+                        <div v-for="wish in wishes" :key="wish.id" class="wish-item"
+                            :class="{ 'wish-done': wish.done }">
+                            <div class="wish-check" @click="toggleWish(wish.id)">
+                                <svg v-if="wish.done" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                            </div>
+                            <div class="wish-content">
+                                <span class="wish-text">{{ wish.text }}</span>
+                                <span class="wish-tag">{{ wish.tag }}</span>
+                            </div>
+                            <button class="wish-del" @click="deleteWish(wish.id)">×</button>
+                        </div>
+                    </div>
+
+                    <!-- 备忘录入口 -->
+                    <div class="section-label" style="margin-top:16px;">✦ 备忘录</div>
+                    <div class="memo-entry" @click="router.push('/diary')">
+                        <div class="memo-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                                stroke-linecap="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                            </svg>
+                        </div>
+                        <div class="memo-text">
+                            <span class="memo-title">备忘录</span>
+                            <span class="memo-sub">记录随时的想法</span>
+                        </div>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#D4C8CA" stroke-width="2" stroke-linecap="round"
+                            class="bm-arrow">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </div>
+
+                    <!-- 所有弹窗 -->
+                    <BlurModal :visible="showHabitatDaysEdit" @close="showHabitatDaysEdit = false">
+                        <h3>设置共栖纪念日</h3>
+                        <DreamInput label="开始日期" type="date" v-model="habitatStartDateInput" />
+                        <div class="modal-actions">
+                            <SoftButton variant="secondary" @click="showHabitatDaysEdit = false">取消</SoftButton>
+                            <SoftButton variant="primary" @click="saveHabitatDaysDate">保存</SoftButton>
+                        </div>
+                    </BlurModal>
+
+                    <BlurModal :visible="showCoupleEdit" @close="showCoupleEdit = false">
+                        <h3>编辑情侣卡片</h3>
+                        <div class="couple-bg-upload">
+                            <div class="couple-bg-preview">
+                                <img v-if="coupleBgImage" :src="coupleBgImage" />
+                                <span v-else>背景图片</span>
+                            </div>
+                            <div class="couple-upload-opts">
+                                <DreamInput label="背景图 URL" v-model="editCoupleBg" placeholder="https://..." />
+                                <div class="file-row">
+                                    <span class="file-label">或上传图片</span>
+                                    <label class="avatar-upload-btn">
+                                        选择文件
+                                        <input type="file" accept="image/*" style="display:none"
+                                            @change="handleCoupleBgUpload" />
+                                    </label>
+                                </div>
+                                <button v-if="coupleBgImage" class="couple-clear-btn"
+                                    @click="clearCoupleBg">清除背景</button>
+                            </div>
+                        </div>
+                        <DreamInput label="自定义短句" v-model="editTagline" placeholder="你走的每一步，我都在" />
+                        <div class="modal-actions">
+                            <SoftButton variant="secondary" @click="showCoupleEdit = false">取消</SoftButton>
+                            <SoftButton variant="primary" @click="saveCoupleEdit">保存</SoftButton>
+                        </div>
+                    </BlurModal>
+
+                    <BlurModal :visible="showAddInsight" @close="showAddInsight = false">
+                        <h3>手动添加记录</h3>
+                        <div class="insight-category-row">
+                            <span class="insight-category-label">分类</span>
+                            <div class="insight-category-options">
+                                <div v-for="cat in insightCategories" :key="cat" class="insight-cat-chip"
+                                    :class="{ active: newInsightCategory === cat && !newInsightCategoryCustom }"
+                                    @click="newInsightCategory = cat; newInsightCategoryCustom = ''">
+                                    {{ cat }}
+                                </div>
+                            </div>
+                            <input v-model="newInsightCategoryCustom" placeholder="或自定义分类名..."
+                                class="cat-custom-input-full" @input="newInsightCategory = ''" />
+                        </div>
+                        <DreamInput type="textarea" v-model="newInsightText" :rows="3" placeholder="他了解的一件关于你的事..." />
+                        <div class="modal-actions">
+                            <SoftButton variant="secondary" @click="showAddInsight = false">取消</SoftButton>
+                            <SoftButton variant="primary" @click="addInsight">保存</SoftButton>
+                        </div>
+                    </BlurModal>
+
+                    <BlurModal :visible="showAddWish" @close="showAddWish = false">
+                        <h3>添加心愿</h3>
+                        <DreamInput label="心愿内容" v-model="newWishText" placeholder="想要什么..." />
+                        <DreamInput label="标签" v-model="newWishTag" placeholder="例：旅行、礼物..." />
+                        <div class="modal-actions">
+                            <SoftButton variant="secondary" @click="showAddWish = false">取消</SoftButton>
+                            <SoftButton variant="primary" @click="addWish">保存</SoftButton>
+                        </div>
+                    </BlurModal>
+
+                    <BlurModal :visible="showBookmarks" @close="showBookmarks = false">
+                        <h3>收藏记录</h3>
+                        <div v-if="bookmarks.length === 0"
+                            style="text-align:center;color:#B8A9AC;padding:20px;font-size:13px;">
+                            还没有收藏，在聊天中长按消息可以收藏
+                        </div>
+                        <div v-else class="bookmark-list">
+                            <div v-for="(bm, idx) in bookmarks" :key="idx" class="bookmark-item">
+                                <span class="bm-type-tag">{{ bm.type === 'message' ? '消息' : bm.type }}</span>
+                                <p class="bm-content">{{ bm.content }}</p>
+                                <span class="bm-time">{{ bm.created_at?.slice(0, 10) }}</span>
+                            </div>
+                        </div>
+                    </BlurModal>
+
+                    <BlurModal :visible="showTimelineAdd" @close="showTimelineAdd = false">
+                        <h3>添加时间轨迹</h3>
+                        <DreamInput label="记录内容" v-model="newTimelineText" placeholder="发生了什么..." />
+                        <DreamInput label="时间标记" v-model="newTimelinePeriod" placeholder="例：2024年春天" />
+                        <div class="modal-actions">
+                            <SoftButton variant="secondary" @click="showTimelineAdd = false">取消</SoftButton>
+                            <SoftButton variant="primary" @click="addTimelineEvent">保存</SoftButton>
+                        </div>
+                    </BlurModal>
+
+                    <BlurModal :visible="showUserEdit" @close="showUserEdit = false">
+                        <h3>编辑我的信息</h3>
+                        <DreamInput label="备注名" v-model="editUserName" placeholder="你的名字..." />
+                        <div class="avatar-edit-section">
+                            <div class="avatar-preview">
+                                <img v-if="editUserAvatar && editUserAvatar.startsWith('http')" :src="editUserAvatar" />
+                                <span v-else-if="editUserAvatar">{{ editUserAvatar }}</span>
+                                <span v-else>🌙</span>
+                            </div>
+                            <div class="avatar-options">
+                                <DreamInput label="图片 URL" v-model="editUserAvatar" placeholder="https://..." />
+                                <div class="avatar-upload-row">
+                                    <span class="avatar-upload-label">或者上传图片</span>
+                                    <label class="avatar-upload-btn">
+                                        选择文件
+                                        <input type="file" accept="image/*" style="display:none"
+                                            @change="handleUserAvatarUpload" />
+                                    </label>
+                                </div>
+                                <DreamInput label="或者用 emoji" v-model="editUserAvatarEmoji" placeholder="🌙" />
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <SoftButton variant="secondary" @click="showUserEdit = false">取消</SoftButton>
+                            <SoftButton variant="primary" @click="saveUserEdit">保存</SoftButton>
+                        </div>
+                    </BlurModal>
+
+                    <BlurModal :visible="showCharSwitch" @close="showCharSwitch = false">
+                        <h3>切换共栖伙伴</h3>
+                        <div class="char-switch-list">
+                            <div v-for="p in allPersonas" :key="p.id" class="char-switch-item"
+                                :class="{ active: p.id === currentAi.personaId }" @click="switchChar(p)">
+                                <div class="cs-avatar">
+                                    <img v-if="p.avatarUrl" :src="p.avatarUrl" />
+                                    <span v-else>{{ p.avatar || '💬' }}</span>
+                                </div>
+                                <div class="cs-info">
+                                    <span class="cs-name">{{ p.note || p.name }}</span>
+                                    <span class="cs-desc">{{ p.description || '' }}</span>
+                                </div>
+                                <div v-if="p.id === currentAi.personaId" class="cs-check">✓</div>
+                            </div>
+                        </div>
+                    </BlurModal>
+
                     <!-- 日程视图弹窗 -->
                     <div v-if="showScheduleView" class="schedule-overlay" @click.self="showScheduleView = false">
                         <div class="schedule-panel">
-                            <!-- 头部 -->
                             <div class="schedule-header">
                                 <div class="schedule-range-tabs">
                                     <button class="sr-tab" :class="{ active: scheduleRange === 1 }"
@@ -268,8 +443,6 @@
                                 </div>
                                 <button class="schedule-close" @click="showScheduleView = false">×</button>
                             </div>
-
-                            <!-- 双栏标题 -->
                             <div class="schedule-cols-header">
                                 <div class="sch-col-title">
                                     <div class="sch-col-avatar ca-user-sm">
@@ -288,13 +461,9 @@
                                     <span>{{ currentAi.note || currentAi.name }}</span>
                                 </div>
                             </div>
-
-                            <!-- 内容区 -->
                             <div class="schedule-content">
-                                <!-- 1天：时间轴视图 -->
                                 <template v-if="scheduleRange === 1">
                                     <div class="schedule-timeline-wrap">
-                                        <!-- 左：user -->
                                         <div class="sch-timeline-col">
                                             <template v-if="getScheduleData(1, 'user').length > 0">
                                                 <div v-for="(item, idx) in getScheduleData(1, 'user')" :key="idx"
@@ -305,12 +474,10 @@
                                             </template>
                                             <div v-else class="sch-empty">今天暂无日程</div>
                                         </div>
-                                        <!-- 中间轴 -->
                                         <div class="sch-center-axis">
                                             <div class="sch-axis-line"></div>
                                             <div class="sch-axis-date">今天</div>
                                         </div>
-                                        <!-- 右：char -->
                                         <div class="sch-timeline-col sch-col-right">
                                             <template v-if="getScheduleData(1, 'char').length > 0">
                                                 <div v-for="(item, idx) in getScheduleData(1, 'char')" :key="idx"
@@ -323,11 +490,8 @@
                                         </div>
                                     </div>
                                 </template>
-
-                                <!-- 7天/30天：分组列表 -->
                                 <template v-else>
                                     <div class="schedule-list-wrap">
-                                        <!-- 左：user -->
                                         <div class="sch-list-col">
                                             <template v-if="getScheduleData(scheduleRange, 'user').length > 0">
                                                 <div v-for="group in groupScheduleByDate(getScheduleData(scheduleRange, 'user'))"
@@ -342,9 +506,7 @@
                                             </template>
                                             <div v-else class="sch-empty">暂无日程</div>
                                         </div>
-                                        <!-- 分隔 -->
                                         <div class="sch-list-divider"></div>
-                                        <!-- 右：char -->
                                         <div class="sch-list-col">
                                             <template v-if="getScheduleData(scheduleRange, 'char').length > 0">
                                                 <div v-for="group in groupScheduleByDate(getScheduleData(scheduleRange, 'char'))"
@@ -364,180 +526,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- AI 画像洞察时间线 -->
-                    <div class="section-label" style="margin-top:16px;">
-                        ✦ 他了解你的
-                        <button class="section-add-btn" @click="showAddInsight = true">+ 手动添加</button>
-                    </div>
-                    <div class="insights-wrap">
-                        <div v-if="personaInsights.length === 0" class="insights-empty">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#D4C8CA" stroke-width="1.2"
-                                stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M12 8v4l3 3" />
-                            </svg>
-                            <p>还没有记录</p>
-                            <p>聊得越多，他越了解你</p>
-                        </div>
-                        <div v-else class="insights-list">
-                            <div v-for="(group, gkey) in groupedInsights" :key="gkey" class="insight-group">
-                                <div class="insight-group-title">{{ gkey }}</div>
-                                <div class="insight-item" v-for="(item, idx) in group" :key="idx"
-                                    :style="{ animationDelay: idx * 0.05 + 's' }">
-                                    <div class="insight-dot"></div>
-                                    <div class="insight-card">
-                                        <p v-if="editingInsightId !== item.id" class="insight-text">{{ item.content }}
-                                        </p>
-                                        <textarea v-else v-model="editingInsightText"
-                                            class="insight-edit-input"></textarea>
-                                        <div class="insight-actions">
-                                            <span class="insight-date">{{ formatInsightDate(item.created_at) }}</span>
-                                            <div class="insight-btns">
-                                                <button v-if="editingInsightId !== item.id" class="insight-btn"
-                                                    @click="startEditInsight(item)">编辑</button>
-                                                <button v-else class="insight-btn insight-btn-save"
-                                                    @click="saveEditInsight(item)">保存</button>
-                                                <button class="insight-btn insight-btn-del"
-                                                    @click="deleteInsight(item.id)">删除</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 时间轨迹 -->
-                    <div class="section-label" style="margin-top:16px;">✦ 时间轨迹</div>
-                    <div class="timeline-wrap">
-                        <div v-if="timelineEvents.length === 0" class="timeline-empty">
-                            <div style="font-size:11px;color:red;">{{ timelineEvents.length }}</div>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="#D4C8CA" stroke-width="1.2"
-                                stroke-linecap="round">
-                                <path
-                                    d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                            </svg>
-                            <p>还没有时间轴记录</p>
-                            <p>每次聊天都会自动留下痕迹</p>
-                        </div>
-                        <div class="timeline-list" v-else>
-                            <div class="timeline-item" v-for="(event, idx) in timelineEvents" :key="idx"
-                                :style="{ animationDelay: idx * 0.06 + 's' }">
-                                <div class="tl-dot"></div>
-                                <div class="tl-content">
-                                    <span class="tl-date">{{ event.period }}</span>
-                                    <p v-if="editingTimelineId !== event.id" class="tl-text">{{ event.content }}</p>
-                                    <textarea v-else v-model="editingTimelineText" class="tl-edit-input"></textarea>
-                                    <div class="tl-actions">
-                                        <button v-if="editingTimelineId !== event.id" class="tl-btn"
-                                            @click="startEditTimeline(event)">编辑</button>
-                                        <button v-else class="tl-btn tl-btn-save"
-                                            @click="saveEditTimeline(event)">保存</button>
-                                        <button class="tl-btn tl-btn-del"
-                                            @click="deleteTimelineEvent(event.id)">删除</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <button class="timeline-add-btn" @click="showTimelineAdd = true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <path d="M12 8v8M8 12h8" />
-                            </svg>
-                            添加记录
-                        </button>
-                        <BlurModal :visible="showAddInsight" @close="showAddInsight = false">
-                            <h3>手动添加洞察</h3>
-                            <DreamInput type="textarea" v-model="newInsightText" :rows="3"
-                                placeholder="他了解的一件关于你的事..." />
-                            <div class="modal-actions">
-                                <SoftButton variant="secondary" @click="showAddInsight = false">取消</SoftButton>
-                                <SoftButton variant="primary" @click="addInsight">保存</SoftButton>
-                            </div>
-                        </BlurModal>
-                    </div>
-
-                    <!-- 收藏弹窗 -->
-                    <BlurModal :visible="showBookmarks" @close="showBookmarks = false">
-                        <h3>收藏记录</h3>
-                        <div v-if="bookmarks.length === 0"
-                            style="text-align:center;color:#B8A9AC;padding:20px;font-size:13px;">
-                            还没有收藏，在聊天中长按消息可以收藏
-                        </div>
-                        <div v-else class="bookmark-list">
-                            <div v-for="(bm, idx) in bookmarks" :key="idx" class="bookmark-item">
-                                <span class="bm-type-tag">{{ bm.type === 'message' ? '消息' : bm.type }}</span>
-                                <p class="bm-content">{{ bm.content }}</p>
-                                <span class="bm-time">{{ bm.created_at?.slice(0, 10) }}</span>
-                            </div>
-                        </div>
-                    </BlurModal>
-
-                    <!-- 添加时间轴弹窗 -->
-                    <BlurModal :visible="showTimelineAdd" @close="showTimelineAdd = false">
-                        <h3>添加时间轨迹</h3>
-                        <DreamInput label="记录内容" v-model="newTimelineText" placeholder="发生了什么..." />
-                        <DreamInput label="时间标记" v-model="newTimelinePeriod" placeholder="例：2024年春天" />
-                        <div class="modal-actions">
-                            <SoftButton variant="secondary" @click="showTimelineAdd = false">取消</SoftButton>
-                            <SoftButton variant="primary" @click="addTimelineEvent">保存</SoftButton>
-                        </div>
-                    </BlurModal>
-
-                    <!-- user 编辑弹窗 -->
-                    <BlurModal :visible="showUserEdit" @close="showUserEdit = false">
-                        <h3>编辑我的信息</h3>
-                        <DreamInput label="备注名" v-model="editUserName" placeholder="你的名字..." />
-
-                        <div class="avatar-edit-section">
-                            <div class="avatar-preview">
-                                <img v-if="editUserAvatar && editUserAvatar.startsWith('http')" :src="editUserAvatar" />
-                                <span v-else-if="editUserAvatar">{{ editUserAvatar }}</span>
-                                <span v-else>🌙</span>
-                            </div>
-                            <div class="avatar-options">
-                                <!-- URL 输入 -->
-                                <DreamInput label="图片 URL" v-model="editUserAvatar" placeholder="https://..." />
-                                <!-- 文件上传 -->
-                                <div class="avatar-upload-row">
-                                    <span class="avatar-upload-label">或者上传图片</span>
-                                    <label class="avatar-upload-btn">
-                                        选择文件
-                                        <input type="file" accept="image/*" style="display:none"
-                                            @change="handleUserAvatarUpload" />
-                                    </label>
-                                </div>
-                                <!-- emoji 输入 -->
-                                <DreamInput label="或者用 emoji" v-model="editUserAvatarEmoji" placeholder="🌙" />
-                            </div>
-                        </div>
-
-                        <div class="modal-actions">
-                            <SoftButton variant="secondary" @click="showUserEdit = false">取消</SoftButton>
-                            <SoftButton variant="primary" @click="saveUserEdit">保存</SoftButton>
-                        </div>
-                    </BlurModal>
-
-                    <!-- 换 char 弹窗 -->
-                    <BlurModal :visible="showCharSwitch" @close="showCharSwitch = false">
-                        <h3>切换共栖伙伴</h3>
-                        <div class="char-switch-list">
-                            <div v-for="p in allPersonas" :key="p.id" class="char-switch-item"
-                                :class="{ active: p.id === currentAi.personaId }" @click="switchChar(p)">
-                                <div class="cs-avatar">
-                                    <img v-if="p.avatarUrl" :src="p.avatarUrl" />
-                                    <span v-else>{{ p.avatar || '💬' }}</span>
-                                </div>
-                                <div class="cs-info">
-                                    <span class="cs-name">{{ p.note || p.name }}</span>
-                                    <span class="cs-desc">{{ p.description || '' }}</span>
-                                </div>
-                                <div v-if="p.id === currentAi.personaId" class="cs-check">✓</div>
-                            </div>
-                        </div>
-                    </BlurModal>
 
                 </div>
 
@@ -567,11 +555,16 @@
                     <!-- 横滑信息条：每张卡片独立聚焦 -->
                     <div class="section-label">✦ 今日概览</div>
                     <div class="overview-slider">
-                        <div class="slider-card-v8 countdown focusable-card">
-                            <span class="s-title">纪念日倒计时</span>
-                            <div class="s-value">45</div>
-                            <span class="s-sub">距离下一个纪念日</span>
+                        <div class="slider-card-v8 countdown focusable-card" @click="showAnnivModal = true">
+                            <span class="s-title">{{ currentAnniv ? currentAnniv.name : '纪念日倒计时' }}</span>
+                            <div class="s-value">{{ nextAnnivDays }}</div>
+                            <span class="s-sub">距离下一个{{ currentAnniv ? currentAnniv.name : '纪念日' }}</span>
+                            <div v-if="anniversaries.length > 1" class="s-dots">
+                                <i v-for="(_, i) in anniversaries" :key="i"
+                                    :class="{ active: activeAnnivIdx === i }"></i>
+                            </div>
                         </div>
+
                         <div class="slider-card-v8 stats-card focusable-card" @click="toggleChatStatLocal">
                             <span class="s-title">聊天统计</span>
                             <div class="s-value">{{ chatStatDisplay.v }}</div>
@@ -695,7 +688,7 @@
                             <span>设置</span>
                         </div>
 
-                        <!-- 更多按钮：只有加号图标，无文字 -->
+                        <!-- 更多按钮 -->
                         <div class="sec-item sec-more focusable-card" @click.stop="showMoreApps = !showMoreApps">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                                 stroke-linecap="round">
@@ -704,30 +697,33 @@
                             </svg>
                         </div>
 
-                        <!-- 遮罩 -->
                         <div v-if="showMoreApps" class="more-apps-overlay" @click="showMoreApps = false"></div>
 
-                        <!-- 更多卡片 -->
                         <Transition name="more-pop">
                             <div v-if="showMoreApps" class="more-apps-card">
                                 <div class="more-apps-row">
+                                    <!-- 备忘录（原镜中位置） -->
                                     <div class="sec-item more-app-sec"
-                                        @click="$router.push('/about'); showMoreApps = false">
+                                        @click="$router.push('/diary'); showMoreApps = false">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                                             stroke-linecap="round">
-                                            <circle cx="12" cy="8" r="4" />
-                                            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                            <line x1="16" y1="13" x2="8" y2="13" />
+                                            <line x1="16" y1="17" x2="8" y2="17" />
                                         </svg>
-                                        <span>镜中</span>
+                                        <span>备忘录</span>
                                     </div>
-                                    <div class="sec-item more-app-sec" @click="openPhone(); showMoreApps = false">
+                                    <!-- 心愿单 -->
+                                    <div class="sec-item more-app-sec" @click="currentPage = 0; showMoreApps = false">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                                             stroke-linecap="round">
                                             <path
-                                                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                                                d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                                         </svg>
-                                        <span>电话</span>
+                                        <span>心愿单</span>
                                     </div>
+                                    <!-- 记忆 -->
                                     <div class="sec-item more-app-sec"
                                         @click="$router.push('/memory'); showMoreApps = false">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -737,18 +733,20 @@
                                         </svg>
                                         <span>记忆</span>
                                     </div>
+                                    <!-- 番茄钟 -->
                                     <div class="sec-item more-app-sec"
-                                        @click="$router.push('/logs'); showMoreApps = false">
+                                        @click="$router.push('/pomodoro'); showMoreApps = false">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                                             stroke-linecap="round">
-                                            <rect x="3" y="3" width="18" height="18" rx="2" />
-                                            <path d="M7 8h10M7 12h10M7 16h6" />
+                                            <circle cx="12" cy="12" r="10" />
+                                            <path d="M12 6v6l4 2" />
                                         </svg>
-                                        <span>语料库</span>
+                                        <span>番茄钟</span>
                                     </div>
                                 </div>
                             </div>
                         </Transition>
+
                     </div>
 
                     <!-- 聊天预览条：独立聚焦 -->
@@ -1110,6 +1108,49 @@
             </div>
         </BlurModal>
 
+        <BlurModal :visible="showInsightFolder" @close="showInsightFolder = false">
+            <h3>{{ currentFolderKey }}</h3>
+            <div class="folder-detail-list">
+                <div v-for="item in currentFolderItems" :key="item.id" class="folder-detail-item">
+                    <p v-if="editingInsightId !== item.id" class="insight-text">{{ item.content }}</p>
+                    <textarea v-else v-model="editingInsightText" class="insight-edit-input"></textarea>
+                    <div class="insight-actions">
+                        <span class="insight-date">{{ formatInsightDate(item.created_at) }}</span>
+                        <div class="insight-btns">
+                            <button v-if="editingInsightId !== item.id" class="insight-btn"
+                                @click="startEditInsight(item)">编辑</button>
+                            <button v-else class="insight-btn insight-btn-save"
+                                @click="saveEditInsight(item)">保存</button>
+                            <button class="insight-btn insight-btn-del" @click="deleteInsight(item.id)">删除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </BlurModal>
+
+        <BlurModal :visible="showAnnivModal" @close="showAnnivModal = false">
+            <h3>纪念日管理</h3>
+            <div class="anniv-list">
+                <div v-for="(a, idx) in anniversaries" :key="idx" class="anniv-item"
+                    :class="{ active: activeAnnivIdx === idx }" @click="switchAnniversary(idx)">
+                    <div class="anniv-info">
+                        <span class="anniv-name">{{ a.name }}</span>
+                        <span class="anniv-date">{{ a.date }}</span>
+                    </div>
+                    <button class="anniv-del" @click.stop="deleteAnniversary(idx)">×</button>
+                </div>
+                <div v-if="anniversaries.length === 0" class="anniv-empty">还没有纪念日</div>
+            </div>
+            <div class="anniv-add">
+                <DreamInput label="名称" v-model="newAnnivName" placeholder="例：在一起纪念日" />
+                <DreamInput label="日期" type="date" v-model="newAnnivDate" />
+                <SoftButton variant="primary" block @click="addAnniversary">添加</SoftButton>
+            </div>
+            <div class="modal-actions">
+                <SoftButton variant="secondary" @click="showAnnivModal = false">关闭</SoftButton>
+            </div>
+        </BlurModal>
+
         <p class="version-text">v1.1.1</p>
     </div>
 </template>
@@ -1148,6 +1189,8 @@ const editingTextValue = ref('')
 const showSaveToast = ref(false)
 const showScheduleView = ref(false)
 const scheduleRange = ref(7)
+const showInsightFolder = ref(false)
+const currentFolderKey = ref('')
 
 // 共栖空间
 const userAvatar = ref(localStorage.getItem('home_user_avatar') || '')
@@ -1158,6 +1201,28 @@ const timelineEvents = ref([])
 const showTimelineAdd = ref(false)
 const newTimelineText = ref('')
 const newTimelinePeriod = ref('')
+
+// 共栖独立数据
+const habitatDays = ref(parseInt(localStorage.getItem('habitat_days') || '1'))
+const habitatStartDate = ref(localStorage.getItem('habitat_start_date') || '')
+const showHabitatDaysEdit = ref(false)
+const habitatStartDateInput = ref('')
+const habitatTotalMessages = ref(null)
+const habitatStreak = ref(null)
+
+// 心愿单
+const wishes = ref(JSON.parse(localStorage.getItem('wishes') || '[]'))
+const showAddWish = ref(false)
+const newWishText = ref('')
+const newWishTag = ref('')
+
+// 备忘录入口
+const showMemoEntry = ref(true)
+
+const insightCategories = ['性格', '喜好', '习惯', '经历', '情绪', '关系']
+const newInsightCategory = ref('性格')
+const newInsightCategoryCustom = ref('')
+
 
 // 情侣卡片
 const coupleTagline = ref(localStorage.getItem('couple_tagline') || '你走的每一步，我都在')
@@ -1180,6 +1245,23 @@ const newEventText = ref('')
 const calViewMode = ref('user')
 const calendarData = ref(JSON.parse(localStorage.getItem('calendar_data') || '{}'))
 const periodData = ref(JSON.parse(localStorage.getItem('period_data') || '[]'))
+
+// 多纪念日
+const anniversaries = ref(JSON.parse(localStorage.getItem('anniversaries') || '[]'))
+const activeAnnivIdx = ref(parseInt(localStorage.getItem('active_anniv_idx') || '0'))
+const showAnnivModal = ref(false)
+const newAnnivName = ref('')
+const newAnnivDate = ref('')
+
+const currentAnniv = computed(() => anniversaries.value[activeAnnivIdx.value] || null)
+const nextAnnivDays = computed(() => {
+    if (!currentAnniv.value) return 45
+    const now = new Date()
+    const start = new Date(currentAnniv.value.date)
+    let next = new Date(now.getFullYear(), start.getMonth(), start.getDate())
+    if (next <= now) next.setFullYear(next.getFullYear() + 1)
+    return Math.ceil((next - now) / 86400000)
+})
 
 // 事件编辑
 const editingEventIdx = ref(-1)
@@ -1251,11 +1333,16 @@ const todayDayStatus = computed(() => {
 const groupedInsights = computed(() => {
     const groups = {}
     personaInsights.value.forEach(item => {
-        const key = item.week || item.created_at?.slice(0, 7) || '未知时间'
+        const key = item.category || '未分类'
         if (!groups[key]) groups[key] = []
         groups[key].push(item)
     })
     return groups
+})
+
+const currentFolderItems = computed(() => {
+    if (!currentFolderKey.value) return []
+    return groupedInsights.value[currentFolderKey.value] || []
 })
 
 const calMonthStats = computed(() => {
@@ -1337,6 +1424,7 @@ function clearAllSessionCache() {
     sessionStorage.removeItem('cached_current_ai')
     sessionStorage.removeItem('cached_left_bubble')
     sessionStorage.removeItem('cached_timeline')
+    sessionStorage.removeItem('cached_insights')
     if (pid) {
         sessionStorage.removeItem('together_loaded_' + pid)
         sessionStorage.removeItem('insights_loaded_' + pid)
@@ -1473,6 +1561,7 @@ async function loadPersonaInsights() {
         const res = await api(`/api/sediment/${pid}/insights`)
         const data = await res.json()
         personaInsights.value = Array.isArray(data) ? data : []
+        sessionStorage.setItem('cached_insights', JSON.stringify(personaInsights.value))
     } catch { }
     sessionStorage.setItem('insights_loaded_' + pid, '1')
 }
@@ -1507,6 +1596,28 @@ function saveDaysDate() {
     localStorage.setItem('together_start_date', startDate.value)
     calculateDays()
     showDaysEdit.value = false
+}
+
+function addAnniversary() {
+    if (!newAnnivName.value || !newAnnivDate.value) return
+    anniversaries.value.push({ name: newAnnivName.value, date: newAnnivDate.value })
+    localStorage.setItem('anniversaries', JSON.stringify(anniversaries.value))
+    newAnnivName.value = ''
+    newAnnivDate.value = ''
+}
+
+function deleteAnniversary(idx) {
+    anniversaries.value.splice(idx, 1)
+    localStorage.setItem('anniversaries', JSON.stringify(anniversaries.value))
+    if (activeAnnivIdx.value >= anniversaries.value.length) {
+        activeAnnivIdx.value = 0
+        localStorage.setItem('active_anniv_idx', '0')
+    }
+}
+
+function switchAnniversary(idx) {
+    activeAnnivIdx.value = idx
+    localStorage.setItem('active_anniv_idx', String(idx))
 }
 
 // ===== 小纸条 =====
@@ -1742,6 +1853,71 @@ function openCoupleEdit() {
     showCoupleEdit.value = true
 }
 
+function calculateHabitatDays() {
+    const saved = localStorage.getItem('habitat_start_date')
+    if (saved) {
+        habitatDays.value = Math.max(1, Math.floor((new Date() - new Date(saved)) / 86400000))
+    }
+}
+
+function saveHabitatDaysDate() {
+    if (!habitatStartDateInput.value) return
+    localStorage.setItem('habitat_start_date', habitatStartDateInput.value)
+    habitatStartDate.value = habitatStartDateInput.value
+    calculateHabitatDays()
+    showHabitatDaysEdit.value = false
+}
+
+async function loadHabitatStats() {
+    const pid = currentAi.value.personaId
+    if (!pid) return
+    try {
+        const res = await api(`/api/memories/${pid}/heatmap`)
+        const heatmap = await res.json()
+        if (heatmap) {
+            habitatTotalMessages.value = Object.values(heatmap).reduce((a, b) => a + b, 0)
+            const today = new Date().toISOString().slice(0, 10)
+            let s = 0, check = today
+            while (heatmap[check]) {
+                s++
+                const prev = new Date(check)
+                prev.setDate(prev.getDate() - 1)
+                check = prev.toISOString().slice(0, 10)
+            }
+            habitatStreak.value = s
+        }
+    } catch { }
+}
+
+// 心愿单
+function addWish() {
+    if (!newWishText.value.trim()) return
+    wishes.value.unshift({
+        id: Date.now(),
+        text: newWishText.value.trim(),
+        tag: newWishTag.value.trim() || '心愿',
+        done: false,
+        createdAt: new Date().toISOString().slice(0, 10)
+    })
+    localStorage.setItem('wishes', JSON.stringify(wishes.value))
+    newWishText.value = ''
+    newWishTag.value = ''
+    showAddWish.value = false
+}
+
+function toggleWish(id) {
+    const wish = wishes.value.find(w => w.id === id)
+    if (wish) {
+        wish.done = !wish.done
+        localStorage.setItem('wishes', JSON.stringify(wishes.value))
+    }
+}
+
+function deleteWish(id) {
+    wishes.value = wishes.value.filter(w => w.id !== id)
+    localStorage.setItem('wishes', JSON.stringify(wishes.value))
+}
+
 // ===== user/char 编辑 =====
 function openUserEdit() {
     editUserName.value = userName.value
@@ -1786,6 +1962,8 @@ async function switchChar(persona) {
     await loadTogetherData()
     await loadPersonaInsights()
     await loadBookmarks()
+    await loadHabitatStats()
+
     try {
         const msgRes = await api(`/api/messages/${persona.id}/last`)
         const lastMsg = await msgRes.json()
@@ -1805,6 +1983,11 @@ async function switchChar(persona) {
 function formatInsightDate(dateStr) {
     if (!dateStr) return ''
     return dateStr.slice(0, 10)
+}
+
+function openInsightFolder(key) {
+    currentFolderKey.value = key
+    showInsightFolder.value = true
 }
 
 function startEditInsight(item) {
@@ -1828,6 +2011,7 @@ async function deleteInsight(id) {
     try {
         await api(`/api/sediment/insight/${id}`, { method: 'DELETE' })
         personaInsights.value = personaInsights.value.filter(i => i.id !== id)
+        sessionStorage.setItem('cached_insights', JSON.stringify(personaInsights.value))
     } catch { }
 }
 
@@ -1836,13 +2020,22 @@ async function addInsight() {
     try {
         const pid = currentAi.value.personaId
         if (!pid) return
+        const category = newInsightCategoryCustom.value.trim()
+            ? newInsightCategoryCustom.value.trim()
+            : (newInsightCategory.value || '未分类')
         await api(`/api/sediment/${pid}/insights`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: newInsightText.value.trim() })
+            body: JSON.stringify({
+                content: newInsightText.value.trim(),
+                category
+            })
         })
         newInsightText.value = ''
+        newInsightCategoryCustom.value = ''
+        newInsightCategory.value = '性格'
         showAddInsight.value = false
+        sessionStorage.removeItem('insights_loaded_' + pid)
         await loadPersonaInsights()
     } catch { }
 }
@@ -2056,6 +2249,7 @@ function setupScrollFocus() {
 onMounted(async () => {
     loadCards()
     calculateDays()
+    calculateHabitatDays()
 
     const icons = localStorage.getItem('custom_app_icons')
     if (icons) customIcons.value = JSON.parse(icons)
@@ -2078,12 +2272,16 @@ onMounted(async () => {
     const cachedTimeline = sessionStorage.getItem('cached_timeline')
     if (cachedTimeline) timelineEvents.value = JSON.parse(cachedTimeline)
 
+    const cachedInsights = sessionStorage.getItem('cached_insights')
+    if (cachedInsights) personaInsights.value = JSON.parse(cachedInsights)
+
     await loadHomeData()
     await loadAllPersonas()
     await loadTogetherData()
     await loadPersonaInsights()
     await loadBookmarks()
     await loadContactGroups()
+    await loadHabitatStats()
 
     setTimeout(setupScrollFocus, 300)
 })
@@ -5997,5 +6195,363 @@ onMounted(async () => {
     font-size: 10px;
     color: #B8A9AC;
     font-weight: 700;
+}
+
+/* 文件夹样式 */
+.insights-folders {
+    margin-bottom: 16px;
+}
+
+.folder-scroll-row {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 2px 8px;
+    scroll-snap-type: x mandatory;
+}
+
+.folder-scroll-row::-webkit-scrollbar {
+    display: none;
+}
+
+.folder-item {
+    flex-shrink: 0;
+    width: 100px;
+    scroll-snap-align: start;
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-radius: 18px;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    border: 1px solid rgba(255, 240, 242, 0.4);
+    box-shadow: 0 4px 14px rgba(217, 163, 175, 0.08);
+    transition: transform 0.2s;
+}
+
+.folder-item:active {
+    transform: scale(0.95);
+}
+
+.folder-icon svg {
+    width: 26px;
+    height: 26px;
+    stroke: #D9A3AF;
+}
+
+.folder-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4A3F41;
+}
+
+.folder-count {
+    font-size: 10px;
+    color: #B8A9AC;
+}
+
+
+.folder-detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 12px;
+}
+
+.folder-detail-item {
+    background: rgba(255, 248, 250, 0.8);
+    border-radius: 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 240, 242, 0.4);
+}
+
+/* 心愿单 */
+.wish-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.wish-empty {
+    font-size: 12px;
+    color: #B8A9AC;
+    text-align: center;
+    padding: 16px 0;
+}
+
+.wish-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-radius: 16px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 240, 242, 0.4);
+    box-shadow: 0 4px 12px rgba(217, 163, 175, 0.06);
+    transition: opacity 0.3s;
+}
+
+.wish-done {
+    opacity: 0.5;
+}
+
+.wish-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(217, 163, 175, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.wish-done .wish-check {
+    background: linear-gradient(135deg, #E8C0C9, #D9A3AF);
+    border-color: transparent;
+}
+
+.wish-check svg {
+    width: 12px;
+    height: 12px;
+    stroke: white;
+}
+
+.wish-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.wish-text {
+    font-size: 13px;
+    color: #4A3F41;
+    line-height: 1.4;
+}
+
+.wish-done .wish-text {
+    text-decoration: line-through;
+}
+
+.wish-tag {
+    font-size: 10px;
+    color: #D9A3AF;
+    font-weight: 600;
+    background: rgba(232, 192, 201, 0.12);
+    padding: 2px 8px;
+    border-radius: 8px;
+    align-self: flex-start;
+}
+
+.wish-del {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #D4C8CA;
+    cursor: pointer;
+}
+
+/* 备忘录入口 */
+.memo-entry {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
+    border-radius: 20px;
+    padding: 14px 16px;
+    box-shadow: 0 6px 20px rgba(217, 163, 175, 0.08);
+    cursor: pointer;
+    margin-bottom: 4px;
+    border: 1px solid rgba(255, 240, 242, 0.4);
+    transition: transform 0.25s ease;
+}
+
+.memo-entry:hover {
+    transform: translateY(-2px);
+}
+
+.memo-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: #FDF9F2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.memo-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: #D4B896;
+}
+
+.memo-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.memo-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4A3F41;
+}
+
+.memo-sub {
+    font-size: 11px;
+    color: #B8A9AC;
+}
+
+/* 多纪念日 */
+.anniv-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.anniv-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 14px;
+    background: rgba(248, 243, 244, 0.8);
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.anniv-item.active {
+    background: rgba(232, 192, 201, 0.12);
+    border-color: rgba(232, 192, 201, 0.4);
+}
+
+.anniv-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.anniv-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #4A3F41;
+}
+
+.anniv-date {
+    font-size: 11px;
+    color: #B8A9AC;
+}
+
+.anniv-del {
+    background: none;
+    border: none;
+    font-size: 16px;
+    color: #D4C8CA;
+    cursor: pointer;
+}
+
+.anniv-empty {
+    font-size: 12px;
+    color: #B8A9AC;
+    text-align: center;
+    padding: 12px 0;
+}
+
+.anniv-add {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid rgba(217, 163, 175, 0.1);
+    padding-top: 14px;
+}
+
+.insight-category-row {
+    margin-bottom: 12px;
+}
+
+.insight-category-label {
+    font-size: 11px;
+    color: #B8A9AC;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.insight-category-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.insight-cat-chip {
+    padding: 5px 12px;
+    border-radius: 14px;
+    background: #F8F3F4;
+    font-size: 12px;
+    color: #9A8A8E;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1.5px solid transparent;
+}
+
+.insight-cat-chip.active {
+    background: rgba(232, 192, 201, 0.15);
+    color: #D9A3AF;
+    border-color: rgba(232, 192, 201, 0.4);
+    font-weight: 600;
+}
+
+.insight-cat-custom {
+    padding: 3px 8px;
+}
+
+.cat-custom-input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 12px;
+    color: #4A3F41;
+    width: 70px;
+    font-family: inherit;
+}
+
+.cat-custom-input::placeholder {
+    color: #D4C8CA;
+}
+
+.cat-custom-input-full {
+    width: 100%;
+    margin-top: 8px;
+    border: 1px solid rgba(255, 240, 242, 0.5);
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #4A3F41;
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.cat-custom-input-full::placeholder {
+    color: #D4C8CA;
 }
 </style>

@@ -1289,11 +1289,42 @@ router.get("/sediment/:personaId/insights", async (req, res) => {
   const db = getDB();
   const { data } = await db
     .from("persona_insights")
-    .select("*")
+    .select("id, persona_id, content, week, category, created_at")
     .eq("persona_id", req.params.personaId)
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(50);
   res.json(data || []);
+});
+
+// 手动添加洞察
+router.post("/sediment/:personaId/insights", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { content, category } = req.body;
+  await db.from("persona_insights").insert({
+    persona_id: req.params.personaId,
+    content,
+    category: category || "未分类",
+    week: new Date().toISOString().slice(0, 7),
+  });
+  res.json({ success: true });
+});
+
+// 编辑洞察
+router.put("/sediment/insight/:id", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  const { content } = req.body;
+  await db.from("persona_insights").update({ content }).eq("id", req.params.id);
+  res.json({ success: true });
+});
+
+// 删除洞察
+router.delete("/sediment/insight/:id", async (req, res) => {
+  const { getDB } = require("../db/index");
+  const db = getDB();
+  await db.from("persona_insights").delete().eq("id", req.params.id);
+  res.json({ success: true });
 });
 
 // 切换世界书启用状态

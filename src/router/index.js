@@ -22,6 +22,7 @@ import SettingsLockView from "../views/settings/SettingsLockView.vue";
 import SettingsLifestyleView from "../views/settings/SettingsLifestyleView.vue";
 import SettingsLifeAwareView from "../views/settings/SettingsLifeAwareView.vue";
 import WalletView from "../views/settings/WalletView.vue";
+import PomodoroView from "../views/PomodoroView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -85,6 +86,8 @@ const router = createRouter({
       component: SettingsLifeAwareView,
     },
     { path: "/wallet", name: "wallet", component: WalletView },
+
+    { path: "/pomodoro", name: "pomodoro", component: PomodoroView },
   ],
 });
 

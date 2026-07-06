@@ -34,7 +34,7 @@ const isHomePage = computed(() => {
     const noPaddingRoutes = [
         'home', 'settings', 'chat-list',
         'settings-api', 'settings-control', 'settings-profile',
-        'settings-general', 'settings-notifications', 'settings-storage',
+        'settings-general', 'settings-notifications', 'settings-storage', 'pomodoro',
         'settings-lock', 'settings-lifestyle', 'settings-life-aware', 'wallet'
     ]
     return noPaddingRoutes.includes(route.name) || route.path === '/'
