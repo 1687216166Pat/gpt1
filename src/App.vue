@@ -37,9 +37,10 @@ const isHomePage = computed(() => {
         'settings-lock', 'settings-lifestyle', 'settings-life-aware', 'wallet',
         'persona-detail',
         'worldbook', 'persona-detail',
-        'worldbook',
-        'about','settings-memory-manage',
-        'memory'
+        'worldbook','chat',
+        'about', 'settings-memory-manage',
+        'memory', 'logs',
+        'diary'
 
     ]
     return noPaddingRoutes.includes(route.name) || route.path === '/'

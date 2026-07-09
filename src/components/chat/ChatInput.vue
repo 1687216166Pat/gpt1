@@ -366,12 +366,15 @@ onMounted(() => {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid rgba(217, 163, 175, 0.1);
 }
 
 /* 图片预览 */
 .image-preview-bar {
-    padding: 8px 0 0;
-    border-top: 1px solid var(--color-border);
+    padding: 8px 16px 0;
 }
 
 .image-preview-list {
@@ -422,7 +425,7 @@ onMounted(() => {
     background: none;
     border: none;
     font-size: 11px;
-    color: var(--color-primary);
+    color: #D9A3AF;
     cursor: pointer;
     padding: 2px 0 6px;
     opacity: 0.7;
@@ -430,10 +433,7 @@ onMounted(() => {
 
 /* 功能栏 */
 .chat-toolbar {
-    border-top: 1px solid var(--color-border);
-    background: var(--color-card);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(217, 163, 175, 0.1);
 }
 
 .toolbar-slide-enter-active {
@@ -452,8 +452,8 @@ onMounted(() => {
 
 /* 面板 */
 .toolbar-panel {
-    padding: 12px;
-    border-bottom: 1px solid var(--color-border);
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(217, 163, 175, 0.08);
     max-height: 200px;
     overflow-y: auto;
 }
@@ -461,8 +461,7 @@ onMounted(() => {
 .panel-empty {
     text-align: center;
     font-size: 12px;
-    color: var(--color-text-light);
-    opacity: 0.5;
+    color: #B8A9AC;
     padding: 16px;
 }
 
@@ -485,7 +484,7 @@ onMounted(() => {
     transform: scale(0.9);
 }
 
-/* 礼物/转账面板 */
+/* 礼物转账面板 */
 .gift-input-area,
 .transfer-input-area {
     display: flex;
@@ -494,23 +493,23 @@ onMounted(() => {
 }
 
 .gift-input {
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(217, 163, 175, 0.2);
     border-radius: 10px;
     padding: 8px 12px;
     font-size: 13px;
-    background: var(--color-bg);
-    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.6);
+    color: #4A3F41;
     outline: none;
     font-family: inherit;
 }
 
 .gift-textarea {
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(217, 163, 175, 0.2);
     border-radius: 10px;
     padding: 8px 12px;
     font-size: 13px;
-    background: var(--color-bg);
-    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.6);
+    color: #4A3F41;
     outline: none;
     font-family: inherit;
     resize: none;
@@ -519,23 +518,22 @@ onMounted(() => {
 
 .gift-input::placeholder,
 .gift-textarea::placeholder {
-    color: var(--color-text-light);
-    opacity: 0.5;
+    color: #D4C8CA;
 }
 
 .transfer-amount-row {
     display: flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(217, 163, 175, 0.2);
     border-radius: 10px;
     padding: 8px 12px;
-    background: var(--color-bg);
+    background: rgba(255, 255, 255, 0.6);
 }
 
 .currency-symbol {
     font-size: 16px;
-    color: var(--color-primary);
+    color: #D9A3AF;
     font-weight: 600;
 }
 
@@ -545,7 +543,7 @@ onMounted(() => {
     background: transparent;
     font-size: 20px;
     font-weight: 600;
-    color: var(--color-text);
+    color: #4A3F41;
     outline: none;
     font-family: inherit;
 }
@@ -554,7 +552,7 @@ onMounted(() => {
     height: 36px;
     border-radius: 10px;
     border: none;
-    background: linear-gradient(135deg, #e8a8be, #d4899e);
+    background: linear-gradient(135deg, #E8C0C9, #D9A3AF);
     color: white;
     font-size: 13px;
     font-weight: 600;
@@ -571,7 +569,7 @@ onMounted(() => {
 .toolbar-btns {
     display: flex;
     gap: 0;
-    padding: 8px 4px;
+    padding: 6px 4px;
     overflow-x: auto;
 }
 
@@ -588,11 +586,12 @@ onMounted(() => {
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--color-text-light);
+    color: #B8A9AC;
     border-radius: 10px;
     transition: all 0.2s;
     flex-shrink: 0;
     min-width: 52px;
+    font-family: inherit;
 }
 
 .toolbar-btn svg {
@@ -606,8 +605,8 @@ onMounted(() => {
 }
 
 .toolbar-btn.active {
-    color: var(--color-primary);
-    background: rgba(212, 137, 158, 0.08);
+    color: #D9A3AF;
+    background: rgba(217, 163, 175, 0.1);
 }
 
 .toolbar-btn:active {
@@ -619,10 +618,10 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 12px;
+    padding: 4px 16px;
     background: rgba(216, 205, 234, 0.2);
     font-size: 11px;
-    color: var(--color-accent);
+    color: #9B89B4;
     border-top: 1px solid rgba(216, 205, 234, 0.3);
 }
 
@@ -630,21 +629,20 @@ onMounted(() => {
     background: none;
     border: none;
     font-size: 14px;
-    color: var(--color-accent);
+    color: #9B89B4;
     cursor: pointer;
     width: auto;
     height: auto;
     border-radius: 0;
     box-shadow: none;
     padding: 0;
-    background: none;
 }
 
 /* 输入行 */
 .chat-input-area {
     display: flex;
     gap: 8px;
-    padding: 10px 0;
+    padding: 10px 16px;
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
     align-items: flex-end;
 }
@@ -653,9 +651,9 @@ onMounted(() => {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    border: 1px solid var(--color-border);
-    background: var(--color-card);
-    color: var(--color-text-light);
+    border: 1px solid rgba(217, 163, 175, 0.2);
+    background: rgba(255, 255, 255, 0.5);
+    color: #B8A9AC;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -671,9 +669,9 @@ onMounted(() => {
 }
 
 .more-btn.active {
-    background: rgba(212, 137, 158, 0.1);
-    border-color: rgba(212, 137, 158, 0.3);
-    color: var(--color-primary);
+    background: rgba(217, 163, 175, 0.12);
+    border-color: rgba(217, 163, 175, 0.3);
+    color: #D9A3AF;
 }
 
 textarea {
@@ -681,20 +679,19 @@ textarea {
     min-height: 36px;
     max-height: 120px;
     border-radius: 20px;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(217, 163, 175, 0.2);
     padding: 8px 16px;
     font-size: 14px;
     font-family: inherit;
-    background: var(--color-card);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     outline: none;
     resize: none;
     line-height: 1.45;
     overflow-y: auto;
-    color: var(--color-text);
-    transition: border-color var(--duration-normal) var(--ease-soft),
-        box-shadow var(--duration-normal) var(--ease-soft);
+    color: #4A3F41;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 textarea.narr {
@@ -704,18 +701,12 @@ textarea.narr {
 }
 
 textarea:focus {
-    border-color: rgba(212, 137, 158, 0.3);
-    box-shadow: 0 0 0 3px rgba(212, 137, 158, 0.06);
-}
-
-textarea.narr:focus {
-    border-color: rgba(176, 144, 210, 0.5);
-    box-shadow: 0 0 0 3px rgba(176, 144, 210, 0.08);
+    border-color: rgba(217, 163, 175, 0.4);
+    box-shadow: 0 0 0 3px rgba(217, 163, 175, 0.08);
 }
 
 textarea::placeholder {
-    color: var(--color-text-light);
-    opacity: 0.5;
+    color: #D4C8CA;
 }
 
 .send-btn {

@@ -202,9 +202,8 @@ function bookmarkMsg() {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    margin-bottom: 6px;
+    margin-bottom: 12px;
     position: relative;
-    transition: background 0.2s;
 }
 
 .bubble-wrapper.user {
@@ -219,12 +218,11 @@ function bookmarkMsg() {
     justify-content: center;
 }
 
-/* 合并时减少间距 */
 .bubble-wrapper.is-merged {
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
-/* 多选模式 */
+/* 多选 */
 .bubble-wrapper.select-mode {
     padding-left: 36px;
     cursor: pointer;
@@ -261,19 +259,19 @@ function bookmarkMsg() {
     height: 13px;
 }
 
-/* 头像 */
+/* ===== 默认主题头像（方形）===== */
 .msg-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--color-bg-secondary);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 233, 237, 0.8);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 20px;
     overflow: hidden;
     flex-shrink: 0;
-    border: 1px solid rgba(217, 163, 175, 0.15);
+    box-shadow: 0 2px 8px rgba(217, 163, 175, 0.2);
 }
 
 .msg-avatar img {
@@ -283,13 +281,13 @@ function bookmarkMsg() {
 }
 
 .avatar-placeholder {
-    width: 32px;
+    width: 40px;
     flex-shrink: 0;
 }
 
-/* 消息内容区 */
+/* 内容区 */
 .bubble-content {
-    max-width: 72%;
+    max-width: 68%;
     display: flex;
     flex-direction: column;
 }
@@ -315,81 +313,175 @@ function bookmarkMsg() {
     border: 1px solid rgba(216, 205, 234, 0.3);
 }
 
-/* 普通气泡 - 默认主题 */
+/* ===== 默认气泡（第四张参考，粉色圆角）===== */
 .bubble {
-    padding: 11px 15px;
-    border-radius: 20px;
+    padding: 10px 14px;
+    border-radius: 18px;
     font-size: 14px;
-    line-height: 1.55;
-    color: var(--color-text);
+    line-height: 1.6;
+    color: #4A3F41;
     word-break: break-word;
 }
 
 .user .bubble {
-    background: linear-gradient(135deg, #e8a8be, #d4899e);
+    background: linear-gradient(135deg, #F4B8CC, #E8A0B8);
     color: white;
-    border-bottom-right-radius: 6px;
-    box-shadow: 0 2px 8px rgba(212, 137, 158, 0.2);
+    border-radius: 18px 18px 6px 18px;
+    box-shadow: 0 2px 10px rgba(232, 160, 184, 0.3);
 }
 
 .ai .bubble {
-    background: var(--color-card);
-    border-bottom-left-radius: 6px;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.02);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 18px 18px 18px 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
 }
 
-/* 合并时的圆角调整 */
 .is-merged.user .bubble {
-    border-bottom-right-radius: 20px;
-    border-top-right-radius: 6px;
+    border-radius: 18px 6px 6px 18px;
 }
 
 .is-merged.ai .bubble {
-    border-bottom-left-radius: 20px;
-    border-top-left-radius: 6px;
+    border-radius: 6px 18px 18px 6px;
 }
 
-/* ===== 极简主题 ===== */
+/* ===== 极简主题 = iMessage ===== */
+.bubble-wrapper.minimal .msg-avatar {
+    border-radius: 50%;
+}
+
 .bubble-wrapper.minimal .bubble {
-    border-radius: 22px;
-}
-
-.bubble-wrapper.minimal.user .bubble {
-    border-bottom-right-radius: 6px;
-    background: linear-gradient(135deg, #e8a8be, #d4899e);
-}
-
-.bubble-wrapper.minimal.ai .bubble {
-    border-bottom-left-radius: 6px;
-    background: rgba(245, 245, 247, 0.9);
-    color: #1c1c1e;
+    border-radius: 18px;
+    font-size: 16px;
+    line-height: 1.4;
+    backdrop-filter: none;
     border: none;
 }
 
+.bubble-wrapper.minimal.user .bubble {
+    background: #007AFF;
+    color: white;
+    border-bottom-right-radius: 4px;
+    box-shadow: none;
+}
+
+.bubble-wrapper.minimal.ai .bubble {
+    background: #FFFFFF;
+    color: #1c1c1e;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
 .bubble-wrapper.minimal.is-merged.user .bubble {
-    border-top-right-radius: 22px;
-    border-bottom-right-radius: 22px;
+    border-bottom-right-radius: 18px;
+    border-top-right-radius: 4px;
 }
 
 .bubble-wrapper.minimal.is-merged.ai .bubble {
-    border-top-left-radius: 22px;
-    border-bottom-left-radius: 22px;
+    border-bottom-left-radius: 18px;
+    border-top-left-radius: 4px;
 }
 
-/* ===== 留白主题（仅AI头像）===== */
+/* 极简无头像 */
+.bubble-wrapper.minimal .msg-avatar {
+    display: none;
+}
+
+.bubble-wrapper.minimal .avatar-placeholder {
+    display: none;
+}
+
+.bubble-wrapper.minimal .bubble-content {
+    max-width: 75%;
+}
+
+/* ===== 留白主题 = 小克毛玻璃 ===== */
+.bubble-wrapper.留白 .msg-avatar {
+    display: none;
+}
+
+.bubble-wrapper.留白 .avatar-placeholder {
+    display: none;
+}
+
 .bubble-wrapper.留白 .bubble-content {
-    max-width: 65%;
+    max-width: 80%;
 }
 
-/* ===== 同框主题（双头像）===== */
+.bubble-wrapper.留白 .bubble {
+    border-radius: 14px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.bubble-wrapper.留白.user .bubble {
+    background: rgba(196, 168, 130, 0.25);
+    color: #E8D5C4;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+}
+
+.bubble-wrapper.留白.ai .bubble {
+    background: rgba(255, 255, 255, 0.08);
+    color: #E8D5C4;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== 同框主题 = Discord ===== */
+.bubble-wrapper.together .msg-avatar {
+    border-radius: 50%;
+}
+
 .bubble-wrapper.together .bubble-content {
-    max-width: 65%;
+    max-width: 75%;
+}
+
+.bubble-wrapper.together .bubble {
+    border-radius: 4px 16px 16px 4px;
+    backdrop-filter: none;
+    border: none;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.bubble-wrapper.together.user .bubble {
+    background: #5865F2;
+    color: white;
+    border-radius: 16px 4px 4px 16px;
+    box-shadow: none;
+}
+
+.bubble-wrapper.together.ai .bubble {
+    background: #2B2D31;
+    color: #DBDEE1;
+    box-shadow: none;
+}
+
+.bubble-wrapper.together.is-merged.user .bubble {
+    border-radius: 16px 4px 4px 16px;
+}
+
+.bubble-wrapper.together.is-merged.ai .bubble {
+    border-radius: 4px 16px 16px 4px;
 }
 
 /* ===== 液态主题 ===== */
+.bubble-wrapper.liquid .msg-avatar {
+    display: none;
+}
+
+.bubble-wrapper.liquid .avatar-placeholder {
+    display: none;
+}
+
+.bubble-wrapper.liquid .bubble-content {
+    max-width: 75%;
+}
+
 .bubble-wrapper.liquid .bubble {
     border-radius: 28px;
     backdrop-filter: blur(20px);
@@ -399,12 +491,14 @@ function bookmarkMsg() {
 
 .bubble-wrapper.liquid.user .bubble {
     background: linear-gradient(135deg, rgba(232, 168, 190, 0.85), rgba(212, 137, 158, 0.85));
-    box-shadow: 0 4px 20px rgba(212, 137, 158, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    color: white;
+    box-shadow: 0 4px 20px rgba(212, 137, 158, 0.25);
 }
 
 .bubble-wrapper.liquid.ai .bubble {
-    background: rgba(255, 255, 255, 0.55);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.6);
+    color: #4A3F41;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 .bubble-wrapper.liquid.is-merged .bubble {
@@ -412,31 +506,51 @@ function bookmarkMsg() {
 }
 
 /* ===== 微信主题 ===== */
+.bubble-wrapper.wechat {
+    margin-bottom: 8px;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.bubble-wrapper.wechat .msg-avatar {
+    border-radius: 6px;
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+}
+
+.bubble-wrapper.wechat .bubble-content {
+    max-width: 68%;
+}
+
 .bubble-wrapper.wechat .bubble {
     border-radius: 4px;
     position: relative;
+    font-size: 15px;
+    backdrop-filter: none;
+    border: none;
+    line-height: 1.5;
 }
 
 .bubble-wrapper.wechat.user .bubble {
     background: #95EC69;
     color: #191919;
-    border-radius: 4px 4px 4px 4px;
     box-shadow: none;
+    border-radius: 8px 2px 8px 8px;
 }
 
 .bubble-wrapper.wechat.ai .bubble {
-    background: white;
+    background: #FFFFFF;
     color: #191919;
-    border: none;
-    box-shadow: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 2px 8px 8px 8px;
 }
 
-/* 微信气泡尾角 */
 .bubble-wrapper.wechat.user .bubble::after {
     content: '';
     position: absolute;
     right: -6px;
-    top: 10px;
+    top: 8px;
     border: 6px solid transparent;
     border-left-color: #95EC69;
     border-right: none;
@@ -446,13 +560,18 @@ function bookmarkMsg() {
     content: '';
     position: absolute;
     left: -6px;
-    top: 10px;
+    top: 8px;
     border: 6px solid transparent;
-    border-right-color: white;
+    border-right-color: #FFFFFF;
     border-left: none;
 }
 
-/* 图片气泡 */
+.bubble-wrapper.wechat .select-checkbox.checked {
+    background: #07C160;
+    border-color: #07C160;
+}
+
+/* ===== 图片气泡 ===== */
 .images-bubble {
     padding: 6px;
 }
@@ -502,6 +621,7 @@ function bookmarkMsg() {
     border: none !important;
     box-shadow: none !important;
     padding: 0;
+    backdrop-filter: none !important;
 }
 
 .emoji-img {
@@ -673,6 +793,37 @@ function bookmarkMsg() {
 
 .action-menu button.danger {
     color: #c07070;
+}
+
+/* 同框主题操作菜单 */
+.bubble-wrapper.together~.bubble-actions .action-menu,
+.theme-together .action-menu {
+    background: #1E1F22;
+    border-radius: 8px;
+}
+
+.theme-together .action-menu button {
+    color: #DBDEE1;
+}
+
+/* 留白主题操作菜单 */
+.theme-留白 .action-menu {
+    background: rgba(40, 34, 46, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.theme-留白 .action-menu button {
+    color: #E8D5C4;
+}
+
+/* 微信操作菜单 */
+.theme-wechat .action-menu {
+    background: #FFFFFF;
+    border-radius: 8px;
+}
+
+.theme-wechat .action-menu button {
+    color: #191919;
 }
 
 /* 图片全屏预览 */

@@ -1,58 +1,78 @@
 <template>
     <div class="logs-page">
-        <div class="logs-header">
-            <button class="back-btn" @click="$router.push('/')">‹</button>
-            <h2>语料库</h2>
-            <button class="add-btn" @click="showAdd = true">+</button>
-        </div>
+        <div class="settings-blob sb-tl"></div>
+        <div class="settings-blob sb-br"></div>
 
-        <div class="persona-tabs">
-            <button v-for="p in personas" :key="p.id" class="tab-item" :class="{ active: currentPersona === p.id }"
-                @click="switchPersona(p.id)">
-                {{ p.name }}
+        <div class="logs-nav">
+            <button class="logs-back" @click="$router.push('/')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <div class="logs-header-title">
+                <span class="logs-title">语料库</span>
+                <span class="logs-subtitle">Corpus</span>
+            </div>
+            <button class="logs-add-btn" @click="showAdd = true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
             </button>
         </div>
 
-        <!-- 分类筛选 -->
-        <div class="filter-tabs">
-            <button class="filter-btn" :class="{ active: filter === 'all' }" @click="filter = 'all'">全部</button>
-            <button class="filter-btn" :class="{ active: filter === 'reply' }" @click="filter = 'reply'">回复样本</button>
-            <button class="filter-btn" :class="{ active: filter === 'trait' }" @click="filter = 'trait'">行为特征</button>
-            <button class="filter-btn" :class="{ active: filter === 'scene' }" @click="filter = 'scene'">情境行为</button>
-            <button class="filter-btn" :class="{ active: filter === 'style' }" @click="filter = 'style'">关系风格</button>
+        <!-- 角色切换 -->
+        <div class="persona-scroll">
+            <div v-for="p in personas" :key="p.id" class="persona-chip" :class="{ active: currentPersona === p.id }"
+                @click="switchPersona(p.id)">
+                <div class="persona-chip-avatar">
+                    <img v-if="p.avatarUrl" :src="p.avatarUrl" />
+                    <span v-else>{{ p.avatar || '💬' }}</span>
+                </div>
+                <span>{{ p.note || p.name }}</span>
+            </div>
         </div>
 
-        <div class="samples-list">
-            <GlassCard v-for="sample in filteredSamples" :key="sample.id" size="sm" class="sample-card">
-                <div class="sample-type">
-                    <GlassTag :variant="typeColor(sample.type)" size="sm">{{ typeLabel(sample.type) }}</GlassTag>
-                    <button class="delete-sample" @click="deleteSample(sample.id)">×</button>
-                </div>
-                <div class="sample-content">
-                    <!-- 回复样本 -->
-                    <template v-if="sample.type === 'reply'">
-                        <p class="sample-user">{{ sample.data.user_message }}</p>
-                        <p class="sample-ai">{{ sample.data.assistant_reply }}</p>
-                    </template>
-                    <!-- 行为特征 -->
-                    <template v-else-if="sample.type === 'trait'">
-                        <p class="sample-trait">{{ sample.data.trait }}</p>
-                        <p class="sample-desc">{{ sample.data.description }}</p>
-                    </template>
-                    <!-- 情境行为 -->
-                    <template v-else-if="sample.type === 'scene'">
-                        <p class="sample-scene">{{ sample.data.scene }}</p>
-                        <p class="sample-behavior" v-for="b in sample.data.behavior" :key="b">· {{ b }}</p>
-                    </template>
-                    <!-- 关系风格 -->
-                    <template v-else-if="sample.type === 'style'">
-                        <p class="sample-style" v-for="s in sample.data.relationship_style" :key="s">· {{ s }}</p>
-                    </template>
-                </div>
-            </GlassCard>
+        <!-- 分类筛选 -->
+        <div class="filter-scroll">
+            <button class="filter-chip" :class="{ active: filter === 'all' }" @click="filter = 'all'">全部</button>
+            <button class="filter-chip" :class="{ active: filter === 'reply' }" @click="filter = 'reply'">回复样本</button>
+            <button class="filter-chip" :class="{ active: filter === 'trait' }" @click="filter = 'trait'">行为特征</button>
+            <button class="filter-chip" :class="{ active: filter === 'scene' }" @click="filter = 'scene'">情境行为</button>
+            <button class="filter-chip" :class="{ active: filter === 'style' }" @click="filter = 'style'">关系风格</button>
+        </div>
 
-            <div v-if="filteredSamples.length === 0" class="empty-state">
-                <p>暂无采样数据</p>
+        <div class="logs-content">
+            <div v-if="filteredSamples.length === 0" class="empty-state-unified">
+                <p class="empty-icon">📋</p>
+                <p class="empty-title">还没有语料</p>
+                <p class="empty-sub">在关于他页面点击「立即沉淀」可以自动提取</p>
+            </div>
+
+            <div v-for="sample in filteredSamples" :key="sample.id" class="sample-card">
+                <div class="sample-header">
+                    <span class="sample-tag" :class="'tag-' + sample.type">{{ typeLabel(sample.type) }}</span>
+                    <span class="sample-time" v-if="sample.created_at">
+                        {{ sample.created_at?.slice(0, 10) }}
+                    </span>
+                    <button class="sample-del" @click="deleteSample(sample.id)">×</button>
+                </div>
+                <div class="sample-body">
+                    <template v-if="sample.type === 'reply'">
+                        <p class="sample-user-msg">{{ sample.data.user_message }}</p>
+                        <p class="sample-ai-msg">{{ sample.data.assistant_reply }}</p>
+                    </template>
+                    <template v-else-if="sample.type === 'trait'">
+                        <p class="sample-main">{{ sample.data.trait }}</p>
+                        <p class="sample-sub">{{ sample.data.description }}</p>
+                    </template>
+                    <template v-else-if="sample.type === 'scene'">
+                        <p class="sample-main">{{ sample.data.scene }}</p>
+                        <p v-for="b in sample.data.behavior" :key="b" class="sample-sub">· {{ b }}</p>
+                    </template>
+                    <template v-else-if="sample.type === 'style'">
+                        <p v-for="s in sample.data.relationship_style" :key="s" class="sample-sub">· {{ s }}</p>
+                    </template>
+                </div>
             </div>
         </div>
 
@@ -68,28 +88,23 @@
                     <option value="style">关系风格</option>
                 </select>
             </div>
-
             <template v-if="newSample.type === 'reply'">
                 <DreamInput label="用户消息" v-model="newSample.user_message" placeholder="用户说了什么" />
                 <DreamInput label="AI回复" v-model="newSample.assistant_reply" placeholder="AI怎么回的" />
             </template>
-
             <template v-if="newSample.type === 'trait'">
                 <DreamInput label="特征名称" v-model="newSample.trait" placeholder="例：默认关系存在" />
                 <DreamInput label="描述" v-model="newSample.description" placeholder="例：不会频繁确认关系" />
             </template>
-
             <template v-if="newSample.type === 'scene'">
                 <DreamInput label="情境" v-model="newSample.scene" placeholder="例：late_night" />
                 <DreamInput label="行为（换行分隔）" type="textarea" v-model="newSample.behavior" :rows="3"
                     placeholder="回复更短&#10;更安静&#10;增加停顿" />
             </template>
-
             <template v-if="newSample.type === 'style'">
                 <DreamInput label="关系风格（换行分隔）" type="textarea" v-model="newSample.styles" :rows="3"
                     placeholder="长期陪伴&#10;默认亲近&#10;低情绪表达" />
             </template>
-
             <div class="modal-actions">
                 <SoftButton variant="secondary" @click="showAdd = false">取消</SoftButton>
                 <SoftButton variant="primary" @click="addSample">保存</SoftButton>
@@ -101,8 +116,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { api } from '@/utils/api'
-import GlassCard from '@/components/ui/GlassCard.vue'
-import GlassTag from '@/components/ui/GlassTag.vue'
 import SoftButton from '@/components/ui/SoftButton.vue'
 import DreamInput from '@/components/ui/DreamInput.vue'
 import BlurModal from '@/components/ui/BlurModal.vue'
@@ -115,13 +128,9 @@ const showAdd = ref(false)
 
 const newSample = ref({
     type: 'reply',
-    user_message: '',
-    assistant_reply: '',
-    trait: '',
-    description: '',
-    scene: '',
-    behavior: '',
-    styles: '',
+    user_message: '', assistant_reply: '',
+    trait: '', description: '',
+    scene: '', behavior: '', styles: '',
 })
 
 const filteredSamples = computed(() => {
@@ -134,24 +143,16 @@ function typeLabel(type) {
     return map[type] || type
 }
 
-function typeColor(type) {
-    const map = { reply: 'pink', trait: 'purple', scene: 'warm', style: 'soft' }
-    return map[type] || 'default'
-}
-
 async function loadPersonas() {
     try {
         const res = await api('/api/prompts/personas')
         const data = await res.json()
-        personas.value = data.personas.map(p => ({ id: p.id, name: p.name }))
-
         const pinnedList = JSON.parse(localStorage.getItem('pinned_personas') || '[]')
-        personas.value.sort((a, b) => {
+        personas.value = data.personas.sort((a, b) => {
             if (pinnedList.includes(a.id) && !pinnedList.includes(b.id)) return -1
             if (!pinnedList.includes(a.id) && pinnedList.includes(b.id)) return 1
             return 0
         })
-
         try {
             const latestRes = await api('/api/messages/latest-persona')
             const latestData = await latestRes.json()
@@ -159,7 +160,6 @@ async function loadPersonas() {
         } catch {
             currentPersona.value = personas.value[0]?.id || ''
         }
-
         await loadSamples()
     } catch { }
 }
@@ -169,9 +169,7 @@ async function loadSamples() {
     try {
         const res = await api(`/api/samples/${currentPersona.value}`)
         samples.value = await res.json()
-    } catch {
-        samples.value = []
-    }
+    } catch { samples.value = [] }
 }
 
 function switchPersona(id) {
@@ -195,13 +193,11 @@ async function addSample() {
             data = { relationship_style: newSample.value.styles.split('\n').filter(Boolean) }
             break
     }
-
     await api(`/api/samples/${currentPersona.value}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: newSample.value.type, data })
     })
-
     showAdd.value = false
     newSample.value = { type: 'reply', user_message: '', assistant_reply: '', trait: '', description: '', scene: '', behavior: '', styles: '' }
     await loadSamples()
@@ -221,172 +217,322 @@ onMounted(loadPersonas)
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding-top: env(safe-area-inset-top, 44px);
-    overflow-x: hidden;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(180deg, #FFFBFA 0%, #FFF0F2 60%, #FFE9ED 100%);
+    box-sizing: border-box;
 }
 
-.logs-header {
+.settings-blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(60px);
+}
+
+.sb-tl {
+    top: -40px;
+    left: -50px;
+    width: 220px;
+    height: 220px;
+    background: #F1DADD;
+    opacity: 0.45;
+}
+
+.sb-br {
+    bottom: 40px;
+    right: -60px;
+    width: 200px;
+    height: 200px;
+    background: #98CBEA;
+    opacity: 0.2;
+}
+
+.logs-nav {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--color-border);
+    justify-content: space-between;
+    padding: calc(env(safe-area-inset-top, 44px) + 8px) 16px 4px;
     flex-shrink: 0;
+    position: relative;
+    z-index: 2;
 }
 
-.back-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: var(--color-primary);
+.logs-back {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border: 1px solid rgba(255, 240, 242, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    opacity: 0.75;
 }
 
-.logs-header h2 {
+.logs-back svg {
+    width: 16px;
+    height: 16px;
+    stroke: #D9A3AF;
+}
+
+.logs-header-title {
     flex: 1;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--color-text);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    justify-content: center;
 }
 
-.add-btn {
-    background: none;
-    border: none;
+.logs-title {
     font-size: 22px;
-    color: var(--color-primary);
-    cursor: pointer;
-    opacity: 0.6;
+    font-weight: 800;
+    color: #4A3F41;
+    letter-spacing: 0.3px;
 }
 
-.persona-tabs {
+.logs-subtitle {
+    font-size: 11px;
+    color: #B8A9AC;
+    font-weight: 400;
+    letter-spacing: 1.5px;
+}
+
+.logs-add-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border: 1px solid rgba(255, 240, 242, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.logs-add-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: #D9A3AF;
+}
+
+.persona-scroll {
     display: flex;
     gap: 8px;
-    padding: 12px 0;
+    padding: 12px 16px;
     overflow-x: auto;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
 }
 
-.tab-item {
-    padding: 6px 14px;
+.persona-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.persona-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px 6px 6px;
     border-radius: 20px;
-    border: 1px solid var(--color-border);
-    background: var(--color-card);
-    font-size: 12px;
-    color: var(--color-text-light);
+    border: 1px solid rgba(255, 240, 242, 0.4);
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
     cursor: pointer;
     white-space: nowrap;
+    font-size: 12px;
+    color: #6B5B5E;
+    transition: all 0.2s;
 }
 
-.tab-item.active {
-    background: linear-gradient(135deg, #e8a8be, #d4899e);
+.persona-chip.active {
+    background: linear-gradient(135deg, #E8C0C9, #D9A3AF);
     color: white;
     border-color: transparent;
 }
 
-.filter-tabs {
+.persona-chip-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 233, 237, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.persona-chip-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.filter-scroll {
     display: flex;
     gap: 6px;
-    padding: 8px 0;
+    padding: 0 16px 10px;
     overflow-x: auto;
     flex-shrink: 0;
 }
 
-.filter-btn {
-    padding: 5px 12px;
-    border-radius: 14px;
-    border: 1px solid var(--color-border);
+.filter-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-chip {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 240, 242, 0.4);
     background: none;
     font-size: 11px;
-    color: var(--color-text-light);
+    color: #B8A9AC;
     cursor: pointer;
     white-space: nowrap;
+    transition: all 0.2s;
+    font-family: inherit;
 }
 
-.filter-btn.active {
-    background: var(--color-card);
-    color: var(--color-text);
-    border-color: var(--color-primary);
+.filter-chip.active {
+    background: rgba(217, 163, 175, 0.15);
+    color: #D9A3AF;
+    border-color: rgba(217, 163, 175, 0.4);
 }
 
-.samples-list {
+.logs-content {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 0 24px;
+    padding: 0 16px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+    position: relative;
+    z-index: 1;
+}
+
+.logs-content::-webkit-scrollbar {
+    display: none;
 }
 
 .sample-card {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.sample-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 10px;
 }
 
-.sample-type {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
+.sample-tag {
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
 }
 
-.delete-sample {
+.tag-reply {
+    background: rgba(232, 192, 201, 0.25);
+    color: #D9A3AF;
+}
+
+.tag-trait {
+    background: rgba(216, 205, 234, 0.35);
+    color: #9B89B4;
+}
+
+.tag-scene {
+    background: rgba(245, 234, 208, 0.5);
+    color: #B8965A;
+}
+
+.tag-style {
+    background: rgba(216, 237, 247, 0.5);
+    color: #6BAED6;
+}
+
+.sample-time {
+    font-size: 10px;
+    color: #B8A9AC;
+    margin-left: auto;
+}
+
+.sample-del {
     background: none;
     border: none;
     font-size: 16px;
-    color: var(--color-text-light);
-    opacity: 0.4;
+    color: #B8A9AC;
     cursor: pointer;
+    opacity: 0.5;
+    margin-left: 4px;
 }
 
-.sample-user {
+.sample-user-msg {
     font-size: 12px;
-    color: var(--color-text-light);
-    margin-bottom: 4px;
-    padding-left: 8px;
-    border-left: 2px solid var(--color-border);
-}
-
-.sample-ai {
-    font-size: 13px;
-    color: var(--color-text);
-    padding-left: 8px;
-    border-left: 2px solid var(--color-primary);
-}
-
-.sample-trait {
-    font-size: 13px;
-    color: var(--color-text);
-    font-weight: 500;
-    margin-bottom: 4px;
-}
-
-.sample-desc {
-    font-size: 12px;
-    color: var(--color-text-light);
-}
-
-.sample-scene {
-    font-size: 13px;
-    color: var(--color-text);
-    font-weight: 500;
+    color: #B8A9AC;
+    padding: 6px 10px;
+    background: rgba(217, 163, 175, 0.06);
+    border-radius: 8px;
     margin-bottom: 6px;
 }
 
-.sample-behavior {
-    font-size: 12px;
-    color: var(--color-text-light);
-    padding: 2px 0;
-}
-
-.sample-style {
-    font-size: 12px;
-    color: var(--color-text);
-    padding: 2px 0;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 40px;
-    color: var(--color-text-light);
+.sample-ai-msg {
     font-size: 13px;
-    opacity: 0.5;
+    color: #4A3F41;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    border-left: 2px solid #D9A3AF;
+}
+
+.sample-main {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4A3F41;
+    margin-bottom: 4px;
+}
+
+.sample-sub {
+    font-size: 12px;
+    color: #6B5B5E;
+    line-height: 1.6;
+}
+
+.empty-state-unified {
+    text-align: center;
+    padding: 48px 24px;
+}
+
+.empty-icon {
+    font-size: 28px;
+    margin-bottom: 14px;
+}
+
+.empty-title {
+    font-size: 14px;
+    color: #4A3F41;
+    font-weight: 400;
+    margin-bottom: 6px;
+}
+
+.empty-sub {
+    font-size: 12px;
+    color: #B8A9AC;
+    line-height: 1.6;
 }
 
 .form-row {
@@ -396,21 +542,22 @@ onMounted(loadPersonas)
 .form-label {
     display: block;
     font-size: 11px;
-    color: var(--color-text-light);
+    color: #B8A9AC;
     margin-bottom: 6px;
 }
 
 .form-select {
     width: 100%;
     height: 38px;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(255, 240, 242, 0.5);
     border-radius: 10px;
     padding: 0 12px;
     font-size: 13px;
-    background: var(--color-card);
-    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.5);
+    color: #4A3F41;
     outline: none;
     appearance: none;
+    -webkit-appearance: none;
 }
 
 .modal-actions {

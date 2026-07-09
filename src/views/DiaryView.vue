@@ -1,33 +1,50 @@
 <template>
     <div class="diary-page">
-        <div class="diary-header">
-            <button class="back-btn" @click="goBack">‹</button>
-            <h2>手记</h2>
-            <button class="add-btn" @click="showWrite = true">+</button>
+        <div class="settings-blob sb-tl"></div>
+        <div class="settings-blob sb-br"></div>
+
+        <div class="diary-nav">
+            <button class="diary-back" @click="goBack">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+            </button>
+            <div class="diary-header-title">
+                <span class="diary-title">手记</span>
+                <span class="diary-subtitle">Journal</span>
+            </div>
+            <button class="diary-add-btn" @click="showWrite = true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+            </button>
         </div>
 
+        <!-- tab 切换 -->
         <div class="diary-tabs">
-            <button class="tab-item" :class="{ active: currentTab === 'ai' }" @click="switchTab('ai')">
+            <button class="diary-tab" :class="{ active: currentTab === 'ai' }" @click="switchTab('ai')">
                 {{ aiName }}的日记
             </button>
-            <button class="tab-item" :class="{ active: currentTab === 'user' }" @click="switchTab('user')">
+            <button class="diary-tab" :class="{ active: currentTab === 'user' }" @click="switchTab('user')">
                 我的日记
             </button>
         </div>
 
-        <div class="diary-list">
-            <GlassCard v-for="entry in entries" :key="entry.id" size="md" class="diary-entry">
-                <div class="entry-header">
-                    <span class="entry-date">{{ entry.date }}</span>
-                    <button class="entry-edit" @click="startEdit(entry)">✎</button>
-                </div>
-                <p class="entry-title">{{ entry.title }}</p>
-                <p class="entry-content">{{ entry.content }}</p>
-            </GlassCard>
-
-            <div v-if="entries.length === 0" class="empty-state">
+        <div class="diary-content">
+            <div v-if="entries.length === 0" class="empty-state-unified">
                 <p class="empty-icon">📝</p>
-                <p class="empty-text">还没有日记</p>
+                <p class="empty-title">还没有日记</p>
+                <p class="empty-sub" v-if="currentTab === 'ai'">在关于他页面点击「立即沉淀」可以生成 AI 日记</p>
+                <p class="empty-sub" v-else>点击右上角 + 写一篇</p>
+            </div>
+
+            <div v-for="entry in entries" :key="entry.id" class="diary-card">
+                <div class="diary-card-header">
+                    <span class="diary-date">{{ entry.date }}</span>
+                    <button class="diary-edit-btn" @click="startEdit(entry)">✎</button>
+                </div>
+                <p class="diary-entry-title" v-if="entry.title">{{ entry.title }}</p>
+                <p class="diary-entry-content">{{ entry.content }}</p>
             </div>
         </div>
 
@@ -57,7 +74,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { api } from '@/utils/api'
-import GlassCard from '@/components/ui/GlassCard.vue'
 import SoftButton from '@/components/ui/SoftButton.vue'
 import DreamInput from '@/components/ui/DreamInput.vue'
 import BlurModal from '@/components/ui/BlurModal.vue'
@@ -73,19 +89,13 @@ const editContent = ref('')
 const route = useRoute()
 const router = useRouter()
 
-
-const newDiary = reactive({
-    title: '',
-    content: '',
-})
+const newDiary = reactive({ title: '', content: '' })
 
 async function loadEntries() {
     try {
         const res = await api(`/api/diary/${currentTab.value}`)
         entries.value = await res.json()
-    } catch {
-        entries.value = []
-    }
+    } catch { entries.value = [] }
 }
 
 async function loadAiName() {
@@ -161,128 +171,218 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding-top: env(safe-area-inset-top, 44px);
-    overflow-x: hidden;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(180deg, #FFFBFA 0%, #FFF0F2 60%, #FFE9ED 100%);
+    box-sizing: border-box;
 }
 
-.diary-header {
+.settings-blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(60px);
+}
+
+.sb-tl {
+    top: -40px;
+    left: -50px;
+    width: 220px;
+    height: 220px;
+    background: #F1DADD;
+    opacity: 0.45;
+}
+
+.sb-br {
+    bottom: 40px;
+    right: -60px;
+    width: 200px;
+    height: 200px;
+    background: #98CBEA;
+    opacity: 0.2;
+}
+
+.diary-nav {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--color-border);
+    justify-content: space-between;
+    padding: calc(env(safe-area-inset-top, 44px) + 8px) 16px 4px;
     flex-shrink: 0;
+    position: relative;
+    z-index: 2;
 }
 
-.back-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: var(--color-primary);
-    cursor: pointer;
-    opacity: 0.75;
-}
-
-.diary-header h2 {
+.diary-header-title {
     flex: 1;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--color-text);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    justify-content: center;
 }
 
-.add-btn {
-    background: none;
-    border: none;
-    font-size: 22px;
-    color: var(--color-primary);
+.diary-back {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border: 1px solid rgba(255, 240, 242, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    opacity: 0.6;
+}
+
+.diary-back svg {
+    width: 16px;
+    height: 16px;
+    stroke: #D9A3AF;
+}
+
+.diary-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #4A3F41;
+    letter-spacing: 0.3px;
+}
+
+.diary-subtitle {
+    font-size: 11px;
+    color: #B8A9AC;
+    font-weight: 400;
+    letter-spacing: 1.5px;
+}
+
+.diary-add-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    border: 1px solid rgba(255, 240, 242, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.diary-add-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: #D9A3AF;
 }
 
 .diary-tabs {
     display: flex;
     gap: 8px;
-    padding: 12px 0;
+    padding: 12px 16px;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
 }
 
-.tab-item {
-    padding: 8px 16px;
+.diary-tab {
+    padding: 8px 18px;
     border-radius: 20px;
-    border: 1px solid var(--color-border);
-    background: var(--color-card);
+    border: 1px solid rgba(255, 240, 242, 0.4);
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: saturate(180%) blur(16px);
+    -webkit-backdrop-filter: saturate(180%) blur(16px);
     font-size: 12px;
-    color: var(--color-text-light);
+    color: #B8A9AC;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.2s;
+    font-family: inherit;
 }
 
-.tab-item.active {
-    background: linear-gradient(135deg, #e8a8be, #d4899e);
+.diary-tab.active {
+    background: linear-gradient(135deg, #E8C0C9, #D9A3AF);
     color: white;
     border-color: transparent;
 }
 
-.diary-list {
+.diary-content {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 0 24px;
+    padding: 0 16px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+    position: relative;
+    z-index: 1;
 }
 
-.diary-entry {
+.diary-content::-webkit-scrollbar {
+    display: none;
+}
+
+.diary-card {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 18px;
+    padding: 16px;
     margin-bottom: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
-.entry-header {
+.diary-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
-.entry-date {
+.diary-date {
     font-size: 11px;
-    color: var(--color-text-light);
-    opacity: 0.5;
+    color: #B8A9AC;
 }
 
-.entry-edit {
+.diary-edit-btn {
     background: none;
     border: none;
     font-size: 14px;
-    color: var(--color-primary);
+    color: #D9A3AF;
     cursor: pointer;
     opacity: 0.5;
 }
 
-.entry-title {
+.diary-entry-title {
     font-size: 14px;
-    font-weight: 500;
-    color: var(--color-text);
+    font-weight: 600;
+    color: #4A3F41;
     margin-bottom: 6px;
 }
 
-.entry-content {
+.diary-entry-content {
     font-size: 13px;
-    color: var(--color-text);
+    color: #4A3F41;
     line-height: 1.7;
     white-space: pre-line;
 }
 
-.empty-state {
+.empty-state-unified {
     text-align: center;
-    padding: 48px 20px;
+    padding: 48px 24px;
 }
 
 .empty-icon {
     font-size: 28px;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
 }
 
-.empty-text {
-    font-size: 13px;
-    color: var(--color-text-light);
-    opacity: 0.5;
+.empty-title {
+    font-size: 14px;
+    color: #4A3F41;
+    font-weight: 400;
+    margin-bottom: 6px;
+}
+
+.empty-sub {
+    font-size: 12px;
+    color: #B8A9AC;
+    line-height: 1.6;
 }
 
 .modal-actions {

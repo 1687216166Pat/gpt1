@@ -553,26 +553,28 @@ onMounted(async () => {
 watch(() => chatStore.messages.length, scrollToBottom)
 </script>
 
-<style scoped>
+<style>
+/* ===== 基础结构（默认主题）===== */
 .chat-page {
     display: flex;
     flex-direction: column;
     height: 100%;
     overflow: hidden;
     position: relative;
+    background: linear-gradient(180deg, #FFF5F7 0%, #FFEEF2 50%, #FFE6EC 100%);
 }
 
-/* ===== Header ===== */
+/* ===== 默认 Header（居中名字，无头像）===== */
 .chat-header {
     display: flex;
     align-items: center;
-    gap: 10px;
     padding: calc(env(safe-area-inset-top, 44px) + 8px) 16px 12px;
-    border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: rgba(255, 248, 252, 0.85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(217, 163, 175, 0.12);
+    position: relative;
 }
 
 .back-btn {
@@ -580,10 +582,11 @@ watch(() => chatStore.messages.length, scrollToBottom)
     border: none;
     cursor: pointer;
     padding: 4px;
-    color: var(--color-primary);
+    color: #D9A3AF;
     display: flex;
     align-items: center;
     flex-shrink: 0;
+    z-index: 1;
 }
 
 .back-btn svg {
@@ -592,48 +595,32 @@ watch(() => chatStore.messages.length, scrollToBottom)
 }
 
 .header-info {
-    flex: 1;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 2px;
     cursor: pointer;
-    min-width: 0;
 }
 
 .header-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--color-bg-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 1.5px solid rgba(217, 163, 175, 0.2);
-}
-
-.header-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    display: none;
 }
 
 .header-text {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    min-width: 0;
+    align-items: center;
+    gap: 1px;
 }
 
 .header-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--color-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 16px;
+    font-weight: 700;
+    color: #4A3F41;
+    letter-spacing: 0.3px;
 }
 
 .header-status {
@@ -641,13 +628,12 @@ watch(() => chatStore.messages.length, scrollToBottom)
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: var(--color-text-light);
-    opacity: 0.6;
+    color: #B8A9AC;
 }
 
 .status-dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: #4caf50;
 }
@@ -656,6 +642,8 @@ watch(() => chatStore.messages.length, scrollToBottom)
     display: flex;
     gap: 4px;
     flex-shrink: 0;
+    margin-left: auto;
+    z-index: 1;
 }
 
 .header-btn {
@@ -663,11 +651,10 @@ watch(() => chatStore.messages.length, scrollToBottom)
     border: none;
     cursor: pointer;
     padding: 6px;
-    color: var(--color-text-light);
+    color: #B8A9AC;
     border-radius: 10px;
     display: flex;
     align-items: center;
-    transition: background 0.2s;
 }
 
 .header-btn svg {
@@ -676,14 +663,14 @@ watch(() => chatStore.messages.length, scrollToBottom)
 }
 
 .header-btn:active {
-    background: rgba(212, 137, 158, 0.08);
+    background: rgba(217, 163, 175, 0.1);
 }
 
 .header-btn.danger {
     color: #c07070;
 }
 
-/* ===== 多选栏 ===== */
+/* 多选栏 */
 .select-bar {
     display: flex;
     align-items: center;
@@ -696,7 +683,7 @@ watch(() => chatStore.messages.length, scrollToBottom)
 
 .select-count {
     font-size: 13px;
-    color: var(--color-primary);
+    color: #D9A3AF;
     font-weight: 500;
 }
 
@@ -714,7 +701,8 @@ watch(() => chatStore.messages.length, scrollToBottom)
     border: none;
     cursor: pointer;
     font-size: 10px;
-    color: var(--color-text-light);
+    color: #B8A9AC;
+    font-family: inherit;
 }
 
 .select-actions button svg {
@@ -736,7 +724,7 @@ watch(() => chatStore.messages.length, scrollToBottom)
     transform: translateY(-10px);
 }
 
-/* ===== 消息列表 ===== */
+/* 消息列表 */
 .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -748,30 +736,30 @@ watch(() => chatStore.messages.length, scrollToBottom)
 .load-more {
     text-align: center;
     padding: 12px;
-    color: var(--color-text-light);
+    color: #B8A9AC;
     font-size: 12px;
     cursor: pointer;
     opacity: 0.4;
 }
 
-/* ===== 时间戳分隔 ===== */
+/* 时间戳 */
 .time-divider {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 12px 0;
+    margin: 10px 0;
 }
 
 .time-divider span {
     font-size: 11px;
-    color: var(--color-text-light);
-    opacity: 0.5;
-    background: rgba(255, 255, 255, 0.4);
+    color: #B8A9AC;
+    background: rgba(255, 255, 255, 0.6);
     padding: 3px 10px;
     border-radius: 10px;
+    backdrop-filter: blur(8px);
 }
 
-/* ===== 浮动面板 ===== */
+/* 浮动面板 */
 .float-panel {
     position: absolute;
     top: 0;
@@ -786,14 +774,14 @@ watch(() => chatStore.messages.length, scrollToBottom)
 }
 
 .panel-content {
-    background: var(--color-card);
+    background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 20px;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgba(255, 240, 242, 0.5);
     padding: 8px;
     width: 200px;
-    box-shadow: 0 8px 32px rgba(200, 130, 160, 0.12);
+    box-shadow: 0 8px 32px rgba(217, 163, 175, 0.15);
     align-self: flex-start;
 }
 
@@ -807,7 +795,7 @@ watch(() => chatStore.messages.length, scrollToBottom)
 }
 
 .panel-item:active {
-    background: rgba(212, 137, 158, 0.06);
+    background: rgba(217, 163, 175, 0.06);
 }
 
 .panel-icon {
@@ -819,30 +807,29 @@ watch(() => chatStore.messages.length, scrollToBottom)
 
 .panel-title {
     font-size: 13px;
-    color: var(--color-text);
+    color: #4A3F41;
 }
 
 .panel-sub {
     font-size: 10px;
-    color: var(--color-text-light);
-    opacity: 0.6;
+    color: #B8A9AC;
     margin-top: 1px;
 }
 
 .panel-enter-active {
-    transition: opacity 0.3s var(--ease-soft);
+    transition: opacity 0.3s;
 }
 
 .panel-enter-active .panel-content {
-    transition: transform 0.35s var(--ease-soft), opacity 0.3s var(--ease-soft);
+    transition: transform 0.35s, opacity 0.3s;
 }
 
 .panel-leave-active {
-    transition: opacity 0.2s var(--ease-soft);
+    transition: opacity 0.2s;
 }
 
 .panel-leave-active .panel-content {
-    transition: transform 0.2s var(--ease-soft), opacity 0.2s;
+    transition: transform 0.2s, opacity 0.2s;
 }
 
 .panel-enter-from {
@@ -863,53 +850,382 @@ watch(() => chatStore.messages.length, scrollToBottom)
     transform: translateY(-4px) scale(0.97);
 }
 
-/* ===== 五种主题 ===== */
-
-/* 默认主题：现有风格不变 */
-.theme-default .chat-messages {
-    padding: 12px 16px;
+/* ===== 极简主题 = iMessage ===== */
+.theme-minimal {
+    background: #F5F5F7;
 }
 
-/* 极简主题：iMessage 风格，无头像，气泡更圆 */
-.theme-minimal .chat-messages {
-    padding: 8px 16px;
+.theme-minimal .chat-header {
+    background: rgba(245, 245, 247, 0.92);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
 }
 
-/* 留白主题：AI 有头像，Instagram DM */
-.theme-留白 .chat-messages {
-    padding: 12px 16px;
+.theme-minimal .header-info {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-/* 同框主题：双头像，Twitter DM */
-.theme-together .chat-messages {
-    padding: 12px 16px;
+.theme-minimal .back-btn {
+    color: #007AFF;
 }
 
-/* 液态主题：大圆角毛玻璃 */
-.theme-liquid .chat-messages {
-    padding: 12px 16px;
+.theme-minimal .header-btn {
+    color: #007AFF;
 }
 
-/* 微信主题 */
+.theme-minimal .header-name {
+    font-size: 14px;
+    color: #1c1c1e;
+    font-weight: 600;
+}
+
+.theme-minimal .header-status {
+    color: #8E8E93;
+}
+
+.theme-minimal .status-dot {
+    background: #34C759;
+}
+
+.theme-minimal .time-divider span {
+    background: transparent;
+    backdrop-filter: none;
+    color: #8E8E93;
+    font-weight: 500;
+}
+
+.theme-minimal .panel-content {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+}
+
+.theme-minimal .panel-title {
+    color: #1c1c1e;
+}
+
+.theme-minimal .panel-sub {
+    color: #8E8E93;
+}
+
+.theme-minimal .select-count {
+    color: #007AFF;
+}
+
+.theme-minimal :deep(.chat-input-wrapper) {
+    background: rgba(245, 245, 247, 0.95);
+    border-top: 0.5px solid rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(20px);
+}
+
+.theme-minimal :deep(textarea) {
+    background: #FFFFFF;
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #1c1c1e;
+    border-radius: 20px;
+}
+
+.theme-minimal :deep(.send-btn) {
+    background: #007AFF;
+    box-shadow: none;
+}
+
+.theme-minimal :deep(.more-btn) {
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #007AFF;
+}
+
+/* ===== 留白主题 = 小克风毛玻璃 ===== */
+.theme-留白 {
+    background: linear-gradient(160deg, #2C2830 0%, #1A1620 100%);
+}
+
+.theme-留白 .chat-header {
+    background: rgba(30, 26, 34, 0.6);
+    backdrop-filter: saturate(150%) blur(30px);
+    -webkit-backdrop-filter: saturate(150%) blur(30px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.theme-留白 .header-name {
+    color: #E8D5C4;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.theme-留白 .header-status {
+    color: rgba(232, 213, 196, 0.5);
+}
+
+.theme-留白 .back-btn {
+    color: #C4A882;
+}
+
+.theme-留白 .header-btn {
+    color: rgba(232, 213, 196, 0.6);
+}
+
+.theme-留白 .time-divider span {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    color: rgba(232, 213, 196, 0.4);
+}
+
+.theme-留白 .panel-content {
+    background: rgba(40, 34, 46, 0.9);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.theme-留白 .panel-title {
+    color: #E8D5C4;
+}
+
+.theme-留白 .panel-sub {
+    color: rgba(232, 213, 196, 0.5);
+}
+
+.theme-留白 .select-count {
+    color: #C4A882;
+}
+
+.theme-留白 :deep(.chat-input-wrapper) {
+    background: rgba(26, 22, 30, 0.8);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.theme-留白 :deep(textarea) {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #E8D5C4;
+    border-radius: 24px;
+}
+
+.theme-留白 :deep(textarea::placeholder) {
+    color: rgba(232, 213, 196, 0.3);
+}
+
+.theme-留白 :deep(.send-btn) {
+    background: #C4A882;
+    box-shadow: none;
+}
+
+.theme-留白 :deep(.more-btn) {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(232, 213, 196, 0.6);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* ===== 同框主题 = Discord 深色 ===== */
+.theme-together {
+    background: #313338;
+}
+
+.theme-together .chat-header {
+    background: rgba(43, 45, 49, 0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.theme-together .header-name {
+    color: #FFFFFF;
+    font-size: 16px;
+}
+
+.theme-together .header-status {
+    color: #B5BAC1;
+}
+
+.theme-together .status-dot {
+    background: #23A55A;
+}
+
+.theme-together .back-btn {
+    color: #B5BAC1;
+}
+
+.theme-together .header-btn {
+    color: #B5BAC1;
+}
+
+.theme-together .time-divider span {
+    background: transparent;
+    backdrop-filter: none;
+    color: #949BA4;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.theme-together .panel-content {
+    background: rgba(30, 31, 34, 0.98);
+    border-color: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+}
+
+.theme-together .panel-title {
+    color: #DBDEE1;
+}
+
+.theme-together .panel-sub {
+    color: #949BA4;
+}
+
+.theme-together .select-bar {
+    background: rgba(43, 45, 49, 0.95);
+    border-color: rgba(0, 0, 0, 0.3);
+}
+
+.theme-together .select-count {
+    color: #5865F2;
+}
+
+.theme-together .select-actions button {
+    color: #B5BAC1;
+}
+
+.theme-together :deep(.chat-input-wrapper) {
+    background: rgba(43, 45, 49, 0.98);
+    border-top: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.theme-together :deep(textarea) {
+    background: #404249;
+    border-color: transparent;
+    color: #DBDEE1;
+    border-radius: 8px;
+}
+
+.theme-together :deep(textarea::placeholder) {
+    color: #949BA4;
+}
+
+.theme-together :deep(.send-btn) {
+    background: #5865F2;
+    box-shadow: none;
+}
+
+.theme-together :deep(.more-btn) {
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #B5BAC1;
+    background: #404249;
+}
+
+/* ===== 液态主题 ===== */
+.theme-liquid {
+    background: linear-gradient(160deg, #FFF5F8 0%, #F5EEFF 50%, #EEF4FF 100%);
+}
+
+.theme-liquid .chat-header {
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: saturate(200%) blur(40px);
+    -webkit-backdrop-filter: saturate(200%) blur(40px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.theme-liquid .header-name {
+    color: #4A3F41;
+}
+
+.theme-liquid .back-btn {
+    color: #D9A3AF;
+}
+
+.theme-liquid .header-btn {
+    color: #B8A9AC;
+}
+
+.theme-liquid .time-divider span {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+}
+
+.theme-liquid :deep(.chat-input-wrapper) {
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.theme-liquid :deep(textarea) {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* ===== 微信主题 ===== */
 .theme-wechat {
     background: #EDEDED;
 }
 
 .theme-wechat .chat-header {
     background: #F7F7F7;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border-bottom: 1px solid #D9D9D9;
 }
 
-.theme-wechat .chat-header .header-name {
+.theme-wechat .header-name {
+    font-size: 17px;
+    font-weight: 600;
     color: #191919;
 }
 
-.theme-wechat .chat-header .back-btn {
-    color: #576B95;
+.theme-wechat .header-status {
+    display: none;
+}
+
+.theme-wechat .back-btn {
+    color: #191919;
+}
+
+.theme-wechat .header-btn {
+    color: #191919;
 }
 
 .theme-wechat .time-divider span {
     background: rgba(0, 0, 0, 0.08);
+    backdrop-filter: none;
     color: #888;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.theme-wechat .panel-content {
+    background: #FFFFFF;
+    border-color: #E0E0E0;
+    border-radius: 8px;
+}
+
+.theme-wechat .panel-title {
+    color: #191919;
+}
+
+.theme-wechat .panel-sub {
+    color: #888;
+}
+
+.theme-wechat :deep(.chat-input-wrapper) {
+    background: #F7F7F7;
+    border-top: 0.5px solid #D9D9D9;
+    backdrop-filter: none;
+}
+
+.theme-wechat :deep(textarea) {
+    background: #FFFFFF;
+    border-radius: 6px;
+    color: #191919;
+    border-color: transparent;
+}
+
+.theme-wechat :deep(.send-btn) {
+    background: #07C160;
+    box-shadow: none;
+}
+
+.theme-wechat :deep(.more-btn) {
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #191919;
+    background: rgba(255, 255, 255, 0.8);
 }
 </style>
